@@ -1,50 +1,67 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+SYNC IMPACT REPORT
+Version: 1.0.0 -> 1.1.0
+Modified Principles:
+- Added: V. Language & Localization
+Added Sections:
+- V. Language & Localization
+Templates Status:
+- .specify/templates/plan-template.md: ✅ Checked (Aligned)
+- .specify/templates/spec-template.md: ✅ Checked (Aligned)
+- .specify/templates/tasks-template.md: ✅ Checked (Aligned)
+-->
+# CRM Questionnaire Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Code Quality & Standards
+Code must be clean, readable, and maintainable. All code must adhere to the project's linter and formatter configurations. No code shall be merged without passing static analysis. Comments should explain "why", not "what". Functions should be small and focused (Single Responsibility Principle).
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### II. Testing Strategy
+Testing is mandatory and non-negotiable. All new features and bug fixes must include accompanying tests.
+- **Unit Tests**: Required for all business logic and utility functions.
+- **Integration Tests**: Required for API endpoints and critical user flows.
+- **Coverage**: Aim for high coverage of critical paths; 100% coverage is not the goal, confidence is.
+- **Test-First**: Tests should ideally be written before implementation (TDD) or immediately alongside it.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### III. User Experience Consistency
+The user experience must be consistent, accessible, and intuitive.
+- **Design System**: UI components must use the established design system/library to ensure visual consistency.
+- **Accessibility**: All interfaces must meet WCAG 2.1 AA standards. Semantic HTML and ARIA labels are required where appropriate.
+- **Feedback**: The system must provide clear feedback for all user actions (loading states, success messages, error handling).
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### IV. Performance Requirements
+Performance is a feature. The system must be responsive and efficient.
+- **Load Time**: Initial page load should be under 2 seconds on 4G networks.
+- **Response Time**: API responses should be under 200ms for standard operations.
+- **Optimization**: Assets must be optimized (compressed images, minified bundles). Database queries must be indexed and optimized.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### V. Language & Localization
+All specifications, plans, and user-facing documentation MUST be written in Traditional Chinese (zh-TW).
+- **Documentation**: All project documentation, including specs, plans, and guides, must be in Traditional Chinese.
+- **User Interface**: All user-facing text in the application must be in Traditional Chinese (zh-TW).
+- **Code Comments**: Code comments may remain in English for technical clarity, but documentation intended for stakeholders must be zh-TW.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+## Security & Compliance
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+All data handling must adhere to security best practices.
+- **Data Protection**: User data must be encrypted in transit and at rest.
+- **Authentication**: Secure authentication mechanisms (e.g., OAuth, JWT) must be used.
+- **Validation**: All user input must be validated on both client and server sides to prevent injection attacks.
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+## Development Workflow
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+- **Branching**: Use feature branches (`feature/name`, `fix/issue`).
+- **Commits**: Use conventional commits (e.g., `feat:`, `fix:`, `docs:`).
+- **Reviews**: All PRs require at least one peer review.
+- **CI/CD**: All tests and linters must pass in CI before merging.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+This Constitution supersedes all other project documentation. Amendments require a Pull Request with a "Constitution Check" and approval from project maintainers.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+- **Compliance**: All PRs must verify compliance with these principles.
+- **Versioning**: Semantic Versioning (MAJOR.MINOR.PATCH) applies to this document.
+- **Runtime Guidance**: Refer to `README.md` for setup and specific command usage.
+
+**Version**: 1.1.0 | **Ratified**: 2025-12-01 | **Last Amended**: 2025-12-01
