@@ -1,0 +1,61 @@
+{
+  "current_index": 0,
+  "questions": [
+    {
+      "id": "user_fields",
+      "text": "除了姓名 (Name) 和電子郵件 (Email) 之外，使用者個人資料 (User Profile) 還需要包含哪些欄位？",
+      "options": {
+        "A": "僅需姓名與 Email",
+        "B": "增加電話號碼 (Phone)",
+        "C": "增加電話號碼與部門 (Department)",
+        "D": "增加電話號碼、部門與職稱 (Job Title)"
+      },
+      "recommendation": "C",
+      "reason": "在 B2B CRM 系統中，部門資訊對於權限管理或業務歸屬通常是必要的。"
+    },
+    {
+      "id": "question_types",
+      "text": "範本題目 (Question) 需要支援哪些具體的題型？",
+      "options": {
+        "A": "僅文字輸入 (Text) 與 單選 (Single Choice)",
+        "B": "文字輸入、單選、多選 (Multiple Choice)",
+        "C": "文字輸入、單選、多選、檔案上傳 (File Upload)",
+        "D": "上述全部加上 評分題 (Rating/Scale)"
+      },
+      "recommendation": "C",
+      "reason": "SAQ 與稽核通常需要佐證資料，檔案上傳是常見需求。"
+    },
+    {
+      "id": "template_sections",
+      "text": "範本 (Template) 是否需要支援將題目分組 (Sections/Categories)？",
+      "options": {
+        "A": "不需要，所有題目列在同一層級",
+        "B": "需要，支援單層章節 (Sections) 分組",
+        "C": "需要，支援多層次巢狀分組"
+      },
+      "recommendation": "B",
+      "reason": "問卷通常較長，分章節有助於填寫體驗與管理。"
+    },
+    {
+      "id": "project_status",
+      "text": "專案 (Project) 是否需要狀態欄位來管理生命週期？",
+      "options": {
+        "A": "不需要，僅需存在即可",
+        "B": "需要簡單狀態：草稿 (Draft) / 發布 (Published)",
+        "C": "需要完整狀態：草稿 (Draft) / 進行中 (In Progress) / 已完成 (Completed) / 已關閉 (Closed)"
+      },
+      "recommendation": "C",
+      "reason": "完整的狀態流有助於追蹤進度與管控填寫權限。"
+    },
+    {
+      "id": "conflict_minerals",
+      "text": "衝突資產 (Conflict Minerals) 的資料模型是否完全沿用 SAQ 的通用問卷結構，還是需要符合特定標準 (如 CMRT) 的專屬欄位？",
+      "options": {
+        "A": "完全沿用 SAQ 通用結構 (Generic)",
+        "B": "需增加 CMRT 標準欄位 (如 Smelter ID, Country)"
+      },
+      "recommendation": "A",
+      "reason": "除非有明確合規要求，初期沿用通用結構可降低開發成本 (MVP)。"
+    }
+  ]
+}
