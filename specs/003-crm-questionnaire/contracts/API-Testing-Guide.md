@@ -113,9 +113,11 @@ http GET http://localhost:3000/api/projects \
 
 #### Step 1: 登入
 ```bash
+# 注意：請替換為實際的使用者帳號密碼
+# Note: Replace with actual user credentials
 TOKEN=$(curl -s -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"host.user","password":"password123"}' \
+  -d '{"username":"YOUR_USERNAME","password":"YOUR_PASSWORD"}' \
   | jq -r '.token')
 
 echo "Token: $TOKEN"
@@ -167,9 +169,10 @@ curl -X GET "http://localhost:3000/api/projects/$PROJECT_ID" \
 #### Step 6: 儲存答案（供應商）
 ```bash
 # 先以供應商身份登入
+# 注意：請替換為實際的供應商帳號密碼
 SUPPLIER_TOKEN=$(curl -s -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"supplier.user","password":"password123"}' \
+  -d '{"username":"SUPPLIER_USERNAME","password":"SUPPLIER_PASSWORD"}' \
   | jq -r '.token')
 
 # 儲存答案
@@ -202,9 +205,10 @@ curl -X POST "http://localhost:3000/api/projects/$PROJECT_ID/submit" \
 #### Step 8: 審核專案（審核者）
 ```bash
 # 以審核者身份登入
+# 注意：請替換為實際的審核者帳號密碼
 REVIEWER_TOKEN=$(curl -s -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"reviewer.user","password":"password123"}' \
+  -d '{"username":"REVIEWER_USERNAME","password":"REVIEWER_PASSWORD"}' \
   | jq -r '.token')
 
 # 核准專案

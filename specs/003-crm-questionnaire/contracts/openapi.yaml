@@ -8,8 +8,12 @@ info:
 servers:
   - url: http://localhost:3000/api
     description: Development server
-  - url: "{PRODUCTION_API_URL}/api"
-    description: Production server
+  - url: https://api.example.com/api
+    description: Production server (replace with actual production URL)
+    variables:
+      environment:
+        default: prod
+        description: The deployment environment
 
 security:
   - bearerAuth: []
@@ -421,10 +425,12 @@ paths:
           schema:
             type: string
       requestBody:
+        required: false
         content:
           application/json:
             schema:
               type: object
+              description: Empty object - no additional parameters required
       responses:
         '200':
           description: Template version published
@@ -1108,6 +1114,11 @@ components:
                   - type: number
                   - type: boolean
                   - type: array
+                    items:
+                      type: string
+                  - type: object
+                  - type: "null"
+                description: Answer value - type depends on question type (text, number, boolean, array for multi-choice, object for file uploads, or null)
         lastSavedAt:
           type: string
           format: date-time

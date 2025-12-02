@@ -1514,8 +1514,8 @@ const handleApiError = (error: any) => {
 ### A. 資料類型定義 (Data Type Definitions)
 
 所有資料類型的完整定義請參考：
-- Frontend: `/frontend/app/types/index.ts`
-- 此文件: [資料模型文件](./data-model.md)
+- Frontend: `frontend/app/types/index.ts` (相對於專案根目錄)
+- 此文件: [資料模型文件](../data-model.md)
 
 ### B. API 測試建議
 
