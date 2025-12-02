@@ -17,11 +17,17 @@
    - 包含使用範例與最佳實踐
    - 適合前端開發者快速查找 API 使用方式
 
+3. **[Quick Reference](./QUICK_REFERENCE.md)** ⚡ 快速參考
+   - 常用 API 操作的快速參考指南
+   - 包含完整的操作流程範例
+   - 適合快速查找和複製程式碼片段
+
 ## 🎯 快速導覽
 
 ### 我是前端開發者
 
 如果你要：
+- **快速開始**: 查看 [Quick Reference](./QUICK_REFERENCE.md) 快速了解常用操作
 - **呼叫 API**: 查看 [API Mapping](./API_MAPPING.md) 了解如何使用現有的 composables
 - **新增功能**: 查看 [API Requirements](./API_REQUIREMENTS.md) 了解完整的 API 規格
 - **除錯問題**: 查看 [API Requirements](./API_REQUIREMENTS.md) 的錯誤回應格式
