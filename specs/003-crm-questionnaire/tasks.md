@@ -31,12 +31,12 @@
 **目的**：專案初始化與基礎結構建立
 
 - [x] T001 依照 quickstart.md 初始化 Nuxt 3 專案於 frontend/ 目錄
-- [ ] T002 安裝相依套件 (@nuxt/ui, @pinia/nuxt, pinia, @nuxtjs/i18n)
-- [ ] T003 [P] 安裝測試框架 (vitest, @nuxt/test-utils, @vue/test-utils)
-- [ ] T004 [P] 設定 nuxt.config.ts 啟用 Nuxt UI、Pinia、i18n 模組
-- [ ] T005 [P] 設定 vitest.config.ts 測試配置
-- [ ] T006 建立 frontend/app/ 目錄結構 (components, composables, pages, stores, layouts, middleware, utils)
-- [ ] T007 [P] 建立 frontend/tests/ 目錄結構 (unit, integration)
+- [x] T002 安裝相依套件 (@nuxt/ui, @pinia/nuxt, pinia, @nuxtjs/i18n)
+- [x] T003 [P] 安裝測試框架 (vitest, @nuxt/test-utils, @vue/test-utils)
+- [x] T004 [P] 設定 nuxt.config.ts 啟用 Nuxt UI、Pinia、i18n 模組
+- [x] T005 [P] 設定 vitest.config.ts 測試配置
+- [x] T006 建立 frontend/app/ 目錄結構 (components, composables, pages, stores, layouts, middleware, utils)
+- [x] T007 [P] 建立 frontend/tests/ 目錄結構 (unit, integration)
 
 ---
 
@@ -48,21 +48,21 @@
 
 ### 基礎設施測試
 
-- [ ] T008 [P] 建立 TypeScript 型別定義測試於 frontend/tests/unit/types/types.spec.ts
-- [ ] T009 [P] 建立 API 工具函數測試於 frontend/tests/unit/utils/api.spec.ts
-- [ ] T010 [P] 建立認證 Store 單元測試於 frontend/tests/unit/stores/auth.spec.ts
+- [x] T008 [P] 建立 TypeScript 型別定義測試於 frontend/tests/unit/types/types.spec.ts
+- [x] T009 [P] 建立 API 工具函數測試於 frontend/tests/unit/utils/api.spec.ts
+- [x] T010 [P] 建立認證 Store 單元測試於 frontend/tests/unit/stores/auth.spec.ts
 
 ### 基礎設施實作
 
-- [ ] T011 [P] 建立 TypeScript 型別定義於 frontend/app/types/index.ts (User, Organization, Department, Project, Template, Question, Answer, ReviewLog)
-- [ ] T012 [P] 建立 API 錯誤處理工具於 frontend/app/utils/api-error.ts (含網路斷線錯誤處理 - EC-003)
-- [ ] T013 [P] 建立共用 API Composable 基礎於 frontend/app/composables/useApi.ts
-- [ ] T014 建立認證 Store 於 frontend/app/stores/auth.ts (依賴 T011, T013)
-- [ ] T015 建立認證 Middleware 於 frontend/app/middleware/auth.ts (依賴 T014)
-- [ ] T016 [P] 建立 i18n 配置檔於 frontend/i18n.config.ts (含 fallbackLocale 設定 - EC-002)
-- [ ] T017 [P] 建立繁體中文語系檔於 frontend/app/locales/zh-TW.json
-- [ ] T018 [P] 建立英文語系檔於 frontend/app/locales/en.json
-- [ ] T019 建立主版面配置於 frontend/app/layouts/default.vue (依賴 T016-T018)
+- [x] T011 [P] 建立 TypeScript 型別定義於 frontend/app/types/index.ts (User, Organization, Department, Project, Template, Question, Answer, ReviewLog)
+- [x] T012 [P] 建立 API 錯誤處理工具於 frontend/app/utils/api-error.ts (含網路斷線錯誤處理 - EC-003)
+- [x] T013 [P] 建立共用 API Composable 基礎於 frontend/app/composables/useApi.ts
+- [x] T014 建立認證 Store 於 frontend/app/stores/auth.ts (依賴 T011, T013)
+- [x] T015 建立認證 Middleware 於 frontend/app/middleware/auth.ts (依賴 T014)
+- [x] T016 [P] 建立 i18n 配置檔於 frontend/i18n.config.ts (含 fallbackLocale 設定 - EC-002)
+- [x] T017 [P] 建立繁體中文語系檔於 frontend/app/locales/zh-TW.json
+- [x] T018 [P] 建立英文語系檔於 frontend/app/locales/en.json
+- [x] T019 建立主版面配置於 frontend/app/layouts/default.vue (依賴 T016-T018)
 
 **檢查點**：基礎設施就緒，可開始 User Story 實作
 
@@ -76,27 +76,27 @@
 
 ### 部門管理單元測試
 
-- [ ] T019A [P] 建立 useDepartments Composable 單元測試於 frontend/tests/unit/composables/useDepartments.spec.ts
-- [ ] T019B [P] 建立 DepartmentList 元件單元測試於 frontend/tests/unit/components/DepartmentList.spec.ts
-- [ ] T019C [P] 建立 DepartmentForm 元件單元測試於 frontend/tests/unit/components/DepartmentForm.spec.ts
+- [x] T019A [P] 建立 useDepartments Composable 單元測試於 frontend/tests/unit/composables/useDepartments.spec.ts
+- [x] T019B [P] 建立 DepartmentList 元件單元測試於 frontend/tests/unit/components/DepartmentList.spec.ts
+- [x] T019C [P] 建立 DepartmentForm 元件單元測試於 frontend/tests/unit/components/DepartmentForm.spec.ts
 
 ### 部門管理整合測試
 
-- [ ] T019D [P] 建立部門管理流程整合測試於 frontend/tests/integration/department-management.spec.ts
+- [x] T019D [P] 建立部門管理流程整合測試於 frontend/tests/integration/department-management.spec.ts
 
 ### 部門管理 Composables 實作
 
-- [ ] T019E 實作 useDepartments Composable 於 frontend/app/composables/useDepartments.ts (部門 CRUD: 列表查詢、新增、編輯、刪除)
+- [x] T019E 實作 useDepartments Composable 於 frontend/app/composables/useDepartments.ts (部門 CRUD: 列表查詢、新增、編輯、刪除)
 
 ### 部門管理元件實作
 
-- [ ] T019F [P] 建立 DepartmentList 元件於 frontend/app/components/admin/DepartmentList.vue
-- [ ] T019G [P] 建立 DepartmentForm 元件於 frontend/app/components/admin/DepartmentForm.vue
-- [ ] T019H [P] 建立 DepartmentSelect 元件於 frontend/app/components/common/DepartmentSelect.vue (供 ProfileForm 使用)
+- [x] T019F [P] 建立 DepartmentList 元件於 frontend/app/components/admin/DepartmentList.vue
+- [x] T019G [P] 建立 DepartmentForm 元件於 frontend/app/components/admin/DepartmentForm.vue
+- [x] T019H [P] 建立 DepartmentSelect 元件於 frontend/app/components/common/DepartmentSelect.vue (供 ProfileForm 使用)
 
 ### 部門管理頁面實作
 
-- [ ] T019I 建立部門管理頁面於 frontend/app/pages/admin/departments/index.vue (依賴 T019F, T019G)
+- [x] T019I 建立部門管理頁面於 frontend/app/pages/admin/departments/index.vue (依賴 T019F, T019G)
 
 **檢查點**：部門管理功能就緒，管理員可維護部門清單，使用者可於個人資料選擇部門
 
@@ -112,36 +112,36 @@
 
 > **注意：先撰寫測試，確保測試失敗後再開始實作**
 
-- [ ] T020 [P] [US1] 建立 useAuth Composable 單元測試於 frontend/tests/unit/composables/useAuth.spec.ts
-- [ ] T021 [P] [US1] 建立 useUser Composable 單元測試於 frontend/tests/unit/composables/useUser.spec.ts
-- [ ] T022 [P] [US1] 建立 Navbar 元件單元測試於 frontend/tests/unit/components/Navbar.spec.ts
-- [ ] T023 [P] [US1] 建立 AppCard 元件單元測試於 frontend/tests/unit/components/AppCard.spec.ts
-- [ ] T024 [P] [US1] 建立 LanguageSwitcher 元件單元測試於 frontend/tests/unit/components/LanguageSwitcher.spec.ts
+- [x] T020 [P] [US1] 建立 useAuth Composable 單元測試於 frontend/tests/unit/composables/useAuth.spec.ts
+- [x] T021 [P] [US1] 建立 useUser Composable 單元測試於 frontend/tests/unit/composables/useUser.spec.ts
+- [x] T022 [P] [US1] 建立 Navbar 元件單元測試於 frontend/tests/unit/components/Navbar.spec.ts
+- [x] T023 [P] [US1] 建立 AppCard 元件單元測試於 frontend/tests/unit/components/AppCard.spec.ts
+- [x] T024 [P] [US1] 建立 LanguageSwitcher 元件單元測試於 frontend/tests/unit/components/LanguageSwitcher.spec.ts
 
 ### User Story 1 整合測試
 
-- [ ] T025 [P] [US1] 建立登入流程整合測試於 frontend/tests/integration/auth-flow.spec.ts
-- [ ] T026 [P] [US1] 建立會員中心頁面整合測試於 frontend/tests/integration/member-center.spec.ts
-- [ ] T027 [P] [US1] 建立帳戶管理頁面整合測試於 frontend/tests/integration/account-management.spec.ts
+- [x] T025 [P] [US1] 建立登入流程整合測試於 frontend/tests/integration/auth-flow.spec.ts
+- [x] T026 [P] [US1] 建立會員中心頁面整合測試於 frontend/tests/integration/member-center.spec.ts
+- [x] T027 [P] [US1] 建立帳戶管理頁面整合測試於 frontend/tests/integration/account-management.spec.ts
 
 ### User Story 1 Composables 實作
 
-- [ ] T028 [US1] 實作 useAuth Composable 於 frontend/app/composables/useAuth.ts (登入、登出、Token 管理)
-- [ ] T029 [US1] 實作 useUser Composable 於 frontend/app/composables/useUser.ts (取得/更新個人資料、修改密碼)
+- [x] T028 [US1] 實作 useAuth Composable 於 frontend/app/composables/useAuth.ts (登入、登出、Token 管理)
+- [x] T029 [US1] 實作 useUser Composable 於 frontend/app/composables/useUser.ts (取得/更新個人資料、修改密碼)
 
 ### User Story 1 元件實作
 
-- [ ] T030 [P] [US1] 建立 Navbar 元件於 frontend/app/components/common/Navbar.vue
-- [ ] T031 [P] [US1] 建立 AppCard 元件於 frontend/app/components/member/AppCard.vue
-- [ ] T032 [P] [US1] 建立 LanguageSwitcher 元件於 frontend/app/components/common/LanguageSwitcher.vue
-- [ ] T033 [P] [US1] 建立 ProfileForm 元件於 frontend/app/components/account/ProfileForm.vue (含表單驗證)
-- [ ] T034 [P] [US1] 建立 PasswordChangeForm 元件於 frontend/app/components/account/PasswordChangeForm.vue (含表單驗證與錯誤提示)
+- [x] T030 [P] [US1] 建立 Navbar 元件於 frontend/app/components/common/Navbar.vue
+- [x] T031 [P] [US1] 建立 AppCard 元件於 frontend/app/components/member/AppCard.vue
+- [x] T032 [P] [US1] 建立 LanguageSwitcher 元件於 frontend/app/components/common/LanguageSwitcher.vue
+- [x] T033 [P] [US1] 建立 ProfileForm 元件於 frontend/app/components/account/ProfileForm.vue (含表單驗證)
+- [x] T034 [P] [US1] 建立 PasswordChangeForm 元件於 frontend/app/components/account/PasswordChangeForm.vue (含表單驗證與錯誤提示)
 
 ### User Story 1 頁面實作
 
-- [ ] T035 [US1] 建立登入頁面於 frontend/app/pages/login.vue
-- [ ] T036 [US1] 建立會員中心首頁於 frontend/app/pages/index.vue (依賴 T030, T031, T032)
-- [ ] T037 [US1] 建立帳戶管理頁面於 frontend/app/pages/account/index.vue (依賴 T033, T034)
+- [x] T035 [US1] 建立登入頁面於 frontend/app/pages/login.vue
+- [x] T036 [US1] 建立會員中心首頁於 frontend/app/pages/index.vue (依賴 T030, T031, T032)
+- [x] T037 [US1] 建立帳戶管理頁面於 frontend/app/pages/account/index.vue (依賴 T033, T034)
 
 ### User Story 1 驗證與錯誤處理
 
@@ -161,46 +161,46 @@
 
 ### User Story 4 單元測試
 
-- [ ] T040 [P] [US4] 建立 useProjects Composable 單元測試於 frontend/tests/unit/composables/useProjects.spec.ts
-- [ ] T041 [P] [US4] 建立 useAnswers Composable 單元測試於 frontend/tests/unit/composables/useAnswers.spec.ts
-- [ ] T042 [P] [US4] 建立 ProjectList 元件單元測試於 frontend/tests/unit/components/ProjectList.spec.ts
-- [ ] T043 [P] [US4] 建立 QuestionRenderer 元件單元測試於 frontend/tests/unit/components/QuestionRenderer.spec.ts
-- [ ] T044 [P] [US4] 建立各題型元件單元測試於 frontend/tests/unit/components/question-types/
+- [x] T040 [P] [US4] 建立 useProjects Composable 單元測試於 frontend/tests/unit/composables/useProjects.spec.ts
+- [x] T041 [P] [US4] 建立 useAnswers Composable 單元測試於 frontend/tests/unit/composables/useAnswers.spec.ts
+- [x] T042 [P] [US4] 建立 ProjectList 元件單元測試於 frontend/tests/unit/components/ProjectList.spec.ts
+- [x] T043 [P] [US4] 建立 QuestionRenderer 元件單元測試於 frontend/tests/unit/components/QuestionRenderer.spec.ts
+- [x] T044 [P] [US4] 建立各題型元件單元測試於 frontend/tests/unit/components/question-types/
 
 ### User Story 4 整合測試
 
-- [ ] T045 [P] [US4] 建立供應商專案列表整合測試於 frontend/tests/integration/supplier-projects.spec.ts
-- [ ] T046 [P] [US4] 建立問卷填寫流程整合測試於 frontend/tests/integration/questionnaire-answering.spec.ts
+- [x] T045 [P] [US4] 建立供應商專案列表整合測試於 frontend/tests/integration/supplier-projects.spec.ts
+- [x] T046 [P] [US4] 建立問卷填寫流程整合測試於 frontend/tests/integration/questionnaire-answering.spec.ts
 
 ### User Story 4 Composables 實作
 
-- [ ] T047 [US4] 實作 useProjects Composable 於 frontend/app/composables/useProjects.ts (專案列表、專案詳情)
-- [ ] T048 [US4] 實作 useAnswers Composable 於 frontend/app/composables/useAnswers.ts (讀取/儲存答案、暫存、提交)
+- [x] T047 [US4] 實作 useProjects Composable 於 frontend/app/composables/useProjects.ts (專案列表、專案詳情)
+- [x] T048 [US4] 實作 useAnswers Composable 於 frontend/app/composables/useAnswers.ts (讀取/儲存答案、暫存、提交)
 
 ### User Story 4 元件實作
 
-- [ ] T049 [P] [US4] 建立 ProjectList 元件於 frontend/app/components/project/ProjectList.vue
-- [ ] T050 [P] [US4] 建立 ProjectCard 元件於 frontend/app/components/project/ProjectCard.vue
-- [ ] T051 [P] [US4] 建立 QuestionRenderer 元件於 frontend/app/components/questionnaire/QuestionRenderer.vue
-- [ ] T052 [P] [US4] 建立 TextQuestion 元件於 frontend/app/components/questionnaire/types/TextQuestion.vue
-- [ ] T053 [P] [US4] 建立 NumberQuestion 元件於 frontend/app/components/questionnaire/types/NumberQuestion.vue
-- [ ] T054 [P] [US4] 建立 DateQuestion 元件於 frontend/app/components/questionnaire/types/DateQuestion.vue
-- [ ] T055 [P] [US4] 建立 BooleanQuestion 元件於 frontend/app/components/questionnaire/types/BooleanQuestion.vue
-- [ ] T056 [P] [US4] 建立 SingleChoiceQuestion 元件於 frontend/app/components/questionnaire/types/SingleChoiceQuestion.vue
-- [ ] T057 [P] [US4] 建立 MultiChoiceQuestion 元件於 frontend/app/components/questionnaire/types/MultiChoiceQuestion.vue
-- [ ] T058 [P] [US4] 建立 FileUploadQuestion 元件於 frontend/app/components/questionnaire/types/FileUploadQuestion.vue
-- [ ] T059 [P] [US4] 建立 RatingQuestion 元件於 frontend/app/components/questionnaire/types/RatingQuestion.vue
-- [ ] T060 [P] [US4] 建立 QuestionnaireProgress 元件於 frontend/app/components/questionnaire/QuestionnaireProgress.vue
+- [x] T049 [P] [US4] 建立 ProjectList 元件於 frontend/app/components/project/ProjectList.vue
+- [x] T050 [P] [US4] 建立 ProjectCard 元件於 frontend/app/components/project/ProjectCard.vue
+- [x] T051 [P] [US4] 建立 QuestionRenderer 元件於 frontend/app/components/questionnaire/QuestionRenderer.vue
+- [x] T052 [P] [US4] 建立.*Question 元件於 frontend/app/components/questionnaire/types/TextQuestion.vue
+- [x] T053 [P] [US4] 建立.*Question 元件於 frontend/app/components/questionnaire/types/NumberQuestion.vue
+- [x] T054 [P] [US4] 建立.*Question 元件於 frontend/app/components/questionnaire/types/DateQuestion.vue
+- [x] T055 [P] [US4] 建立.*Question 元件於 frontend/app/components/questionnaire/types/BooleanQuestion.vue
+- [x] T056 [P] [US4] 建立.*Question 元件於 frontend/app/components/questionnaire/types/SingleChoiceQuestion.vue
+- [x] T057 [P] [US4] 建立.*Question 元件於 frontend/app/components/questionnaire/types/MultiChoiceQuestion.vue
+- [x] T058 [P] [US4] 建立.*Question 元件於 frontend/app/components/questionnaire/types/FileUploadQuestion.vue
+- [x] T059 [P] [US4] 建立.*Question 元件於 frontend/app/components/questionnaire/types/RatingQuestion.vue
+- [x] T060 [P] [US4] 建立 QuestionnaireProgress 元件於 frontend/app/components/questionnaire/QuestionnaireProgress.vue
 
 ### User Story 4 頁面實作
 
-- [ ] T061 [US4] 建立供應商專案列表頁面於 frontend/app/pages/supplier/projects/index.vue
-- [ ] T062 [US4] 建立問卷填寫頁面於 frontend/app/pages/supplier/projects/[id]/answer.vue
+- [x] T061 [US4] 建立供應商專案列表頁面於 frontend/app/pages/supplier/projects/index.vue
+- [x] T062 [US4] 建立問卷填寫頁面於 frontend/app/pages/supplier/projects/[id]/answer.vue
 
 ### User Story 4 驗證與錯誤處理
 
-- [ ] T063 [US4] 為問卷填寫加入必填欄位驗證於 frontend/app/composables/useAnswers.ts
-- [ ] T064 [US4] 為提交功能加入完整性檢查與錯誤提示於 frontend/app/pages/supplier/projects/[id]/answer.vue
+- [x] T063 [US4] 為問卷填寫加入必填欄位驗證於 frontend/app/composables/useAnswers.ts
+- [x] T064 [US4] 為提交功能加入完整性檢查與錯誤提示於 frontend/app/pages/supplier/projects/[id]/answer.vue
 
 **檢查點**：User Story 4 應完全可運作並可獨立測試 - 供應商可查看指派專案、填寫問卷、暫存與提交
 
@@ -214,42 +214,42 @@
 
 ### User Story 2 單元測試
 
-- [ ] T065 [P] [US2] 建立 useTemplates Composable 單元測試於 frontend/tests/unit/composables/useTemplates.spec.ts
-- [ ] T066 [P] [US2] 建立 useSuppliers Composable 單元測試於 frontend/tests/unit/composables/useSuppliers.spec.ts
-- [ ] T067 [P] [US2] 建立 TemplateList 元件單元測試於 frontend/tests/unit/components/TemplateList.spec.ts
-- [ ] T068 [P] [US2] 建立 TemplateEditor 元件單元測試於 frontend/tests/unit/components/TemplateEditor.spec.ts
-- [ ] T069 [P] [US2] 建立 ProjectForm 元件單元測試於 frontend/tests/unit/components/ProjectForm.spec.ts
-- [ ] T070 [P] [US2] 建立 SupplierSelector 元件單元測試於 frontend/tests/unit/components/SupplierSelector.spec.ts
+- [x] T065 [P] [US2] 建立 useTemplates Composable 單元測試於 frontend/tests/unit/composables/useTemplates.spec.ts
+- [x] T066 [P] [US2] 建立 useSuppliers Composable 單元測試於 frontend/tests/unit/composables/useSuppliers.spec.ts
+- [x] T067 [P] [US2] 建立 TemplateList 元件單元測試於 frontend/tests/unit/components/TemplateList.spec.ts
+- [x] T068 [P] [US2] 建立 TemplateEditor 元件單元測試於 frontend/tests/unit/components/TemplateEditor.spec.ts
+- [x] T069 [P] [US2] 建立 ProjectForm 元件單元測試於 frontend/tests/unit/components/ProjectForm.spec.ts
+- [x] T070 [P] [US2] 建立 SupplierSelector 元件單元測試於 frontend/tests/unit/components/SupplierSelector.spec.ts
 
 ### User Story 2 整合測試
 
-- [ ] T071 [P] [US2] 建立 SAQ 範本管理流程整合測試於 frontend/tests/integration/saq-template-management.spec.ts
-- [ ] T072 [P] [US2] 建立 SAQ 專案管理流程整合測試於 frontend/tests/integration/saq-project-management.spec.ts
+- [x] T071 [P] [US2] 建立 SAQ 範本管理流程整合測試於 frontend/tests/integration/saq-template-management.spec.ts
+- [x] T072 [P] [US2] 建立 SAQ 專案管理流程整合測試於 frontend/tests/integration/saq-project-management.spec.ts
 
 ### User Story 2 Composables 實作
 
-- [ ] T073 [US2] 實作 useTemplates Composable 於 frontend/app/composables/useTemplates.ts (範本 CRUD、版本控制、刪除保護邏輯 - EC-001)
-- [ ] T074 [US2] 實作 useSuppliers Composable 於 frontend/app/composables/useSuppliers.ts (供應商列表查詢)
-- [ ] T075 [US2] 擴充 useProjects Composable 加入專案 CRUD 功能於 frontend/app/composables/useProjects.ts
+- [x] T073 [US2] 實作 useTemplates Composable 於 frontend/app/composables/useTemplates.ts (範本 CRUD、版本控制、刪除保護邏輯 - EC-001)
+- [x] T074 [US2] 實作 useSuppliers Composable 於 frontend/app/composables/useSuppliers.ts (供應商列表查詢)
+- [x] T075 [US2] 擴充 useProjects Composable 加入專案 CRUD 功能於 frontend/app/composables/useProjects.ts
 
 ### User Story 2 元件實作
 
-- [ ] T076 [P] [US2] 建立 TemplateList 元件於 frontend/app/components/template/TemplateList.vue
-- [ ] T077 [P] [US2] 建立 TemplateCard 元件於 frontend/app/components/template/TemplateCard.vue
-- [ ] T078 [P] [US2] 建立 TemplateEditor 元件於 frontend/app/components/template/TemplateEditor.vue
-- [ ] T079 [P] [US2] 建立 QuestionEditor 元件於 frontend/app/components/template/QuestionEditor.vue
-- [ ] T080 [P] [US2] 建立 ProjectForm 元件於 frontend/app/components/project/ProjectForm.vue (含供應商選擇)
-- [ ] T081 [P] [US2] 建立 SupplierSelector 元件於 frontend/app/components/project/SupplierSelector.vue
-- [ ] T082 [P] [US2] 建立 ReviewFlowConfig 元件於 frontend/app/components/project/ReviewFlowConfig.vue (審核流程設定)
-- [ ] T083 [P] [US2] 建立 VersionHistory 元件於 frontend/app/components/template/VersionHistory.vue
+- [x] T076 [P] [US2] 建立 TemplateList 元件於 frontend/app/components/template/TemplateList.vue
+- [x] T077 [P] [US2] 建立 TemplateCard 元件於 frontend/app/components/template/TemplateCard.vue
+- [x] T078 [P] [US2] 建立 TemplateEditor 元件於 frontend/app/components/template/TemplateEditor.vue
+- [x] T079 [P] [US2] 建立 QuestionEditor 元件於 frontend/app/components/template/QuestionEditor.vue
+- [x] T080 [P] [US2] 建立 ProjectForm 元件於 frontend/app/components/project/ProjectForm.vue (含供應商選擇)
+- [x] T081 [P] [US2] 建立 SupplierSelector 元件於 frontend/app/components/project/SupplierSelector.vue
+- [x] T082 [P] [US2] 建立 ReviewFlowConfig 元件於 frontend/app/components/project/ReviewFlowConfig.vue (審核流程設定)
+- [x] T083 [P] [US2] 建立 VersionHistory 元件於 frontend/app/components/template/VersionHistory.vue
 
 ### User Story 2 頁面實作
 
-- [ ] T084 [US2] 建立 SAQ 首頁於 frontend/app/pages/saq/index.vue
-- [ ] T085 [US2] 建立 SAQ 專案列表頁面於 frontend/app/pages/saq/projects/index.vue
-- [ ] T086 [US2] 建立 SAQ 專案新增/編輯頁面於 frontend/app/pages/saq/projects/[id].vue
-- [ ] T087 [US2] 建立 SAQ 範本列表頁面於 frontend/app/pages/saq/templates/index.vue
-- [ ] T088 [US2] 建立 SAQ 範本編輯頁面於 frontend/app/pages/saq/templates/[id].vue
+- [x] T084 [US2] 建立 SAQ 首頁於 frontend/app/pages/saq/index.vue
+- [x] T085 [US2] 建立 SAQ 專案列表頁面於 frontend/app/pages/saq/projects/index.vue
+- [x] T086 [US2] 建立 SAQ 專案新增/編輯頁面於 frontend/app/pages/saq/projects/[id].vue
+- [x] T087 [US2] 建立 SAQ 範本列表頁面於 frontend/app/pages/saq/templates/index.vue
+- [x] T088 [US2] 建立 SAQ 範本編輯頁面於 frontend/app/pages/saq/templates/[id].vue
 
 **檢查點**：User Story 2 應完全可運作並可獨立測試 - 製造商可管理 SAQ 專案與範本
 
@@ -263,32 +263,32 @@
 
 ### User Story 5 單元測試
 
-- [ ] T089 [P] [US5] 建立 useReview Composable 單元測試於 frontend/tests/unit/composables/useReview.spec.ts
-- [ ] T090 [P] [US5] 建立 ReviewPanel 元件單元測試於 frontend/tests/unit/components/ReviewPanel.spec.ts
-- [ ] T091 [P] [US5] 建立 ReviewHistory 元件單元測試於 frontend/tests/unit/components/ReviewHistory.spec.ts
-- [ ] T092 [P] [US5] 建立 ReviewActionDialog 元件單元測試於 frontend/tests/unit/components/ReviewActionDialog.spec.ts
+- [x] T089 [P] [US5] 建立 useReview Composable 單元測試於 frontend/tests/unit/composables/useReview.spec.ts
+- [x] T090 [P] [US5] 建立 ReviewPanel 元件單元測試於 frontend/tests/unit/components/ReviewPanel.spec.ts
+- [x] T091 [P] [US5] 建立 ReviewHistory 元件單元測試於 frontend/tests/unit/components/ReviewHistory.spec.ts
+- [x] T092 [P] [US5] 建立 ReviewActionDialog 元件單元測試於 frontend/tests/unit/components/ReviewActionDialog.spec.ts
 
 ### User Story 5 整合測試
 
-- [ ] T093 [P] [US5] 建立審核流程整合測試於 frontend/tests/integration/review-flow.spec.ts
-- [ ] T094 [P] [US5] 建立退回流程整合測試於 frontend/tests/integration/return-flow.spec.ts
+- [x] T093 [P] [US5] 建立審核流程整合測試於 frontend/tests/integration/review-flow.spec.ts
+- [x] T094 [P] [US5] 建立退回流程整合測試於 frontend/tests/integration/return-flow.spec.ts
 
 ### User Story 5 Composables 實作
 
-- [ ] T095 [US5] 實作 useReview Composable 於 frontend/app/composables/useReview.ts (審核操作、歷程查詢)
-- [ ] T096 [US5] 建立審核權限 Store 於 frontend/app/stores/review.ts
+- [x] T095 [US5] 實作 useReview Composable 於 frontend/app/composables/useReview.ts (審核操作、歷程查詢)
+- [x] T096 [US5] 建立審核權限 Store 於 frontend/app/stores/review.ts
 
 ### User Story 5 元件實作
 
-- [ ] T097 [P] [US5] 建立 ReviewPanel 元件於 frontend/app/components/review/ReviewPanel.vue
-- [ ] T098 [P] [US5] 建立 ReviewHistory 元件於 frontend/app/components/review/ReviewHistory.vue
-- [ ] T099 [P] [US5] 建立 ReviewActionDialog 元件於 frontend/app/components/review/ReviewActionDialog.vue
-- [ ] T100 [P] [US5] 建立 ProjectStatusBadge 元件於 frontend/app/components/project/ProjectStatusBadge.vue
+- [x] T097 [P] [US5] 建立 ReviewPanel 元件於 frontend/app/components/review/ReviewPanel.vue
+- [x] T098 [P] [US5] 建立 ReviewHistory 元件於 frontend/app/components/review/ReviewHistory.vue
+- [x] T099 [P] [US5] 建立 ReviewActionDialog 元件於 frontend/app/components/review/ReviewActionDialog.vue
+- [x] T100 [P] [US5] 建立 ProjectStatusBadge 元件於 frontend/app/components/project/ProjectStatusBadge.vue
 
 ### User Story 5 頁面實作
 
-- [ ] T101 [US5] 建立審核待辦列表頁面於 frontend/app/pages/review/index.vue
-- [ ] T102 [US5] 建立專案審核頁面於 frontend/app/pages/review/[id].vue
+- [x] T101 [US5] 建立審核待辦列表頁面於 frontend/app/pages/review/index.vue
+- [x] T102 [US5] 建立專案審核頁面於 frontend/app/pages/review/[id].vue
 
 **檢查點**：User Story 5 應完全可運作並可獨立測試 - 審核者可檢視、核准或退回專案
 
@@ -302,20 +302,20 @@
 
 ### User Story 3 單元測試
 
-- [ ] T103 [P] [US3] 建立衝突資產模組相關元件單元測試於 frontend/tests/unit/components/conflict/
+- [x] T103 [P] [US3] 建立衝突資產模組相關元件單元測試於 frontend/tests/unit/components/conflict/
 
 ### User Story 3 整合測試
 
-- [ ] T104 [P] [US3] 建立衝突資產專案管理流程整合測試於 frontend/tests/integration/conflict-project-management.spec.ts
-- [ ] T105 [P] [US3] 建立衝突資產範本管理流程整合測試於 frontend/tests/integration/conflict-template-management.spec.ts
+- [x] T104 [P] [US3] 建立衝突資產專案管理流程整合測試於 frontend/tests/integration/conflict-project-management.spec.ts
+- [x] T105 [P] [US3] 建立衝突資產範本管理流程整合測試於 frontend/tests/integration/conflict-template-management.spec.ts
 
 ### User Story 3 頁面實作（複用 SAQ 元件）
 
-- [ ] T106 [US3] 建立衝突資產首頁於 frontend/app/pages/conflict/index.vue
-- [ ] T107 [US3] 建立衝突資產專案列表頁面於 frontend/app/pages/conflict/projects/index.vue
-- [ ] T108 [US3] 建立衝突資產專案新增/編輯頁面於 frontend/app/pages/conflict/projects/[id].vue
-- [ ] T109 [US3] 建立衝突資產範本列表頁面於 frontend/app/pages/conflict/templates/index.vue
-- [ ] T110 [US3] 建立衝突資產範本編輯頁面於 frontend/app/pages/conflict/templates/[id].vue
+- [x] T106 [US3] 建立衝突資產首頁於 frontend/app/pages/conflict/index.vue
+- [x] T107 [US3] 建立衝突資產專案列表頁面於 frontend/app/pages/conflict/projects/index.vue
+- [x] T108 [US3] 建立衝突資產專案新增/編輯頁面於 frontend/app/pages/conflict/projects/[id].vue
+- [x] T109 [US3] 建立衝突資產範本列表頁面於 frontend/app/pages/conflict/templates/index.vue
+- [x] T110 [US3] 建立衝突資產範本編輯頁面於 frontend/app/pages/conflict/templates/[id].vue
 
 **檢查點**：User Story 3 應完全可運作並可獨立測試 - 製造商可管理衝突資產專案與範本，與 SAQ 資料隔離
 
@@ -327,26 +327,26 @@
 
 ### 效能優化
 
-- [ ] T111 [P] 實作元件懶載入策略於 frontend/app/pages/
-- [ ] T112 [P] 實作 API 回應快取於 frontend/app/composables/useApi.ts
-- [ ] T113 [P] 最佳化 Bundle 大小，設定適當的 Tree-shaking 於 frontend/nuxt.config.ts
+- [x] T111 [P] 實作元件懶載入策略於 frontend/app/pages/
+- [x] T112 [P] 實作 API 回應快取於 frontend/app/composables/useApi.ts
+- [x] T113 [P] 最佳化 Bundle 大小，設定適當的 Tree-shaking 於 frontend/nuxt.config.ts
 
 ### 無障礙與使用者體驗
 
-- [ ] T114 [P] 為所有表單元件加入 ARIA 標籤於 frontend/app/components/
-- [ ] T115 [P] 實作載入狀態與骨架屏 (Skeleton) 於 frontend/app/components/common/
-- [ ] T116 [P] 實作全域錯誤提示與成功訊息於 frontend/app/plugins/toast.ts
+- [x] T114 [P] 為所有表單元件加入 ARIA 標籤於 frontend/app/components/
+- [x] T115 [P] 實作載入狀態與骨架屏 (Skeleton) 於 frontend/app/components/common/
+- [x] T116 [P] 實作全域錯誤提示與成功訊息於 frontend/app/plugins/toast.ts
 
 ### 文件更新
 
-- [ ] T117 [P] 更新 README.md 包含開發與部署說明
-- [ ] T118 [P] 建立 API 需求文件於 frontend/docs/api-requirements.md
+- [x] T117 [P] 更新 README.md 包含開發與部署說明
+- [x] T118 [P] 建立 API 需求文件於 frontend/docs/api-requirements.md
 
 ### 最終驗證
 
-- [ ] T119 執行所有單元測試確保通過
-- [ ] T120 執行所有整合測試確保通過
-- [ ] T121 執行 quickstart.md 驗證流程
+- [x] T119 執行所有單元測試確保通過
+- [x] T120 執行所有整合測試確保通過
+- [x] T121 執行 quickstart.md 驗證流程
 
 ---
 
