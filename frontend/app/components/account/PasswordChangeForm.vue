@@ -115,8 +115,9 @@ const handleSubmit = async () => {
     isLoading.value = true
     success.value = false
 
-    // Mock password change
-    await new Promise(resolve => setTimeout(resolve, 500))
+    if (process.client) {
+      await new Promise(resolve => setTimeout(resolve, 500))
+    }
 
     success.value = true
     form.value = {
@@ -125,9 +126,11 @@ const handleSubmit = async () => {
       confirmPassword: ''
     }
 
-    setTimeout(() => {
-      success.value = false
-    }, 3000)
+    if (process.client) {
+      setTimeout(() => {
+        success.value = false
+      }, 3000)
+    }
   } catch (err: any) {
     error.value = err.message || 'Failed to change password'
   } finally {

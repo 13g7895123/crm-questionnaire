@@ -13,22 +13,25 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { computed } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 
 const { locale } = useI18n()
+const currentLocale = ref('')
 
-const currentLocale = computed({
-  get: () => locale.value,
-  set: (val) => {
-    locale.value = val
-    if (process.client) {
-      localStorage.setItem('locale', val)
-    }
-  }
+onMounted(() => {
+  currentLocale.value = locale.value
+})
+
+watch(locale, (newVal) => {
+  currentLocale.value = newVal
 })
 
 const changeLocale = (event: Event) => {
   const target = event.target as HTMLSelectElement
-  currentLocale.value = target.value
+  const val = target.value
+  locale.value = val
+  if (process.client) {
+    localStorage.setItem('locale', val)
+  }
 }
 </script>

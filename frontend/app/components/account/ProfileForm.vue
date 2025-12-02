@@ -88,7 +88,6 @@ const handleSubmit = async () => {
     isLoading.value = true
     success.value = false
 
-    // Mock update
     authStore.updateUser({
       email: form.value.email,
       phone: form.value.phone,
@@ -96,9 +95,11 @@ const handleSubmit = async () => {
     })
 
     success.value = true
-    setTimeout(() => {
-      success.value = false
-    }, 3000)
+    if (process.client) {
+      setTimeout(() => {
+        success.value = false
+      }, 3000)
+    }
   } catch (err) {
     console.error(err)
   } finally {

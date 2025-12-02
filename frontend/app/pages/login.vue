@@ -1,42 +1,63 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gray-50">
-    <div class="max-w-md w-full bg-white rounded-lg shadow-md p-8">
-      <h1 class="text-2xl font-bold mb-6 text-center">{{ $t('auth.login') }}</h1>
-      
+  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+    <UCard class="w-full max-w-md">
+      <template #header>
+        <div class="text-center">
+          <h1 class="text-3xl font-bold text-gray-900">{{ $t('auth.login') }}</h1>
+          <p class="text-gray-600 mt-2">{{ $t('common.appName') }}</p>
+        </div>
+      </template>
+
       <form @submit.prevent="handleLogin" class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700">{{ $t('auth.username') }}</label>
-          <input
+        <UFormGroup :label="$t('auth.username')" name="username">
+          <UInput
             v-model="form.username"
             type="text"
-            class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            :placeholder="$t('auth.username')"
             required
+            icon="i-heroicons-user-20-solid"
           />
-        </div>
+        </UFormGroup>
 
-        <div>
-          <label class="block text-sm font-medium text-gray-700">{{ $t('auth.password') }}</label>
-          <input
+        <UFormGroup :label="$t('auth.password')" name="password">
+          <UInput
             v-model="form.password"
             type="password"
-            class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            :placeholder="$t('auth.password')"
             required
+            icon="i-heroicons-lock-closed-20-solid"
           />
+        </UFormGroup>
+
+        <div class="flex items-center justify-between text-sm">
+          <UCheckbox v-model="form.rememberMe" :label="$t('auth.rememberMe')" />
+          <NuxtLink to="#" class="text-blue-600 hover:text-blue-700">
+            {{ $t('auth.forgotPassword') }}
+          </NuxtLink>
         </div>
 
-        <button
+        <UButton
           type="submit"
-          :disabled="isLoading"
-          class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400"
+          :loading="isLoading"
+          block
+          size="lg"
+          color="blue"
         >
           {{ isLoading ? $t('common.loading') : $t('auth.login') }}
-        </button>
+        </UButton>
       </form>
 
-      <div v-if="error" class="mt-4 p-3 bg-red-100 text-red-700 rounded">
-        {{ error }}
-      </div>
-    </div>
+      <template #footer>
+        <div v-if="error" class="mt-4">
+          <UAlert
+            :title="$t('common.error')"
+            :description="error"
+            color="red"
+            icon="i-heroicons-exclamation-triangle-20-solid"
+          />
+        </div>
+      </template>
+    </UCard>
   </div>
 </template>
 
@@ -58,7 +79,8 @@ const error = ref<string | null>(null)
 
 const form = ref({
   username: '',
-  password: ''
+  password: '',
+  rememberMe: false
 })
 
 const handleLogin = async () => {
@@ -77,7 +99,7 @@ const handleLogin = async () => {
       organizationId: 'org-1'
     }
 
-    const mockToken = 'mock-jwt-token-' + Date.now()
+    const mockToken = 'mock-jwt-token-' + Math.random().toString(36).substring(7)
 
     authStore.setUser(mockUser)
     authStore.setToken(mockToken)

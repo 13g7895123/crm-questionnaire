@@ -8,9 +8,6 @@ import { useAuthStore } from '~/stores/auth'
 export default defineNuxtRouteMiddleware((to, from) => {
   const authStore = useAuthStore()
 
-  // Restore auth state from localStorage on first load
-  authStore.restoreAuth()
-
   // List of public routes that don't require authentication
   const publicRoutes = ['/login', '/register']
 
