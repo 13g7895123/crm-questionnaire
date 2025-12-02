@@ -2,90 +2,264 @@ openapi: 3.0.0
 info:
   title: CRM Questionnaire API
   version: 1.0.0
+  description: |
+    CRM 問卷系統 API 規格文件
+    
+    完整的 API 需求文件請參考:
+    - `/frontend/docs/api-requirements.md` - API 總覽
+    - `/frontend/docs/api-auth.md` - 認證相關 API
+    - `/frontend/docs/api-users.md` - 使用者管理 API
+    - `/frontend/docs/api-departments.md` - 部門管理 API
+    - `/frontend/docs/api-projects.md` - 專案管理 API
+    - `/frontend/docs/api-templates.md` - 範本管理 API
+    - `/frontend/docs/api-answers.md` - 問卷填寫 API
+    - `/frontend/docs/api-reviews.md` - 審核流程 API
+    - `/frontend/docs/api-organizations.md` - 組織管理 API
+
+servers:
+  - url: https://api.crm-questionnaire.com/v1
+    description: 生產環境
+  - url: http://localhost:3001/api/v1
+    description: 開發環境
+
+security:
+  - BearerAuth: []
+
 paths:
+  # 認證相關 API
   /auth/login:
     post:
-      summary: User Login
-      operationId: login
+      summary: 使用者登入
+      tags: [認證]
+      security: []
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - username
+                - password
               properties:
                 username:
                   type: string
+                  description: 使用者帳號
                 password:
                   type: string
+                  description: 密碼
       responses:
         '200':
-          description: Login success
+          description: 登入成功
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  token:
-                    type: string
-                  user:
-                    $ref: '#/components/schemas/User'
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      accessToken:
+                        type: string
+                      refreshToken:
+                        type: string
+                      expiresIn:
+                        type: integer
+                      user:
+                        $ref: '#/components/schemas/User'
+
+  /auth/logout:
+    post:
+      summary: 使用者登出
+      tags: [認證]
+      responses:
+        '200':
+          description: 登出成功
 
   /auth/me:
     get:
-      summary: Get Current User Profile
-      operationId: getProfile
+      summary: 取得當前使用者資訊
+      tags: [認證]
       responses:
         '200':
-          description: User profile
+          description: 使用者資訊
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+                $ref: '#/components/schemas/ApiResponse'
+
+  # 使用者管理 API
+  /users/me:
     put:
-      summary: Update Profile
-      operationId: updateProfile
+      summary: 更新個人資料
+      tags: [使用者]
       requestBody:
+        required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/User'
+              type: object
+              properties:
+                email:
+                  type: string
+                phone:
+                  type: string
+                departmentId:
+                  type: string
       responses:
         '200':
-          description: Updated
+          description: 更新成功
 
+  /users/me/password:
+    put:
+      summary: 修改密碼
+      tags: [使用者]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - currentPassword
+                - newPassword
+                - confirmPassword
+              properties:
+                currentPassword:
+                  type: string
+                newPassword:
+                  type: string
+                confirmPassword:
+                  type: string
+      responses:
+        '200':
+          description: 密碼更新成功
+
+  # 部門管理 API
+  /departments:
+    get:
+      summary: 取得部門列表
+      tags: [部門]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: 部門列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+    post:
+      summary: 建立部門
+      tags: [部門]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - organizationId
+              properties:
+                name:
+                  type: string
+                organizationId:
+                  type: string
+      responses:
+        '201':
+          description: 建立成功
+
+  # 專案管理 API
   /projects:
     get:
-      summary: List Projects
+      summary: 取得專案列表
+      tags: [專案]
       parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
         - name: type
           in: query
           schema:
             type: string
             enum: [SAQ, CONFLICT]
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [DRAFT, IN_PROGRESS, SUBMITTED, REVIEWING, APPROVED, RETURNED]
       responses:
         '200':
-          description: List of projects
+          description: 專案列表
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Project'
+                $ref: '#/components/schemas/PaginatedResponse'
     post:
-      summary: Create Project
+      summary: 建立專案
+      tags: [專案]
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/ProjectInput'
       responses:
         '201':
-          description: Created
+          description: 建立成功
 
-  /projects/{id}/answers:
+  /projects/{projectId}:
+    get:
+      summary: 取得專案詳情
+      tags: [專案]
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdParam'
+      responses:
+        '200':
+          description: 專案詳情
     put:
-      summary: Save Answers (Draft)
+      summary: 更新專案
+      tags: [專案]
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdParam'
       requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectInput'
+      responses:
+        '200':
+          description: 更新成功
+    delete:
+      summary: 刪除專案
+      tags: [專案]
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdParam'
+      responses:
+        '204':
+          description: 刪除成功
+
+  # 問卷填寫 API
+  /projects/{projectId}/answers:
+    get:
+      summary: 取得專案答案
+      tags: [問卷填寫]
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdParam'
+      responses:
+        '200':
+          description: 專案答案
+    put:
+      summary: 暫存答案
+      tags: [問卷填寫]
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdParam'
+      requestBody:
+        required: true
         content:
           application/json:
             schema:
@@ -95,23 +269,34 @@ paths:
                   type: object
       responses:
         '200':
-          description: Saved
+          description: 儲存成功
 
-  /projects/{id}/submit:
+  /projects/{projectId}/submit:
     post:
-      summary: Submit Project for Review
+      summary: 提交專案
+      tags: [問卷填寫]
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdParam'
       responses:
         '200':
-          description: Submitted
+          description: 提交成功
 
-  /projects/{id}/review:
+  # 審核流程 API
+  /projects/{projectId}/review:
     post:
-      summary: Review Action (Approve/Return)
+      summary: 審核專案
+      tags: [審核]
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdParam'
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - action
+                - comment
               properties:
                 action:
                   type: string
@@ -120,21 +305,200 @@ paths:
                   type: string
       responses:
         '200':
-          description: Processed
+          description: 審核完成
+
+  /projects/{projectId}/reviews:
+    get:
+      summary: 取得審核歷程
+      tags: [審核]
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdParam'
+      responses:
+        '200':
+          description: 審核歷程
+
+  /reviews/pending:
+    get:
+      summary: 取得待審核專案
+      tags: [審核]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: 待審核專案列表
+
+  # 範本管理 API
+  /templates:
+    get:
+      summary: 取得範本列表
+      tags: [範本]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [SAQ, CONFLICT]
+      responses:
+        '200':
+          description: 範本列表
+    post:
+      summary: 建立範本
+      tags: [範本]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemplateInput'
+      responses:
+        '201':
+          description: 建立成功
+
+  /templates/{templateId}:
+    get:
+      summary: 取得範本詳情
+      tags: [範本]
+      parameters:
+        - name: templateId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 範本詳情
+
+  # 組織管理 API
+  /organizations:
+    get:
+      summary: 取得組織列表
+      tags: [組織]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: 組織列表
+    post:
+      summary: 建立組織
+      tags: [組織]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - type
+              properties:
+                name:
+                  type: string
+                type:
+                  type: string
+                  enum: [HOST, SUPPLIER]
+      responses:
+        '201':
+          description: 建立成功
+
+  /suppliers:
+    get:
+      summary: 取得供應商列表
+      tags: [組織]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: 供應商列表
 
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    LimitParam:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    ProjectIdParam:
+      name: projectId
+      in: path
+      required: true
+      schema:
+        type: string
+
   schemas:
+    ApiResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+        error:
+          type: object
+        timestamp:
+          type: string
+          format: date-time
+
+    PaginatedResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            type: object
+        pagination:
+          type: object
+          properties:
+            page:
+              type: integer
+            limit:
+              type: integer
+            total:
+              type: integer
+            totalPages:
+              type: integer
+
     User:
       type: object
       properties:
         id:
           type: string
-        name:
+        username:
           type: string
         email:
           type: string
-        department:
+        phone:
           type: string
+        role:
+          type: string
+          enum: [HOST, SUPPLIER, ADMIN]
+        organizationId:
+          type: string
+        departmentId:
+          type: string
+
     Project:
       type: object
       properties:
@@ -142,16 +506,98 @@ components:
           type: string
         name:
           type: string
+        year:
+          type: integer
+        type:
+          type: string
+          enum: [SAQ, CONFLICT]
+        templateId:
+          type: string
+        templateVersion:
+          type: string
+        supplierId:
+          type: string
         status:
           type: string
+          enum: [DRAFT, IN_PROGRESS, SUBMITTED, REVIEWING, APPROVED, RETURNED]
+        currentStage:
+          type: integer
+        reviewConfig:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReviewStageConfig'
+
     ProjectInput:
       type: object
+      required:
+        - name
+        - year
+        - type
+        - templateId
+        - templateVersion
+        - supplierId
+        - reviewConfig
       properties:
         name:
           type: string
         year:
           type: integer
+        type:
+          type: string
+          enum: [SAQ, CONFLICT]
         templateId:
+          type: string
+        templateVersion:
           type: string
         supplierId:
           type: string
+        reviewConfig:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReviewStageConfig'
+
+    ReviewStageConfig:
+      type: object
+      properties:
+        stageOrder:
+          type: integer
+        departmentId:
+          type: string
+        approverId:
+          type: string
+
+    TemplateInput:
+      type: object
+      required:
+        - name
+        - type
+        - questions
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [SAQ, CONFLICT]
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Question'
+
+    Question:
+      type: object
+      properties:
+        id:
+          type: string
+        text:
+          type: string
+        type:
+          type: string
+          enum: [TEXT, NUMBER, DATE, BOOLEAN, SINGLE_CHOICE, MULTI_CHOICE, FILE, RATING]
+        required:
+          type: boolean
+        options:
+          type: array
+          items:
+            type: string
+        config:
+          type: object
