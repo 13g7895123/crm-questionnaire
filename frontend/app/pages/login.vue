@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-    <UCard class="w-full max-w-md">
+    <UCard class="w-full max-w-md bg-white dark:bg-gray-800">
       <template #header>
         <div class="text-center">
           <h1 class="text-3xl font-bold text-gray-900">{{ $t('auth.login') }}</h1>

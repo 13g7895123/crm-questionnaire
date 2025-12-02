@@ -1,5 +1,6 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
+  compatibilityDate: '2025-12-02',
   app: {
     head: {
       title: 'CRM 問卷系統',
@@ -17,6 +18,9 @@ export default defineNuxtConfig({
     '@pinia/nuxt',
     '@nuxtjs/i18n'
   ],
+  colorMode: {
+    preference: process.env.COLOR_MODE || 'light'
+  },
   i18n: {
     locales: [
       { code: 'zh-TW', language: 'zh-TW', name: '繁體中文', file: 'zh-TW.json' },

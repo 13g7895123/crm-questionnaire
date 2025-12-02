@@ -7,6 +7,7 @@
     "edit": "編輯",
     "copy": "複製",
     "add": "新增",
+    "create": "建立",
     "search": "搜尋",
     "refresh": "重新整理",
     "back": "返回",
@@ -17,7 +18,8 @@
     "error": "錯誤",
     "success": "成功",
     "warning": "警告",
-    "info": "信息"
+    "info": "信息",
+    "retry": "重試"
   },
   "auth": {
     "login": "登入",
@@ -59,15 +61,21 @@
     "projects": "專案",
     "projectManagement": "專案管理",
     "createProject": "建立專案",
+    "addProject": "新增專案",
     "editProject": "編輯專案",
     "deleteProject": "刪除專案",
+    "projectDetail": "專案詳情",
     "projectName": "專案名稱",
     "projectYear": "年份",
+    "projectType": "專案類型",
     "template": "範本",
     "supplier": "供應商",
     "status": "狀態",
+    "currentStage": "目前審核階段",
     "createdAt": "建立日期",
     "updatedAt": "更新日期",
+    "submittedAt": "提交日期",
+    "basicInfo": "基本資訊",
     "draft": "草稿",
     "inProgress": "進行中",
     "submitted": "已提交",
@@ -75,15 +83,20 @@
     "approved": "已核准",
     "returned": "已退回",
     "noProjects": "無專案",
-    "noProjectData": "目前沒有任何專案資料"
+    "noProjectData": "目前沒有任何專案資料",
+    "createFirst": "建立第一個專案",
+    "fillQuestionnaire": "填寫問卷"
   },
   "templates": {
     "templates": "範本",
+    "template": "範本",
     "createTemplate": "建立範本",
     "editTemplate": "編輯範本",
     "deleteTemplate": "刪除範本",
     "templateName": "範本名稱",
     "templateType": "範本類型",
+    "selectTemplate": "選擇範本",
+    "selectVersion": "選擇版本",
     "version": "版本",
     "publishVersion": "發佈版本",
     "questions": "問題",
@@ -104,6 +117,9 @@
   },
   "review": {
     "review": "審核",
+    "reviewFlow": "審核流程",
+    "stage": "階段",
+    "addStage": "新增審核階段",
     "pending": "待審核",
     "approve": "核准",
     "return": "退回",
@@ -119,7 +135,17 @@
     "editDepartment": "編輯部門",
     "deleteDepartment": "刪除部門",
     "departmentName": "部門名稱",
+    "selectDepartment": "選擇部門",
     "noDepartments": "無部門"
+  },
+  "suppliers": {
+    "supplier": "供應商",
+    "suppliers": "供應商列表",
+    "selectSupplier": "選擇供應商",
+    "supplierInfo": "供應商資訊"
+  },
+  "conflict": {
+    "projectManagement": "衝突資產專案管理"
   },
   "validation": {
     "required": "此欄位為必填",

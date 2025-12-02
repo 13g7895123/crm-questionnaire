@@ -11,14 +11,14 @@
             icon="i-heroicons-plus"
             color="primary"
             :label="$t('common.add')"
-            to="/saq/projects/new"
+            @click="openCreateModal"
           />
           <UButton
             icon="i-heroicons-pencil-square"
             color="white"
             :label="$t('common.edit')"
             :disabled="!selected.length || selected.length > 1"
-            @click="handleEdit"
+            @click="openEditModal"
           />
           <UButton
             icon="i-heroicons-document-duplicate"
@@ -61,22 +61,70 @@
         :columns="columns"
         :loading="loading"
         class="w-full bg-white shadow-sm rounded-lg border border-gray-200"
+        @select="handleRowSelect"
       >
+        <template #name-data="{ row }">
+          <span 
+            class="text-primary-600 hover:text-primary-700 cursor-pointer font-medium"
+            @click="openEditModal(row)"
+          >
+            {{ row.name }}
+          </span>
+        </template>
+        
         <template #status-data="{ row }">
           <ProjectStatusBadge :status="row.status" />
         </template>
         
+        <template #supplier-data="{ row }">
+          <span v-if="row.supplier">{{ row.supplier.name }}</span>
+          <span v-else class="text-gray-400">-</span>
+        </template>
+        
         <template #updatedAt-data="{ row }">
-          {{ new Date(row.updatedAt).toLocaleDateString() }}
+          {{ formatDate(row.updatedAt) }}
+        </template>
+
+        <template #actions-data="{ row }">
+          <div class="flex items-center gap-1">
+            <UButton
+              icon="i-heroicons-pencil-square"
+              color="gray"
+              variant="ghost"
+              size="xs"
+              @click.stop="openEditModal(row)"
+            />
+            <UButton
+              icon="i-heroicons-eye"
+              color="gray"
+              variant="ghost"
+              size="xs"
+              @click.stop="viewProject(row)"
+            />
+          </div>
         </template>
 
         <template #empty-state>
           <div class="flex flex-col items-center justify-center py-12 gap-3">
             <span class="italic text-sm text-gray-500">{{ $t('projects.noProjectData') }}</span>
+            <UButton
+              color="primary"
+              variant="soft"
+              :label="$t('projects.createFirst')"
+              @click="openCreateModal"
+            />
           </div>
         </template>
       </UTable>
     </div>
+
+    <!-- Project Form Modal -->
+    <ProjectForm
+      v-model="showFormModal"
+      project-type="SAQ"
+      :project="editingProject"
+      @saved="handleProjectSaved"
+    />
   </div>
 </template>
 
@@ -85,7 +133,9 @@ import { ref, computed, onMounted } from 'vue'
 import { useProjects } from '~/composables/useProjects'
 import { useRouter } from 'vue-router'
 import ProjectStatusBadge from '~/components/project/ProjectStatusBadge.vue'
+import ProjectForm from '~/components/project/ProjectForm.vue'
 import { useI18n } from 'vue-i18n'
+import type { Project } from '~/types/index'
 
 definePageMeta({ middleware: 'auth' })
 
@@ -96,7 +146,9 @@ const { fetchProjects, projects } = useProjects()
 const loading = ref(true)
 const error = ref('')
 const searchQuery = ref('')
-const selected = ref([])
+const selected = ref<Project[]>([])
+const showFormModal = ref(false)
+const editingProject = ref<Project | null>(null)
 
 const columns = computed(() => [
   {
@@ -110,6 +162,11 @@ const columns = computed(() => [
     sortable: true
   },
   {
+    key: 'supplier',
+    label: t('suppliers.supplier'),
+    sortable: false
+  },
+  {
     key: 'status',
     label: t('projects.status'),
     sortable: true
@@ -118,6 +175,11 @@ const columns = computed(() => [
     key: 'updatedAt',
     label: t('projects.updatedAt'),
     sortable: true
+  },
+  {
+    key: 'actions',
+    label: '',
+    sortable: false
   }
 ])
 
@@ -126,9 +188,15 @@ const filteredProjects = computed(() => {
   const query = searchQuery.value.toLowerCase()
   return projects.value.filter(p => 
     p.name.toLowerCase().includes(query) || 
-    p.year.toString().includes(query)
+    p.year.toString().includes(query) ||
+    p.supplier?.name?.toLowerCase().includes(query)
   )
 })
+
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return '-'
+  return new Date(dateStr).toLocaleDateString()
+}
 
 const loadData = async () => {
   loading.value = true
@@ -147,15 +215,36 @@ const refreshData = () => {
   loadData()
 }
 
-const handleEdit = () => {
-  if (selected.value.length === 1) {
-    router.push(`/saq/projects/${selected.value[0].id}`)
+const openCreateModal = () => {
+  editingProject.value = null
+  showFormModal.value = true
+}
+
+const openEditModal = (project?: Project) => {
+  if (project) {
+    editingProject.value = project
+  } else if (selected.value.length === 1) {
+    editingProject.value = selected.value[0]
   }
+  showFormModal.value = true
+}
+
+const handleRowSelect = (row: Project) => {
+  // Double click to edit
+}
+
+const viewProject = (project: Project) => {
+  router.push(`/saq/projects/${project.id}`)
 }
 
 const handleCopy = () => {
   // Implement copy logic here
   console.log('Copy projects:', selected.value)
+}
+
+const handleProjectSaved = (project: Project) => {
+  loadData()
+  selected.value = []
 }
 
 onMounted(() => {
