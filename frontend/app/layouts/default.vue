@@ -3,7 +3,7 @@
     <ClientOnly>
       <Navbar v-if="isAuthenticated" />
     </ClientOnly>
-    <main class="container mx-auto">
+    <main>
       <slot />
     </main>
   </div>

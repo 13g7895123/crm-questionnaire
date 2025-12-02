@@ -1,20 +1,26 @@
 <template>
-  <div class="py-8">
-    <h1 class="text-3xl font-bold mb-8">{{ $t('member.memberCenter') }}</h1>
-
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <AppCard
-        title="SAQ"
-        description="Supply Chain Assessment Questionnaire"
-        icon="📋"
-        href="/saq"
-      />
-      <AppCard
-        title="Conflict Minerals"
-        description="衝突資產管理系統"
-        icon="⚠️"
-        href="/conflict"
-      />
+  <div class="py-12 px-4 sm:px-6 lg:px-8 bg-gray-50 min-h-[calc(100vh-80px)]">
+    <div class="max-w-7xl mx-auto">
+      <div class="flex flex-wrap justify-center gap-6">
+        <AppCard
+          :title="$t('member.account')"
+          icon="👤"
+          href="/account"
+          class="w-full sm:w-64 h-64"
+        />
+        <AppCard
+          title="SAQ"
+          icon="📋"
+          href="/saq"
+          class="w-full sm:w-64 h-64"
+        />
+        <AppCard
+          title="衝突資產"
+          icon="⚠️"
+          href="/conflict"
+          class="w-full sm:w-64 h-64"
+        />
+      </div>
     </div>
   </div>
 </template>
