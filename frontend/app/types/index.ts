@@ -32,7 +32,7 @@ export interface User {
   phone: string
   departmentId: string
   department?: Department
-  role: 'HOST' | 'SUPPLIER'
+  role: 'HOST' | 'SUPPLIER' | 'ADMIN'
   organizationId: string
   organization?: Organization
 }

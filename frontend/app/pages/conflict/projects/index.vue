@@ -27,6 +27,12 @@
             :disabled="!selected.length"
             @click="handleCopy"
           />
+          <UButton
+            icon="i-heroicons-document-text"
+            color="white"
+            :label="$t('templates.templates')"
+            @click="openTemplateManager"
+          />
         </div>
 
         <!-- Right: Search & Refresh -->
@@ -124,6 +130,12 @@
       :project="editingProject"
       @saved="handleProjectSaved"
     />
+
+    <!-- Template Manager Modal -->
+    <TemplateManager
+      v-model="showTemplateManager"
+      type="CONFLICT"
+    />
   </div>
 </template>
 
@@ -133,6 +145,7 @@ import { useProjects } from '~/composables/useProjects'
 import { useRouter } from 'vue-router'
 import ProjectStatusBadge from '~/components/project/ProjectStatusBadge.vue'
 import ProjectForm from '~/components/project/ProjectForm.vue'
+import TemplateManager from '~/components/template/TemplateManager.vue'
 import { useI18n } from 'vue-i18n'
 import type { Project } from '~/types/index'
 
@@ -147,6 +160,7 @@ const error = ref('')
 const searchQuery = ref('')
 const selected = ref<Project[]>([])
 const showFormModal = ref(false)
+const showTemplateManager = ref(false)
 const editingProject = ref<Project | null>(null)
 
 const columns = computed(() => [
@@ -217,6 +231,10 @@ const refreshData = () => {
 const openCreateModal = () => {
   editingProject.value = null
   showFormModal.value = true
+}
+
+const openTemplateManager = () => {
+  showTemplateManager.value = true
 }
 
 const openEditModal = (project?: Project) => {
