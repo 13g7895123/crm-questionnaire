@@ -9,9 +9,9 @@
           class="w-full sm:w-64 h-64"
         />
         <AppCard
-          title="SAQ"
+          :title="$t('apps.saq')"
           icon="📋"
-          href="/saq"
+          href="/saq/projects"
           class="w-full sm:w-64 h-64"
         />
         <AppCard
