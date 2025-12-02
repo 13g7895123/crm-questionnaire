@@ -1,0 +1,135 @@
+version: '3.8'
+
+services:
+  # ===========================================
+  # Frontend Builder (Nuxt Static Generation)
+  # ===========================================
+  frontend-builder:
+    image: node:18-alpine
+    container_name: crm_frontend_builder
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+      - frontend_dist:/app/.output/public
+    command: sh -c "npm ci && npm run generate"
+    profiles:
+      - build
+
+  # ===========================================
+  # Backend Blue (CodeIgniter 4)
+  # ===========================================
+  backend-blue:
+    build:
+      context: ./docker/backend
+      dockerfile: Dockerfile
+    container_name: crm_backend_blue
+    volumes:
+      - ./backend:/var/www/html
+    environment:
+      - CI_ENVIRONMENT=production
+      - database.default.hostname=${DB_HOST}
+      - database.default.database=${DB_DATABASE}
+      - database.default.username=${DB_USERNAME}
+      - database.default.password=${DB_PASSWORD}
+      - database.default.DBDriver=MySQLi
+      - database.default.port=3306
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - crm_prod_network
+    restart: unless-stopped
+
+  # ===========================================
+  # Backend Green (CodeIgniter 4)
+  # ===========================================
+  backend-green:
+    build:
+      context: ./docker/backend
+      dockerfile: Dockerfile
+    container_name: crm_backend_green
+    volumes:
+      - ./backend:/var/www/html
+    environment:
+      - CI_ENVIRONMENT=production
+      - database.default.hostname=${DB_HOST}
+      - database.default.database=${DB_DATABASE}
+      - database.default.username=${DB_USERNAME}
+      - database.default.password=${DB_PASSWORD}
+      - database.default.DBDriver=MySQLi
+      - database.default.port=3306
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - crm_prod_network
+    restart: unless-stopped
+
+  # ===========================================
+  # Nginx Reverse Proxy & Static File Server
+  # ===========================================
+  nginx:
+    image: nginx:alpine
+    container_name: crm_nginx
+    ports:
+      - "${PROD_PORT}:80"
+    volumes:
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
+      - frontend_dist:/usr/share/nginx/html:ro
+    depends_on:
+      - backend-blue
+      - backend-green
+    networks:
+      - crm_prod_network
+    restart: unless-stopped
+
+  # ===========================================
+  # Database Service (MariaDB)
+  # ===========================================
+  db:
+    image: mariadb:10.11
+    container_name: crm_db_prod
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - db_data_prod:/var/lib/mysql
+    networks:
+      - crm_prod_network
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      start_period: 10s
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+  # ===========================================
+  # phpMyAdmin Service
+  # ===========================================
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: crm_phpmyadmin_prod
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: ${DB_ROOT_PASSWORD}
+    ports:
+      - "${PMA_PORT}:80"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - crm_prod_network
+    restart: unless-stopped
+
+volumes:
+  db_data_prod:
+  frontend_dist:
+
+networks:
+  crm_prod_network:
+    driver: bridge

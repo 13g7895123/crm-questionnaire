@@ -32,6 +32,9 @@ export default defineNuxtConfig({
       redirectOn: 'root',
     }
   },
+  devServer: {
+    port: 8104
+  },
   vite: {
     server: {
       hmr: {
