@@ -5,7 +5,10 @@
     "cancel": "取消",
     "delete": "刪除",
     "edit": "編輯",
+    "copy": "複製",
     "add": "新增",
+    "search": "搜尋",
+    "refresh": "重新整理",
     "back": "返回",
     "confirm": "確認",
     "close": "關閉",
@@ -54,6 +57,7 @@
   },
   "projects": {
     "projects": "專案",
+    "projectManagement": "專案管理",
     "createProject": "建立專案",
     "editProject": "編輯專案",
     "deleteProject": "刪除專案",
@@ -70,7 +74,8 @@
     "reviewing": "審核中",
     "approved": "已核准",
     "returned": "已退回",
-    "noProjects": "無專案"
+    "noProjects": "無專案",
+    "noProjectData": "目前沒有任何專案資料"
   },
   "templates": {
     "templates": "範本",
