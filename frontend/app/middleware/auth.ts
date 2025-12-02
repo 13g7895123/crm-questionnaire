@@ -16,7 +16,13 @@ export default defineNuxtRouteMiddleware((to, from) => {
 
   // If trying to access protected route without auth, redirect to login
   if (isProtectedRoute && !authStore.isAuthenticated) {
-    return navigateTo('/login')
+    // Try to restore auth first (handle page refresh)
+    authStore.restoreAuth()
+    
+    // Check again after restore
+    if (!authStore.isAuthenticated) {
+      return navigateTo('/login')
+    }
   }
 
   // If already authenticated and trying to access login page, redirect to home
