@@ -49,8 +49,7 @@ specs/003-crm-questionnaire/
 
 ```text
 frontend/
-├── docs/                # API Requirements Document
-├── src/                 # (Nuxt default structure usually implies root, but we can map to standard Nuxt dirs)
+├── app/                 # Nuxt 3 主要源碼目錄
 │   ├── assets/
 │   ├── components/
 │   ├── composables/     # API Management & Logic
@@ -58,17 +57,18 @@ frontend/
 │   ├── middleware/
 │   ├── pages/
 │   ├── plugins/
-│   ├── public/
 │   ├── stores/          # Pinia Stores
 │   ├── utils/
-│   ├── app.vue
-│   └── nuxt.config.ts
+│   └── app.vue
+├── docs/                # API Requirements Document
+├── public/
+├── nuxt.config.ts
 └── tests/
     ├── unit/
     └── e2e/
 ```
 
-**Structure Decision**: 採用標準 Nuxt 3 目錄結構，並強調 `composables/` 用於 API 管理，`stores/` 用於狀態管理。`frontend/docs/` 用於存放 API 需求文件。
+**Structure Decision**: 採用 Nuxt 3 新版目錄結構，主要源碼放置於 `app/` 目錄下，並強調 `app/composables/` 用於 API 管理，`app/stores/` 用於狀態管理。`frontend/docs/` 用於存放 API 需求文件。
 
 ## Complexity Tracking
 
