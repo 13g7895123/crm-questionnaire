@@ -68,7 +68,7 @@ import { useAuthStore } from '~/stores/auth'
 import type { User } from '~/types/index'
 
 definePageMeta({
-  layout: 'default',
+  layout: 'blank',
   middleware: []
 })
 

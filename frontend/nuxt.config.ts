@@ -13,7 +13,28 @@ export default defineNuxtConfig({
       { code: 'en', language: 'en', name: 'English' }
     ],
     defaultLocale: 'zh-TW',
-    fallbackLocale: 'zh-TW',
     strategy: 'prefix_except_default'
+  },
+  components: {
+    dirs: [
+      {
+        path: '~/components',
+        pathPrefix: false
+      }
+    ]
+  },
+  vite: {
+    server: {
+      middlewareMode: false,
+      hmr: {
+        protocol: 'ws',
+        host: 'localhost'
+      }
+    }
+  },
+  nitro: {
+    prerender: {
+      crawlLinks: false
+    }
   }
 })
