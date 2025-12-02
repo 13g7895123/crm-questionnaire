@@ -54,17 +54,51 @@
 
 ### 基礎設施實作
 
-- [ ] T011 [P] 建立 TypeScript 型別定義於 frontend/app/types/index.ts (User, Project, Template, Question, Answer, ReviewLog)
-- [ ] T012 [P] 建立 API 錯誤處理工具於 frontend/app/utils/api-error.ts
+- [ ] T011 [P] 建立 TypeScript 型別定義於 frontend/app/types/index.ts (User, Organization, Department, Project, Template, Question, Answer, ReviewLog)
+- [ ] T012 [P] 建立 API 錯誤處理工具於 frontend/app/utils/api-error.ts (含網路斷線錯誤處理 - EC-003)
 - [ ] T013 [P] 建立共用 API Composable 基礎於 frontend/app/composables/useApi.ts
 - [ ] T014 建立認證 Store 於 frontend/app/stores/auth.ts (依賴 T011, T013)
 - [ ] T015 建立認證 Middleware 於 frontend/app/middleware/auth.ts (依賴 T014)
-- [ ] T016 [P] 建立 i18n 配置檔於 frontend/i18n.config.ts
+- [ ] T016 [P] 建立 i18n 配置檔於 frontend/i18n.config.ts (含 fallbackLocale 設定 - EC-002)
 - [ ] T017 [P] 建立繁體中文語系檔於 frontend/app/locales/zh-TW.json
 - [ ] T018 [P] 建立英文語系檔於 frontend/app/locales/en.json
 - [ ] T019 建立主版面配置於 frontend/app/layouts/default.vue (依賴 T016-T018)
 
 **檢查點**：基礎設施就緒，可開始 User Story 實作
+
+---
+
+## 第二.五階段：部門管理 (Department Management) - FR-018
+
+**目的**：實作部門 CRUD 功能，供管理員維護部門清單，並供使用者在個人資料中選擇所屬部門
+
+**依賴**：Foundational 完成後即可開始
+
+### 部門管理單元測試
+
+- [ ] T019A [P] 建立 useDepartments Composable 單元測試於 frontend/tests/unit/composables/useDepartments.spec.ts
+- [ ] T019B [P] 建立 DepartmentList 元件單元測試於 frontend/tests/unit/components/DepartmentList.spec.ts
+- [ ] T019C [P] 建立 DepartmentForm 元件單元測試於 frontend/tests/unit/components/DepartmentForm.spec.ts
+
+### 部門管理整合測試
+
+- [ ] T019D [P] 建立部門管理流程整合測試於 frontend/tests/integration/department-management.spec.ts
+
+### 部門管理 Composables 實作
+
+- [ ] T019E 實作 useDepartments Composable 於 frontend/app/composables/useDepartments.ts (部門 CRUD: 列表查詢、新增、編輯、刪除)
+
+### 部門管理元件實作
+
+- [ ] T019F [P] 建立 DepartmentList 元件於 frontend/app/components/admin/DepartmentList.vue
+- [ ] T019G [P] 建立 DepartmentForm 元件於 frontend/app/components/admin/DepartmentForm.vue
+- [ ] T019H [P] 建立 DepartmentSelect 元件於 frontend/app/components/common/DepartmentSelect.vue (供 ProfileForm 使用)
+
+### 部門管理頁面實作
+
+- [ ] T019I 建立部門管理頁面於 frontend/app/pages/admin/departments/index.vue (依賴 T019F, T019G)
+
+**檢查點**：部門管理功能就緒，管理員可維護部門清單，使用者可於個人資料選擇部門
 
 ---
 
@@ -100,8 +134,8 @@
 - [ ] T030 [P] [US1] 建立 Navbar 元件於 frontend/app/components/common/Navbar.vue
 - [ ] T031 [P] [US1] 建立 AppCard 元件於 frontend/app/components/member/AppCard.vue
 - [ ] T032 [P] [US1] 建立 LanguageSwitcher 元件於 frontend/app/components/common/LanguageSwitcher.vue
-- [ ] T033 [P] [US1] 建立 ProfileForm 元件於 frontend/app/components/account/ProfileForm.vue
-- [ ] T034 [P] [US1] 建立 PasswordChangeForm 元件於 frontend/app/components/account/PasswordChangeForm.vue
+- [ ] T033 [P] [US1] 建立 ProfileForm 元件於 frontend/app/components/account/ProfileForm.vue (含表單驗證)
+- [ ] T034 [P] [US1] 建立 PasswordChangeForm 元件於 frontend/app/components/account/PasswordChangeForm.vue (含表單驗證與錯誤提示)
 
 ### User Story 1 頁面實作
 
@@ -111,8 +145,7 @@
 
 ### User Story 1 驗證與錯誤處理
 
-- [ ] T038 [US1] 為帳戶管理表單加入表單驗證於 frontend/app/components/account/ProfileForm.vue
-- [ ] T039 [US1] 為密碼修改表單加入驗證與錯誤提示於 frontend/app/components/account/PasswordChangeForm.vue
+> **注意**：表單驗證已整合於 T033、T034 元件實作中
 
 **檢查點**：User Story 1 應完全可運作並可獨立測試 - 使用者可登入、瀏覽會員中心、切換語系、修改個人資料與密碼
 
@@ -195,7 +228,7 @@
 
 ### User Story 2 Composables 實作
 
-- [ ] T073 [US2] 實作 useTemplates Composable 於 frontend/app/composables/useTemplates.ts (範本 CRUD、版本控制)
+- [ ] T073 [US2] 實作 useTemplates Composable 於 frontend/app/composables/useTemplates.ts (範本 CRUD、版本控制、刪除保護邏輯 - EC-001)
 - [ ] T074 [US2] 實作 useSuppliers Composable 於 frontend/app/composables/useSuppliers.ts (供應商列表查詢)
 - [ ] T075 [US2] 擴充 useProjects Composable 加入專案 CRUD 功能於 frontend/app/composables/useProjects.ts
 
@@ -454,18 +487,19 @@
 
 | 項目 | 數量 |
 |------|------|
-| **總任務數** | 121 |
+| **總任務數** | 128 |
 | **Setup 任務** | 7 |
 | **Foundational 任務** | 12 |
-| **User Story 1 任務** | 20 |
+| **部門管理任務** | 9 |
+| **User Story 1 任務** | 18 |
 | **User Story 4 任務** | 25 |
 | **User Story 2 任務** | 24 |
 | **User Story 5 任務** | 14 |
 | **User Story 3 任務** | 8 |
 | **Polish 任務** | 11 |
-| **可平行任務 [P]** | 74 |
-| **單元測試任務** | 25 |
-| **整合測試任務** | 13 |
+| **可平行任務 [P]** | 80 |
+| **單元測試任務** | 28 |
+| **整合測試任務** | 14 |
 
 ### 各 User Story 獨立測試標準
 

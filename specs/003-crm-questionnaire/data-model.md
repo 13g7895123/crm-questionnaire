@@ -1,5 +1,27 @@
 # Data Model (Frontend Types)
 
+## Organization & Department
+
+```typescript
+type OrganizationType = 'HOST' | 'SUPPLIER'; // Manufacturer (Host) or Supplier
+
+interface Organization {
+  id: string;
+  name: string;
+  type: OrganizationType;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Department {
+  id: string;
+  name: string;
+  organizationId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+```
+
 ## User & Auth
 
 ```typescript
@@ -8,9 +30,11 @@ interface User {
   username: string;
   email: string;
   phone: string;
-  department: string; // Department ID or Name
+  departmentId: string; // Reference to Department.id
+  department?: Department; // Populated Department object
   role: 'HOST' | 'SUPPLIER'; // Manufacturer (Host) or Supplier
   organizationId: string;
+  organization?: Organization; // Populated Organization object
 }
 
 interface AuthState {
@@ -42,7 +66,8 @@ interface Project {
 
 interface ReviewStageConfig {
   stageOrder: number;
-  department: string; // Department responsible
+  departmentId: string; // Reference to Department.id
+  department?: Department; // Populated Department object
   approverId?: string; // Optional specific approver
 }
 ```
@@ -72,7 +97,18 @@ interface Question {
   type: QuestionType;
   required: boolean;
   options?: string[]; // For choice types
-  config?: any; // Additional config (e.g., max file size, rating range)
+  config?: QuestionConfig; // Additional config
+}
+
+interface QuestionConfig {
+  maxFileSize?: number; // For FILE type, in bytes
+  allowedFileTypes?: string[]; // For FILE type, e.g., ['pdf', 'jpg', 'png']
+  ratingMin?: number; // For RATING type, default: 1
+  ratingMax?: number; // For RATING type, default: 5
+  ratingStep?: number; // For RATING type, default: 1
+  numberMin?: number; // For NUMBER type
+  numberMax?: number; // For NUMBER type
+  maxLength?: number; // For TEXT type
 }
 ```
 

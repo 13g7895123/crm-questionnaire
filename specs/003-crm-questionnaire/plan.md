@@ -12,7 +12,7 @@
 ## Technical Context
 
 **Language/Version**: Node.js (LTS), Nuxt 3
-**Primary Dependencies**: Nuxt 3, Pinia (State Management), Vue I18n (Localization), TailwindCSS (UI Styling - 待確認), Axios/Nuxt Fetch
+**Primary Dependencies**: Nuxt 3, Pinia (State Management), Vue I18n (Localization), @nuxt/ui (UI Components, includes TailwindCSS)
 **Storage**: LocalStorage/Cookies (Auth Tokens)
 **Testing**: Vitest, Nuxt Test Utils
 **Target Platform**: Modern Web Browsers (RWD)
