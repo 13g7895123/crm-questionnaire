@@ -2,24 +2,47 @@ openapi: 3.0.0
 info:
   title: CRM Questionnaire API
   version: 1.0.0
+  description: API documentation for CRM Questionnaire System
+  contact:
+    name: API Support
+servers:
+  - url: http://localhost:3000/api
+    description: Development server
+  - url: "{PRODUCTION_API_URL}/api"
+    description: Production server
+
+security:
+  - bearerAuth: []
+
 paths:
+  # Authentication APIs
   /auth/login:
     post:
       summary: User Login
       operationId: login
+      tags:
+        - Authentication
+      security: []
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - username
+                - password
               properties:
                 username:
                   type: string
+                  example: "john.doe"
                 password:
                   type: string
+                  format: password
+                  example: "SecurePassword123"
       responses:
         '200':
-          description: Login success
+          description: Login successful
           content:
             application/json:
               schema:
@@ -27,35 +50,235 @@ paths:
                 properties:
                   token:
                     type: string
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
                   user:
                     $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 
-  /auth/me:
-    get:
-      summary: Get Current User Profile
-      operationId: getProfile
-      responses:
-        '200':
-          description: User profile
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
+  # User Management APIs
+  /users/{userId}:
     put:
-      summary: Update Profile
-      operationId: updateProfile
+      summary: Update User Profile
+      operationId: updateUserProfile
+      tags:
+        - User Management
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/User'
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                phone:
+                  type: string
       responses:
         '200':
-          description: Updated
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
+  /users/change-password:
+    post:
+      summary: Change Password
+      operationId: changePassword
+      tags:
+        - User Management
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - currentPassword
+                - newPassword
+              properties:
+                currentPassword:
+                  type: string
+                  format: password
+                newPassword:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Password changed successfully"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # Project Management APIs
   /projects:
     get:
       summary: List Projects
+      operationId: listProjects
+      tags:
+        - Project Management
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [SAQ, CONFLICT]
+          description: Filter by project type
+      responses:
+        '200':
+          description: List of projects
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Project'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      summary: Create Project
+      operationId: createProject
+      tags:
+        - Project Management
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectInput'
+      responses:
+        '201':
+          description: Project created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /projects/{id}:
+    get:
+      summary: Get Project by ID
+      operationId: getProject
+      tags:
+        - Project Management
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      responses:
+        '200':
+          description: Project details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      summary: Update Project
+      operationId: updateProject
+      tags:
+        - Project Management
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                year:
+                  type: integer
+                supplierId:
+                  type: string
+                reviewConfig:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ReviewStageConfig'
+      responses:
+        '200':
+          description: Project updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      summary: Delete Project
+      operationId: deleteProject
+      tags:
+        - Project Management
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      responses:
+        '200':
+          description: Project deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # Template Management APIs
+  /templates:
+    get:
+      summary: List Templates
+      operationId: listTemplates
+      tags:
+        - Template Management
       parameters:
         - name: type
           in: query
@@ -64,77 +287,651 @@ paths:
             enum: [SAQ, CONFLICT]
       responses:
         '200':
-          description: List of projects
+          description: List of templates
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Project'
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Template'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
     post:
-      summary: Create Project
+      summary: Create Template
+      operationId: createTemplate
+      tags:
+        - Template Management
       requestBody:
+        required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ProjectInput'
+              $ref: '#/components/schemas/TemplateInput'
       responses:
         '201':
-          description: Created
+          description: Template created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Template'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
-  /projects/{id}/answers:
+  /templates/{id}:
+    get:
+      summary: Get Template by ID
+      operationId: getTemplate
+      tags:
+        - Template Management
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Template details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Template'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
-      summary: Save Answers (Draft)
+      summary: Update Template
+      operationId: updateTemplate
+      tags:
+        - Template Management
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       requestBody:
         content:
           application/json:
             schema:
               type: object
+              properties:
+                name:
+                  type: string
+                questions:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Question'
+      responses:
+        '200':
+          description: Template updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Template'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      summary: Delete Template
+      operationId: deleteTemplate
+      tags:
+        - Template Management
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Template deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /templates/{id}/publish:
+    post:
+      summary: Publish Template Version
+      operationId: publishTemplateVersion
+      tags:
+        - Template Management
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Template version published
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Template'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # Supplier Management APIs
+  /suppliers:
+    get:
+      summary: List Suppliers
+      operationId: listSuppliers
+      tags:
+        - Supplier Management
+      responses:
+        '200':
+          description: List of suppliers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Organization'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # Department Management APIs
+  /departments:
+    get:
+      summary: List Departments
+      operationId: listDepartments
+      tags:
+        - Department Management
+      responses:
+        '200':
+          description: List of departments
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Department'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      summary: Create Department
+      operationId: createDepartment
+      tags:
+        - Department Management
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+      responses:
+        '201':
+          description: Department created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Department'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /departments/{id}:
+    put:
+      summary: Update Department
+      operationId: updateDepartment
+      tags:
+        - Department Management
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+      responses:
+        '200':
+          description: Department updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Department'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      summary: Delete Department
+      operationId: deleteDepartment
+      tags:
+        - Department Management
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Department deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  # Answer Management APIs
+  /projects/{projectId}/answers:
+    get:
+      summary: Get Project Answers
+      operationId: getProjectAnswers
+      tags:
+        - Answer Management
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      responses:
+        '200':
+          description: Project answers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectAnswers'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      summary: Save Answers (Draft)
+      operationId: saveAnswers
+      tags:
+        - Answer Management
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - answers
               properties:
                 answers:
                   type: object
+                  additionalProperties: true
       responses:
         '200':
-          description: Saved
+          description: Answers saved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectAnswers'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
-  /projects/{id}/submit:
+  /projects/{projectId}/submit:
     post:
       summary: Submit Project for Review
-      responses:
-        '200':
-          description: Submitted
-
-  /projects/{id}/review:
-    post:
-      summary: Review Action (Approve/Return)
+      operationId: submitProject
+      tags:
+        - Answer Management
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - answers
               properties:
-                action:
-                  type: string
-                  enum: [APPROVE, RETURN]
+                answers:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '200':
+          description: Project submitted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  projectId:
+                    type: string
+                  status:
+                    type: string
+                    enum: [SUBMITTED, REVIEWING]
+                  currentStage:
+                    type: integer
+                  submittedAt:
+                    type: string
+                    format: date-time
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  # Review Process APIs
+  /review/pending:
+    get:
+      summary: Get Pending Reviews
+      operationId: getPendingReviews
+      tags:
+        - Review Process
+      responses:
+        '200':
+          description: List of pending reviews
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Project'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /projects/{projectId}/review-logs:
+    get:
+      summary: Get Review Logs
+      operationId: getReviewLogs
+      tags:
+        - Review Process
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      responses:
+        '200':
+          description: Review logs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ReviewLog'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /projects/{projectId}/approve:
+    post:
+      summary: Approve Project
+      operationId: approveProject
+      tags:
+        - Review Process
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - comment
+              properties:
                 comment:
                   type: string
       responses:
         '200':
-          description: Processed
+          description: Project approved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /projects/{projectId}/return:
+    post:
+      summary: Return Project
+      operationId: returnProject
+      tags:
+        - Review Process
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - comment
+              properties:
+                comment:
+                  type: string
+      responses:
+        '200':
+          description: Project returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    ProjectId:
+      name: projectId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: The project ID
+
+  responses:
+    BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
   schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        statusCode:
+          type: integer
+        details:
+          type: object
+
     User:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        departmentId:
+          type: string
+        department:
+          $ref: '#/components/schemas/Department'
+        role:
+          type: string
+          enum: [HOST, SUPPLIER]
+        organizationId:
+          type: string
+        organization:
+          $ref: '#/components/schemas/Organization'
+
+    Organization:
       type: object
       properties:
         id:
           type: string
         name:
           type: string
-        email:
+        type:
+          type: string
+          enum: [HOST, SUPPLIER]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Department:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        organizationId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ReviewStageConfig:
+      type: object
+      properties:
+        stageOrder:
+          type: integer
+        departmentId:
           type: string
         department:
+          $ref: '#/components/schemas/Department'
+        approverId:
           type: string
+
     Project:
       type: object
       properties:
@@ -142,16 +939,210 @@ components:
           type: string
         name:
           type: string
+        year:
+          type: integer
+        type:
+          type: string
+          enum: [SAQ, CONFLICT]
+        templateId:
+          type: string
+        templateVersion:
+          type: string
+        supplierId:
+          type: string
         status:
           type: string
+          enum: [DRAFT, IN_PROGRESS, SUBMITTED, REVIEWING, APPROVED, RETURNED]
+        currentStage:
+          type: integer
+        reviewConfig:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReviewStageConfig'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
     ProjectInput:
       type: object
+      required:
+        - name
+        - year
+        - type
+        - templateId
+        - supplierId
+        - reviewConfig
       properties:
         name:
           type: string
         year:
           type: integer
+        type:
+          type: string
+          enum: [SAQ, CONFLICT]
         templateId:
           type: string
         supplierId:
           type: string
+        reviewConfig:
+          type: array
+          items:
+            type: object
+            required:
+              - stageOrder
+              - departmentId
+            properties:
+              stageOrder:
+                type: integer
+              departmentId:
+                type: string
+              approverId:
+                type: string
+
+    QuestionConfig:
+      type: object
+      properties:
+        maxFileSize:
+          type: integer
+        allowedFileTypes:
+          type: array
+          items:
+            type: string
+        ratingMin:
+          type: integer
+        ratingMax:
+          type: integer
+        ratingStep:
+          type: number
+        numberMin:
+          type: number
+        numberMax:
+          type: number
+        maxLength:
+          type: integer
+
+    Question:
+      type: object
+      properties:
+        id:
+          type: string
+        text:
+          type: string
+        type:
+          type: string
+          enum: [TEXT, NUMBER, DATE, BOOLEAN, SINGLE_CHOICE, MULTI_CHOICE, FILE, RATING]
+        required:
+          type: boolean
+        options:
+          type: array
+          items:
+            type: string
+        config:
+          $ref: '#/components/schemas/QuestionConfig'
+
+    TemplateVersion:
+      type: object
+      properties:
+        version:
+          type: string
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Question'
+        createdAt:
+          type: string
+          format: date-time
+
+    Template:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum: [SAQ, CONFLICT]
+        versions:
+          type: array
+          items:
+            $ref: '#/components/schemas/TemplateVersion'
+        latestVersion:
+          type: string
+
+    TemplateInput:
+      type: object
+      required:
+        - name
+        - type
+        - questions
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [SAQ, CONFLICT]
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Question'
+
+    ProjectAnswers:
+      type: object
+      properties:
+        projectId:
+          type: string
+        answers:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              questionId:
+                type: string
+              value:
+                oneOf:
+                  - type: string
+                  - type: number
+                  - type: boolean
+                  - type: array
+        lastSavedAt:
+          type: string
+          format: date-time
+
+    ReviewLog:
+      type: object
+      properties:
+        id:
+          type: string
+        projectId:
+          type: string
+        reviewerId:
+          type: string
+        reviewerName:
+          type: string
+        stage:
+          type: integer
+        action:
+          type: string
+          enum: [APPROVE, RETURN]
+        comment:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    ReviewResponse:
+      type: object
+      properties:
+        projectId:
+          type: string
+        status:
+          type: string
+          enum: [REVIEWING, APPROVED, RETURNED]
+        currentStage:
+          type: integer
+        reviewLog:
+          $ref: '#/components/schemas/ReviewLog'
