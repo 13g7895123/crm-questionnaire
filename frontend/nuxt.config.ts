@@ -19,7 +19,9 @@ export default defineNuxtConfig({
     '@nuxtjs/i18n'
   ],
   colorMode: {
-    preference: process.env.COLOR_MODE || 'light'
+    preference: process.env.COLOR_MODE || 'light',
+    fallback: 'light',
+    storageKey: 'nuxt-color-mode-config'
   },
   i18n: {
     locales: [
