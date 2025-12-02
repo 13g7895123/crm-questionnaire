@@ -1,6 +1,6 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  compatibilityDate: '2025-07-15',
+  srcDir: 'app/',
   devtools: { enabled: true },
   modules: [
     '@nuxt/ui',
@@ -9,32 +9,25 @@ export default defineNuxtConfig({
   ],
   i18n: {
     locales: [
-      { code: 'zh-TW', language: 'zh-TW', name: '繁體中文' },
-      { code: 'en', language: 'en', name: 'English' }
+      { code: 'zh-TW', iso: 'zh-TW', name: '繁體中文', file: 'zh-TW.json' },
+      { code: 'en', iso: 'en-US', name: 'English', file: 'en.json' },
+      { code: 'zh', iso: 'zh-TW', name: '繁體中文', file: 'zh-TW.json' }
     ],
     defaultLocale: 'zh-TW',
-    strategy: 'prefix_except_default'
-  },
-  components: {
-    dirs: [
-      {
-        path: '~/components',
-        pathPrefix: false
-      }
-    ]
+    strategy: 'prefix_except_default',
+    langDir: 'locales/',
+    detectBrowserLanguage: {
+      useCookie: true,
+      cookieKey: 'i18n_redirected',
+      redirectOn: 'root',
+    }
   },
   vite: {
     server: {
-      middlewareMode: false,
       hmr: {
         protocol: 'ws',
         host: 'localhost'
       }
-    }
-  },
-  nitro: {
-    prerender: {
-      crawlLinks: false
     }
   }
 })

@@ -15,6 +15,13 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const setUser = (newUser: User | null) => {
     user.value = newUser
+    if (isClient()) {
+      if (newUser) {
+        localStorage.setItem('auth_user', JSON.stringify(newUser))
+      } else {
+        localStorage.removeItem('auth_user')
+      }
+    }
   }
 
   /**
@@ -40,7 +47,7 @@ export const useAuthStore = defineStore('auth', () => {
    * Logout
    */
   const logout = () => {
-    user.value = null
+    setUser(null)
     clearToken()
   }
 
@@ -50,8 +57,19 @@ export const useAuthStore = defineStore('auth', () => {
   const restoreAuth = () => {
     if (isClient()) {
       const savedToken = localStorage.getItem('auth_token')
+      const savedUser = localStorage.getItem('auth_user')
+      
       if (savedToken) {
         token.value = savedToken
+      }
+      
+      if (savedUser) {
+        try {
+          user.value = JSON.parse(savedUser)
+        } catch (e) {
+          console.error('Failed to parse user from localStorage', e)
+          localStorage.removeItem('auth_user')
+        }
       }
     }
   }
@@ -61,7 +79,8 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const updateUser = (updates: Partial<User>) => {
     if (user.value) {
-      user.value = { ...user.value, ...updates }
+      const updatedUser = { ...user.value, ...updates }
+      setUser(updatedUser)
     }
   }
 
