@@ -63,7 +63,6 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import type { User } from '~/types/index'
 
@@ -72,7 +71,6 @@ definePageMeta({
   middleware: []
 })
 
-const router = useRouter()
 const authStore = useAuthStore()
 const isLoading = ref(false)
 const error = ref<string | null>(null)
@@ -105,7 +103,7 @@ const handleLogin = async () => {
     authStore.setToken(mockToken)
 
     // Redirect to home
-    await router.push('/')
+    await navigateTo('/')
   } catch (err: any) {
     error.value = err.message || 'Login failed'
   } finally {
