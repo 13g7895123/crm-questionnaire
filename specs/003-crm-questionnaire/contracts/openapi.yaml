@@ -1,0 +1,157 @@
+openapi: 3.0.0
+info:
+  title: CRM Questionnaire API
+  version: 1.0.0
+paths:
+  /auth/login:
+    post:
+      summary: User Login
+      operationId: login
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
+
+  /auth/me:
+    get:
+      summary: Get Current User Profile
+      operationId: getProfile
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+    put:
+      summary: Update Profile
+      operationId: updateProfile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '200':
+          description: Updated
+
+  /projects:
+    get:
+      summary: List Projects
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [SAQ, CONFLICT]
+      responses:
+        '200':
+          description: List of projects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Project'
+    post:
+      summary: Create Project
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectInput'
+      responses:
+        '201':
+          description: Created
+
+  /projects/{id}/answers:
+    put:
+      summary: Save Answers (Draft)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                answers:
+                  type: object
+      responses:
+        '200':
+          description: Saved
+
+  /projects/{id}/submit:
+    post:
+      summary: Submit Project for Review
+      responses:
+        '200':
+          description: Submitted
+
+  /projects/{id}/review:
+    post:
+      summary: Review Action (Approve/Return)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                action:
+                  type: string
+                  enum: [APPROVE, RETURN]
+                comment:
+                  type: string
+      responses:
+        '200':
+          description: Processed
+
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        department:
+          type: string
+    Project:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+    ProjectInput:
+      type: object
+      properties:
+        name:
+          type: string
+        year:
+          type: integer
+        templateId:
+          type: string
+        supplierId:
+          type: string
