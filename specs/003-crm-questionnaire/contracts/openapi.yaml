@@ -444,6 +444,10 @@ components:
       required: true
       schema:
         type: string
+        pattern: '^proj_[a-zA-Z0-9]+$'
+        minLength: 8
+        maxLength: 50
+        description: 專案 ID，格式為 proj_ 前綴加英數字
 
   schemas:
     ApiResponse:
