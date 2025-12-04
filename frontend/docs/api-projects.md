@@ -246,7 +246,7 @@ Authorization: Bearer <accessToken>
   "type": "SAQ",
   "templateId": "tmpl_def456",
   "templateVersion": "1.2.0",
-  "supplierId": "org_supplier789",
+  "supplierIds": ["org_supplier789", "org_supplier790"],
   "reviewConfig": [
     {
       "stageOrder": 1,
@@ -269,7 +269,7 @@ Authorization: Bearer <accessToken>
 | type | string | ✓ | 專案類型 (SAQ, CONFLICT) |
 | templateId | string | ✓ | 範本 ID |
 | templateVersion | string | ✓ | 範本版本 (如: 1.2.0) |
-| supplierId | string | ✓ | 供應商組織 ID |
+| supplierIds | array | ✓ | 供應商組織 ID 列表 |
 | reviewConfig | array | ✓ | 審核流程設定 (1-5 個階段) |
 | reviewConfig[].stageOrder | integer | ✓ | 審核階段順序 (從 1 開始) |
 | reviewConfig[].departmentId | string | ✓ | 負責部門 ID |
@@ -280,44 +280,77 @@ Authorization: Bearer <accessToken>
 - `stageOrder` 必須連續且從 1 開始
 - 同一專案的 `departmentId` 不可重複
 - `templateVersion` 必須存在於指定的範本中
-- `supplierId` 必須是 SUPPLIER 類型的組織
+- `supplierIds` 必須包含至少一個 SUPPLIER 類型的組織 ID
 
 ### Response (201 Created)
 
 ```json
 {
   "success": true,
-  "data": {
-    "id": "proj_new789",
-    "name": "2025 SAQ 供應商評估",
-    "year": 2025,
-    "type": "SAQ",
-    "templateId": "tmpl_def456",
-    "templateVersion": "1.2.0",
-    "supplierId": "org_supplier789",
-    "status": "IN_PROGRESS",
-    "currentStage": 0,
-    "reviewConfig": [
-      {
-        "stageOrder": 1,
-        "departmentId": "dept_qm123",
-        "department": {
-          "id": "dept_qm123",
-          "name": "品質管理部"
+  "data": [
+    {
+      "id": "proj_new789",
+      "name": "2025 SAQ 供應商評估",
+      "year": 2025,
+      "type": "SAQ",
+      "templateId": "tmpl_def456",
+      "templateVersion": "1.2.0",
+      "supplierId": "org_supplier789",
+      "status": "IN_PROGRESS",
+      "currentStage": 0,
+      "reviewConfig": [
+        {
+          "stageOrder": 1,
+          "departmentId": "dept_qm123",
+          "department": {
+            "id": "dept_qm123",
+            "name": "品質管理部"
+          }
+        },
+        {
+          "stageOrder": 2,
+          "departmentId": "dept_proc456",
+          "department": {
+            "id": "dept_proc456",
+            "name": "採購部"
+          }
         }
-      },
-      {
-        "stageOrder": 2,
-        "departmentId": "dept_proc456",
-        "department": {
-          "id": "dept_proc456",
-          "name": "採購部"
+      ],
+      "createdAt": "2025-12-02T06:08:38.435Z",
+      "updatedAt": "2025-12-02T06:08:38.435Z"
+    },
+    {
+      "id": "proj_new790",
+      "name": "2025 SAQ 供應商評估",
+      "year": 2025,
+      "type": "SAQ",
+      "templateId": "tmpl_def456",
+      "templateVersion": "1.2.0",
+      "supplierId": "org_supplier790",
+      "status": "IN_PROGRESS",
+      "currentStage": 0,
+      "reviewConfig": [
+        {
+          "stageOrder": 1,
+          "departmentId": "dept_qm123",
+          "department": {
+            "id": "dept_qm123",
+            "name": "品質管理部"
+          }
+        },
+        {
+          "stageOrder": 2,
+          "departmentId": "dept_proc456",
+          "department": {
+            "id": "dept_proc456",
+            "name": "採購部"
+          }
         }
-      }
-    ],
-    "createdAt": "2025-12-02T06:08:38.435Z",
-    "updatedAt": "2025-12-02T06:08:38.435Z"
-  }
+      ],
+      "createdAt": "2025-12-02T06:08:38.435Z",
+      "updatedAt": "2025-12-02T06:08:38.435Z"
+    }
+  ]
 }
 ```
 

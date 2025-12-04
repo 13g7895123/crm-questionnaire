@@ -65,7 +65,7 @@
         <!-- 供應商選擇 (新增時) -->
         <UFormGroup v-if="!isEditing" :label="$t('suppliers.supplier')" required>
           <USelectMenu
-            v-model="form.supplierId"
+            v-model="form.supplierIds"
             :options="supplierOptions"
             option-attribute="label"
             value-attribute="value"
@@ -73,6 +73,7 @@
             :disabled="loading || suppliersLoading"
             :loading="suppliersLoading"
             searchable
+            multiple
           />
         </UFormGroup>
 
@@ -181,7 +182,7 @@ const form = ref({
   year: new Date().getFullYear(),
   templateId: '',
   templateVersion: '',
-  supplierId: '',
+  supplierIds: [] as string[],
   reviewConfig: [{ stageOrder: 1, departmentId: '' }] as { stageOrder: number; departmentId: string }[]
 })
 
@@ -224,7 +225,7 @@ const resetForm = () => {
     year: new Date().getFullYear(),
     templateId: '',
     templateVersion: '',
-    supplierId: '',
+    supplierIds: [],
     reviewConfig: [{ stageOrder: 1, departmentId: '' }]
   }
   selectedTemplate.value = null
@@ -249,7 +250,7 @@ watch(() => props.project, (newProject) => {
     form.value.year = newProject.year
     form.value.templateId = newProject.templateId
     form.value.templateVersion = newProject.templateVersion
-    form.value.supplierId = newProject.supplierId
+    form.value.supplierIds = [newProject.supplierId]
     form.value.reviewConfig = newProject.reviewConfig?.map((r, i) => ({
       stageOrder: i + 1,
       departmentId: r.departmentId
@@ -318,7 +319,7 @@ const handleSubmit = async () => {
     if (!form.value.templateId || !form.value.templateVersion) {
       return
     }
-    if (!form.value.supplierId) {
+    if (form.value.supplierIds.length === 0) {
       return
     }
     if (!form.value.reviewConfig.every(r => r.departmentId)) {
@@ -341,7 +342,7 @@ const handleSubmit = async () => {
         type: props.projectType,
         templateId: form.value.templateId,
         templateVersion: form.value.templateVersion,
-        supplierId: form.value.supplierId,
+        supplierIds: form.value.supplierIds,
         reviewConfig: form.value.reviewConfig
       })
     }
