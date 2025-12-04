@@ -45,8 +45,9 @@ export default defineNuxtConfig({
     server: {
       allowedHosts: ['crm.l'],
       hmr: {
-        protocol: 'ws',
-        host: 'localhost'
+        protocol: 'wss',
+        host: 'crm.l',
+        clientPort: 443
       }
     }
   },

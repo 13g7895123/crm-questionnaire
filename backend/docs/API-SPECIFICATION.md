@@ -315,16 +315,85 @@ Authorization: Bearer <accessToken>
 ```
 
 **Query Parameters：**
-| 參數 | 類型 | 說明 |
-|------|------|------|
-| organizationId | string | 篩選組織 ID |
-| search | string | 搜尋部門名稱 |
+| 參數 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| organizationId | string | 否 | 篩選組織 ID，若未提供則預設為當前使用者所屬組織 |
+| search | string | 否 | 搜尋部門名稱（模糊比對） |
+| page | integer | 否 | 頁碼（預設: 1） |
+| limit | integer | 否 | 每頁筆數（預設: 20，最大: 100） |
+
+**Response (200)：**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "dept_qm001",
+      "name": "品質管理部",
+      "organizationId": "org_host001",
+      "organization": {
+        "id": "org_host001",
+        "name": "製造商公司",
+        "type": "HOST"
+      },
+      "createdAt": "2025-12-02T06:08:38.435Z",
+      "updatedAt": "2025-12-02T06:08:38.435Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 5,
+    "totalPages": 1
+  }
+}
+```
+
+**權限說明：**
+- 非 ADMIN 使用者只能查看自己所屬組織的部門
+- ADMIN 可查看所有組織的部門
 
 ### 5.2 取得部門詳情
 
 ```
 GET /api/v1/departments/{departmentId}
 Authorization: Bearer <accessToken>
+```
+
+**Path Parameters：**
+| 參數 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| departmentId | string | 是 | 部門 ID（格式：dept_xxx） |
+
+**Response (200)：**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "dept_qm001",
+    "name": "品質管理部",
+    "organizationId": "org_host001",
+    "organization": {
+      "id": "org_host001",
+      "name": "製造商公司",
+      "type": "HOST"
+    },
+    "memberCount": 10,
+    "createdAt": "2025-12-02T06:08:38.435Z",
+    "updatedAt": "2025-12-02T06:08:38.435Z"
+  }
+}
+```
+
+**Response (404)：**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "RESOURCE_NOT_FOUND",
+    "message": "找不到指定的部門"
+  }
+}
 ```
 
 ### 5.3 建立部門 (ADMIN)
@@ -335,12 +404,70 @@ Authorization: Bearer <accessToken>
 ```
 
 **Request Body：**
+| 欄位 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| name | string | 是 | 部門名稱（最大長度: 100） |
+| organizationId | string | 否 | 組織 ID，若未提供則自動使用當前使用者所屬組織 |
+
+**Request Body 範例：**
 ```json
 {
   "name": "環境安全部",
   "organizationId": "org_xyz789"
 }
 ```
+
+**或僅提供名稱（自動使用當前使用者組織）：**
+```json
+{
+  "name": "環境安全部"
+}
+```
+
+**Response (201)：**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "dept_abc123",
+    "name": "環境安全部",
+    "organizationId": "org_xyz789",
+    "organization": {
+      "id": "org_xyz789",
+      "name": "製造商公司",
+      "type": "HOST"
+    },
+    "createdAt": "2025-12-04T07:30:00.000Z",
+    "updatedAt": "2025-12-04T07:30:00.000Z"
+  }
+}
+```
+
+**Response (409) - 部門名稱重複：**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "RESOURCE_CONFLICT",
+    "message": "此組織已存在相同名稱的部門"
+  }
+}
+```
+
+**Response (404) - 組織不存在：**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "RESOURCE_NOT_FOUND",
+    "message": "找不到指定的組織"
+  }
+}
+```
+
+**權限說明：**
+- 僅 ADMIN 角色可建立部門
+- 部門名稱在同一組織內不可重複
 
 ### 5.4 更新部門 (ADMIN)
 
@@ -349,12 +476,102 @@ PUT /api/v1/departments/{departmentId}
 Authorization: Bearer <accessToken>
 ```
 
+**Path Parameters：**
+| 參數 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| departmentId | string | 是 | 部門 ID |
+
+**Request Body：**
+| 欄位 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| name | string | 是 | 部門名稱（最大長度: 100） |
+
+**Request Body 範例：**
+```json
+{
+  "name": "品質保證部"
+}
+```
+
+**Response (200)：**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "dept_qm001",
+    "name": "品質保證部",
+    "organizationId": "org_host001",
+    "organization": {
+      "id": "org_host001",
+      "name": "製造商公司",
+      "type": "HOST"
+    },
+    "createdAt": "2025-12-02T06:08:38.435Z",
+    "updatedAt": "2025-12-04T07:35:00.000Z"
+  }
+}
+```
+
+**Response (409) - 部門名稱重複：**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "RESOURCE_CONFLICT",
+    "message": "此組織已存在相同名稱的部門"
+  }
+}
+```
+
+**權限說明：**
+- 僅 ADMIN 角色可更新部門
+- 部門名稱在同一組織內不可重複
+
 ### 5.5 刪除部門 (ADMIN)
 
 ```
 DELETE /api/v1/departments/{departmentId}
 Authorization: Bearer <accessToken>
 ```
+
+**Path Parameters：**
+| 參數 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| departmentId | string | 是 | 部門 ID |
+
+**Response (204)：**
+無內容（刪除成功）
+
+**Response (409) - 部門正在使用中：**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "DEPARTMENT_IN_USE",
+    "message": "此部門有使用者或被專案審核流程使用，無法刪除"
+  },
+  "data": {
+    "userCount": 5,
+    "projectCount": 2,
+    "hasData": true
+  }
+}
+```
+
+**Response (404)：**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "RESOURCE_NOT_FOUND",
+    "message": "找不到指定的部門"
+  }
+}
+```
+
+**權限說明：**
+- 僅 ADMIN 角色可刪除部門
+- 若部門下有使用者或被專案審核流程使用，無法刪除
 
 ---
 
