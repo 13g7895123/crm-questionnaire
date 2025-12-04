@@ -74,7 +74,26 @@
             :loading="suppliersLoading"
             searchable
             multiple
-          />
+          >
+            <template #label>
+              <div v-if="form.supplierIds.length" class="flex flex-wrap gap-1">
+                <UBadge
+                  v-for="id in form.supplierIds"
+                  :key="id"
+                  variant="subtle"
+                  class="mr-1"
+                >
+                  {{ getSupplierName(id) }}
+                  <UIcon
+                    name="i-heroicons-x-mark"
+                    class="ml-1 w-3 h-3 cursor-pointer hover:text-red-500"
+                    @click.stop="removeSupplier(id)"
+                  />
+                </UBadge>
+              </div>
+              <span v-else class="text-gray-500">{{ $t('suppliers.selectSupplier') }}</span>
+            </template>
+          </USelectMenu>
         </UFormGroup>
 
         <!-- 審核流程設定 (新增時) -->
@@ -302,6 +321,15 @@ const removeReviewStage = (index: number) => {
   form.value.reviewConfig.forEach((stage, i) => {
     stage.stageOrder = i + 1
   })
+}
+
+const getSupplierName = (id: string) => {
+  const supplier = suppliers.value.find((s: any) => s.id === id)
+  return supplier ? supplier.name : id
+}
+
+const removeSupplier = (id: string) => {
+  form.value.supplierIds = form.value.supplierIds.filter(sid => sid !== id)
 }
 
 const closeModal = () => {
