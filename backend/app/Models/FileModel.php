@@ -9,11 +9,10 @@ class FileModel extends Model
 {
     protected $table = 'files';
     protected $primaryKey = 'id';
-    protected $useAutoIncrement = false;
+    protected $useAutoIncrement = true;
     protected $returnType = File::class;
     protected $useSoftDeletes = false;
     protected $allowedFields = [
-        'id',
         'project_id',
         'question_id',
         'file_name',
@@ -32,20 +31,8 @@ class FileModel extends Model
      */
     public function createFile(array $data): File
     {
-        $data['id'] = $this->generateUuid();
-        $this->insert($data);
+        $id = $this->insert($data);
 
-        return $this->find($data['id']);
-    }
-
-    /**
-     * Generate UUID
-     */
-    protected function generateUuid(): string
-    {
-        return sprintf('%s_%s',
-            'file',
-            bin2hex(random_bytes(12))
-        );
+        return $this->find($id);
     }
 }

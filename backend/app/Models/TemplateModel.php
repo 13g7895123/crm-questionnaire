@@ -9,11 +9,10 @@ class TemplateModel extends Model
 {
     protected $table = 'templates';
     protected $primaryKey = 'id';
-    protected $useAutoIncrement = false;
+    protected $useAutoIncrement = true;
     protected $returnType = Template::class;
     protected $useSoftDeletes = true;
     protected $allowedFields = [
-        'id',
         'name',
         'type',
         'latest_version',

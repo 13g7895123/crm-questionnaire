@@ -9,11 +9,10 @@ class AnswerModel extends Model
 {
     protected $table = 'answers';
     protected $primaryKey = 'id';
-    protected $useAutoIncrement = false;
+    protected $useAutoIncrement = true;
     protected $returnType = Answer::class;
     protected $useSoftDeletes = false;
     protected $allowedFields = [
-        'id',
         'project_id',
         'question_id',
         'value',
@@ -26,7 +25,7 @@ class AnswerModel extends Model
     /**
      * Get answers for a project
      */
-    public function getAnswersForProject(string $projectId): array
+    public function getAnswersForProject(int $projectId): array
     {
         $answers = $this->where('project_id', $projectId)->findAll();
         
@@ -44,7 +43,7 @@ class AnswerModel extends Model
     /**
      * Save or update answers for a project
      */
-    public function saveAnswers(string $projectId, array $answers): int
+    public function saveAnswers(int $projectId, array $answers): int
     {
         $count = 0;
         foreach ($answers as $questionId => $answerData) {
@@ -60,7 +59,6 @@ class AnswerModel extends Model
                 $this->update($existing->id, ['value' => $value]);
             } else {
                 $this->insert([
-                    'id' => $this->generateUuid(),
                     'project_id' => $projectId,
                     'question_id' => $questionId,
                     'value' => $value,
@@ -75,23 +73,12 @@ class AnswerModel extends Model
     /**
      * Get last saved timestamp for project
      */
-    public function getLastSavedAt(string $projectId): ?string
+    public function getLastSavedAt(int $projectId): ?string
     {
         $answer = $this->where('project_id', $projectId)
                        ->orderBy('updated_at', 'DESC')
                        ->first();
 
         return $answer?->updated_at?->toIso8601String();
-    }
-
-    /**
-     * Generate UUID
-     */
-    protected function generateUuid(): string
-    {
-        return sprintf('%s_%s',
-            'ans',
-            bin2hex(random_bytes(12))
-        );
     }
 }

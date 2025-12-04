@@ -247,9 +247,7 @@ class ProjectController extends BaseApiController
         }
 
         // Create project
-        $projectId = $this->generateUuid('proj');
         $this->projectModel->insert([
-            'id' => $projectId,
             'name' => $this->request->getJsonVar('name'),
             'year' => $this->request->getJsonVar('year'),
             'type' => $this->request->getJsonVar('type'),
@@ -259,6 +257,8 @@ class ProjectController extends BaseApiController
             'status' => 'IN_PROGRESS',
             'current_stage' => 0,
         ]);
+
+        $projectId = $this->projectModel->getInsertID();
 
         // Create review config
         $this->reviewConfigModel->createConfigForProject($projectId, $reviewConfig);

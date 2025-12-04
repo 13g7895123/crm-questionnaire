@@ -134,13 +134,12 @@ class OrganizationController extends BaseApiController
             return $this->conflictResponse('RESOURCE_CONFLICT', '組織名稱已存在');
         }
 
-        $orgId = $this->generateUuid('org');
         $this->orgModel->insert([
-            'id' => $orgId,
             'name' => $name,
             'type' => $this->request->getJsonVar('type'),
         ]);
 
+        $orgId = $this->orgModel->getInsertID();
         $organization = $this->orgModel->find($orgId);
 
         return $this->successResponse([

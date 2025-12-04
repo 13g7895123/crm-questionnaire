@@ -97,7 +97,7 @@ class FileController extends BaseApiController
         }
 
         // Generate unique filename
-        $newFileName = $this->generateUuid('f') . '.' . $extension;
+        $newFileName = uniqid('f_') . '.' . $extension;
 
         // Move file to storage
         $uploadPath = WRITEPATH . 'uploads/' . $projectId;

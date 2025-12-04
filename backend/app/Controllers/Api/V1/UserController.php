@@ -260,9 +260,7 @@ class UserController extends BaseApiController
         }
 
         // Create user
-        $userId = $this->generateUuid('usr');
         $userData = [
-            'id' => $userId,
             'username' => $username,
             'email' => $email,
             'phone' => $this->request->getJsonVar('phone'),
@@ -278,6 +276,7 @@ class UserController extends BaseApiController
 
         $this->userModel->insert($user);
 
+        $userId = $this->userModel->getInsertID();
         $createdUser = $this->userModel->find($userId);
 
         return $this->successResponse([

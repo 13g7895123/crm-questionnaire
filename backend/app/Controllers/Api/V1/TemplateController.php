@@ -131,23 +131,22 @@ class TemplateController extends BaseApiController
         }
 
         // Create template
-        $templateId = $this->generateUuid('tmpl');
         $this->templateModel->insert([
-            'id' => $templateId,
             'name' => $this->request->getJsonVar('name'),
             'type' => $this->request->getJsonVar('type'),
             'latest_version' => '1.0.0',
         ]);
 
+        $templateId = $this->templateModel->getInsertID();
+
         // Create version 1.0.0
-        $versionId = $this->generateUuid('tv');
         $this->versionModel->insert([
-            'id' => $versionId,
             'template_id' => $templateId,
             'version' => '1.0.0',
             'questions' => json_encode($validatedQuestions['questions']),
         ]);
 
+        $versionId = $this->versionModel->getInsertID();
         $template = $this->templateModel->find($templateId);
         $version = $this->versionModel->find($versionId);
 
@@ -272,13 +271,13 @@ class TemplateController extends BaseApiController
         }
 
         // Create version
-        $versionId = $this->generateUuid('tv');
         $this->versionModel->insert([
-            'id' => $versionId,
             'template_id' => $templateId,
             'version' => $version,
             'questions' => json_encode($validatedQuestions['questions']),
         ]);
+
+        $versionId = $this->versionModel->getInsertID();
 
         // Update template latest version
         $this->templateModel->update($templateId, ['latest_version' => $version]);

@@ -9,11 +9,10 @@ class ReviewStageConfigModel extends Model
 {
     protected $table = 'review_stage_configs';
     protected $primaryKey = 'id';
-    protected $useAutoIncrement = false;
+    protected $useAutoIncrement = true;
     protected $returnType = ReviewStageConfig::class;
     protected $useSoftDeletes = false;
     protected $allowedFields = [
-        'id',
         'project_id',
         'stage_order',
         'department_id',
@@ -25,7 +24,7 @@ class ReviewStageConfigModel extends Model
     /**
      * Get review config for a project with department info
      */
-    public function getConfigForProject(string $projectId): array
+    public function getConfigForProject(int $projectId): array
     {
         return $this->builder()
             ->select('review_stage_configs.*, departments.name as department_name')
@@ -39,7 +38,7 @@ class ReviewStageConfigModel extends Model
     /**
      * Create review config for project
      */
-    public function createConfigForProject(string $projectId, array $reviewConfig): bool
+    public function createConfigForProject(int $projectId, array $reviewConfig): bool
     {
         // Delete existing config
         $this->where('project_id', $projectId)->delete();
@@ -47,7 +46,6 @@ class ReviewStageConfigModel extends Model
         // Insert new config
         foreach ($reviewConfig as $config) {
             $this->insert([
-                'id' => $this->generateUuid(),
                 'project_id' => $projectId,
                 'stage_order' => $config['stageOrder'],
                 'department_id' => $config['departmentId'],
@@ -61,7 +59,7 @@ class ReviewStageConfigModel extends Model
     /**
      * Get stage by project and stage order
      */
-    public function getStage(string $projectId, int $stageOrder): ?ReviewStageConfig
+    public function getStage(int $projectId, int $stageOrder): ?ReviewStageConfig
     {
         return $this->where('project_id', $projectId)
                     ->where('stage_order', $stageOrder)
@@ -71,19 +69,8 @@ class ReviewStageConfigModel extends Model
     /**
      * Get total stages for a project
      */
-    public function getTotalStages(string $projectId): int
+    public function getTotalStages(int $projectId): int
     {
         return $this->where('project_id', $projectId)->countAllResults();
-    }
-
-    /**
-     * Generate UUID
-     */
-    protected function generateUuid(): string
-    {
-        return sprintf('%s_%s',
-            'rsc',
-            bin2hex(random_bytes(12))
-        );
     }
 }

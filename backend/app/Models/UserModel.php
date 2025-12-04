@@ -9,11 +9,10 @@ class UserModel extends Model
 {
     protected $table = 'users';
     protected $primaryKey = 'id';
-    protected $useAutoIncrement = false;
+    protected $useAutoIncrement = true;
     protected $returnType = User::class;
     protected $useSoftDeletes = true;
     protected $allowedFields = [
-        'id',
         'username',
         'email',
         'password_hash',

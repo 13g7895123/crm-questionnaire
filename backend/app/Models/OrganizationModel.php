@@ -9,11 +9,10 @@ class OrganizationModel extends Model
 {
     protected $table = 'organizations';
     protected $primaryKey = 'id';
-    protected $useAutoIncrement = false;
+    protected $useAutoIncrement = true;
     protected $returnType = Organization::class;
     protected $useSoftDeletes = true;
     protected $allowedFields = [
-        'id',
         'name',
         'type',
     ];

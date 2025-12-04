@@ -9,11 +9,10 @@ class ProjectModel extends Model
 {
     protected $table = 'projects';
     protected $primaryKey = 'id';
-    protected $useAutoIncrement = false;
+    protected $useAutoIncrement = true;
     protected $returnType = Project::class;
     protected $useSoftDeletes = true;
     protected $allowedFields = [
-        'id',
         'name',
         'year',
         'type',

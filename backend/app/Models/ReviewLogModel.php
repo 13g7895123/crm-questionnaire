@@ -9,11 +9,10 @@ class ReviewLogModel extends Model
 {
     protected $table = 'review_logs';
     protected $primaryKey = 'id';
-    protected $useAutoIncrement = false;
+    protected $useAutoIncrement = true;
     protected $returnType = ReviewLog::class;
     protected $useSoftDeletes = false;
     protected $allowedFields = [
-        'id',
         'project_id',
         'reviewer_id',
         'stage',
@@ -36,7 +35,7 @@ class ReviewLogModel extends Model
     /**
      * Get review history for a project
      */
-    public function getHistoryForProject(string $projectId): array
+    public function getHistoryForProject(int $projectId): array
     {
         return $this->builder()
             ->select('review_logs.*, users.username as reviewer_name, departments.id as department_id, departments.name as department_name')
@@ -51,7 +50,7 @@ class ReviewLogModel extends Model
     /**
      * Get review stats for a department
      */
-    public function getStatsForDepartment(string $departmentId, ?string $type = null, ?string $startDate = null, ?string $endDate = null): array
+    public function getStatsForDepartment(int $departmentId, ?string $type = null, ?string $startDate = null, ?string $endDate = null): array
     {
         $builder = $this->builder()
             ->select('review_logs.action, COUNT(*) as count')
@@ -85,10 +84,9 @@ class ReviewLogModel extends Model
     /**
      * Create a review log entry
      */
-    public function createLog(string $projectId, string $reviewerId, int $stage, string $action, string $comment): ReviewLog
+    public function createLog(int $projectId, int $reviewerId, int $stage, string $action, string $comment): ReviewLog
     {
         $data = [
-            'id' => $this->generateUuid(),
             'project_id' => $projectId,
             'reviewer_id' => $reviewerId,
             'stage' => $stage,
@@ -96,19 +94,8 @@ class ReviewLogModel extends Model
             'comment' => $comment,
         ];
 
-        $this->insert($data);
+        $id = $this->insert($data);
 
-        return $this->find($data['id']);
-    }
-
-    /**
-     * Generate UUID
-     */
-    protected function generateUuid(): string
-    {
-        return sprintf('%s_%s',
-            'log',
-            bin2hex(random_bytes(12))
-        );
+        return $this->find($id);
     }
 }

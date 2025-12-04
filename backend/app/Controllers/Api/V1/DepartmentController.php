@@ -133,13 +133,12 @@ class DepartmentController extends BaseApiController
             return $this->conflictResponse('RESOURCE_CONFLICT', '此組織已存在相同名稱的部門');
         }
 
-        $deptId = $this->generateUuid('dept');
         $this->deptModel->insert([
-            'id' => $deptId,
             'name' => $name,
             'organization_id' => $organizationId,
         ]);
 
+        $deptId = $this->deptModel->getInsertID();
         $department = $this->deptModel->find($deptId);
 
         return $this->successResponse([

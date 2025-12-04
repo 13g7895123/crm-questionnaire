@@ -9,11 +9,10 @@ class RefreshTokenModel extends Model
 {
     protected $table = 'refresh_tokens';
     protected $primaryKey = 'id';
-    protected $useAutoIncrement = false;
+    protected $useAutoIncrement = true;
     protected $returnType = RefreshToken::class;
     protected $useSoftDeletes = false;
     protected $allowedFields = [
-        'id',
         'user_id',
         'token_hash',
         'expires_at',
@@ -26,14 +25,13 @@ class RefreshTokenModel extends Model
     /**
      * Create a new refresh token
      */
-    public function createToken(string $userId): array
+    public function createToken(int $userId): array
     {
         $token = bin2hex(random_bytes(32));
         $tokenHash = hash('sha256', $token);
         $expiresAt = date('Y-m-d H:i:s', time() + (30 * 24 * 60 * 60)); // 30 days
 
         $this->insert([
-            'id' => $this->generateUuid(),
             'user_id' => $userId,
             'token_hash' => $tokenHash,
             'expires_at' => $expiresAt,
@@ -75,21 +73,10 @@ class RefreshTokenModel extends Model
     /**
      * Revoke all tokens for a user
      */
-    public function revokeAllUserTokens(string $userId): bool
+    public function revokeAllUserTokens(int $userId): bool
     {
         return $this->where('user_id', $userId)
                     ->set(['is_revoked' => true])
                     ->update();
-    }
-
-    /**
-     * Generate UUID
-     */
-    protected function generateUuid(): string
-    {
-        return sprintf('%s_%s',
-            'rt',
-            bin2hex(random_bytes(12))
-        );
     }
 }

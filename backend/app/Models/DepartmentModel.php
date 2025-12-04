@@ -9,11 +9,10 @@ class DepartmentModel extends Model
 {
     protected $table = 'departments';
     protected $primaryKey = 'id';
-    protected $useAutoIncrement = false;
+    protected $useAutoIncrement = true;
     protected $returnType = Department::class;
     protected $useSoftDeletes = true;
     protected $allowedFields = [
-        'id',
         'name',
         'organization_id',
     ];

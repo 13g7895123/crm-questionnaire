@@ -8,24 +8,21 @@ class InitialDataSeeder extends Seeder
 {
     public function run()
     {
-        // Create Organizations
+        // Create Organizations (IDs will be auto-generated: 1, 2, 3)
         $organizations = [
             [
-                'id' => 'org_host001',
                 'name' => '製造商公司',
                 'type' => 'HOST',
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s'),
             ],
             [
-                'id' => 'org_supplier001',
                 'name' => '供應商 A 公司',
                 'type' => 'SUPPLIER',
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s'),
             ],
             [
-                'id' => 'org_supplier002',
                 'name' => '供應商 B 公司',
                 'type' => 'SUPPLIER',
                 'created_at' => date('Y-m-d H:i:s'),
@@ -35,40 +32,35 @@ class InitialDataSeeder extends Seeder
 
         $this->db->table('organizations')->insertBatch($organizations);
 
-        // Create Departments
+        // Create Departments (reference organization by numeric ID)
         $departments = [
             [
-                'id' => 'dept_qm001',
                 'name' => '品質管理部',
-                'organization_id' => 'org_host001',
+                'organization_id' => 1, // 製造商公司
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s'),
             ],
             [
-                'id' => 'dept_proc001',
                 'name' => '採購部',
-                'organization_id' => 'org_host001',
+                'organization_id' => 1, // 製造商公司
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s'),
             ],
             [
-                'id' => 'dept_exec001',
                 'name' => '高階主管部',
-                'organization_id' => 'org_host001',
+                'organization_id' => 1, // 製造商公司
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s'),
             ],
             [
-                'id' => 'dept_sup001',
                 'name' => '業務部',
-                'organization_id' => 'org_supplier001',
+                'organization_id' => 2, // 供應商 A 公司
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s'),
             ],
             [
-                'id' => 'dept_sup002',
                 'name' => '業務部',
-                'organization_id' => 'org_supplier002',
+                'organization_id' => 3, // 供應商 B 公司
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s'),
             ],
@@ -76,69 +68,64 @@ class InitialDataSeeder extends Seeder
 
         $this->db->table('departments')->insertBatch($departments);
 
-        // Create Users
+        // Create Users (reference organization and department by numeric ID)
         $users = [
             [
-                'id' => 'usr_admin001',
                 'username' => 'admin',
                 'email' => 'admin@example.com',
                 'password_hash' => password_hash('admin123', PASSWORD_DEFAULT),
                 'phone' => '0912345678',
                 'role' => 'ADMIN',
-                'organization_id' => 'org_host001',
-                'department_id' => 'dept_qm001',
+                'organization_id' => 1, // 製造商公司
+                'department_id' => 1,   // 品質管理部
                 'is_active' => true,
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s'),
             ],
             [
-                'id' => 'usr_host001',
                 'username' => 'host_user',
                 'email' => 'host@example.com',
                 'password_hash' => password_hash('host1234', PASSWORD_DEFAULT),
                 'phone' => '0923456789',
                 'role' => 'HOST',
-                'organization_id' => 'org_host001',
-                'department_id' => 'dept_qm001',
+                'organization_id' => 1, // 製造商公司
+                'department_id' => 1,   // 品質管理部
                 'is_active' => true,
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s'),
             ],
             [
-                'id' => 'usr_host002',
                 'username' => 'proc_user',
                 'email' => 'proc@example.com',
                 'password_hash' => password_hash('proc1234', PASSWORD_DEFAULT),
                 'phone' => '0934567890',
                 'role' => 'HOST',
-                'organization_id' => 'org_host001',
-                'department_id' => 'dept_proc001',
+                'organization_id' => 1, // 製造商公司
+                'department_id' => 2,   // 採購部
                 'is_active' => true,
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s'),
             ],
             [
-                'id' => 'usr_supplier001',
                 'username' => 'supplier_a',
                 'email' => 'supplier_a@example.com',
                 'password_hash' => password_hash('supp1234', PASSWORD_DEFAULT),
                 'phone' => '0945678901',
                 'role' => 'SUPPLIER',
-                'organization_id' => 'org_supplier001',
-                'department_id' => 'dept_sup001',
+                'organization_id' => 2, // 供應商 A 公司
+                'department_id' => 4,   // 業務部 (供應商A)
                 'is_active' => true,
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s'),
             ],
             [
-                'id' => 'usr_supplier002',
                 'username' => 'supplier_b',
                 'email' => 'supplier_b@example.com',
                 'password_hash' => password_hash('supp1234', PASSWORD_DEFAULT),
                 'phone' => '0956789012',
                 'role' => 'SUPPLIER',
-                'organization_id' => 'org_supplier002',
-                'department_id' => 'dept_sup002',
+                'organization_id' => 3, // 供應商 B 公司
+                'department_id' => 5,   // 業務部 (供應商B)
                 'is_active' => true,
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s'),
@@ -150,7 +137,6 @@ class InitialDataSeeder extends Seeder
         // Create Templates
         $templates = [
             [
-                'id' => 'tmpl_saq001',
                 'name' => 'SAQ 標準範本',
                 'type' => 'SAQ',
                 'latest_version' => '1.0.0',
@@ -158,7 +144,6 @@ class InitialDataSeeder extends Seeder
                 'updated_at' => date('Y-m-d H:i:s'),
             ],
             [
-                'id' => 'tmpl_conflict001',
                 'name' => '衝突資產調查範本',
                 'type' => 'CONFLICT',
                 'latest_version' => '1.0.0',
@@ -231,15 +216,13 @@ class InitialDataSeeder extends Seeder
 
         $templateVersions = [
             [
-                'id' => 'tv_saq001',
-                'template_id' => 'tmpl_saq001',
+                'template_id' => 1, // SAQ 標準範本
                 'version' => '1.0.0',
                 'questions' => json_encode($saqQuestions),
                 'created_at' => date('Y-m-d H:i:s'),
             ],
             [
-                'id' => 'tv_conflict001',
-                'template_id' => 'tmpl_conflict001',
+                'template_id' => 2, // 衝突資產調查範本
                 'version' => '1.0.0',
                 'questions' => json_encode($conflictQuestions),
                 'created_at' => date('Y-m-d H:i:s'),

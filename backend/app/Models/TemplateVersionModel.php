@@ -9,11 +9,10 @@ class TemplateVersionModel extends Model
 {
     protected $table = 'template_versions';
     protected $primaryKey = 'id';
-    protected $useAutoIncrement = false;
+    protected $useAutoIncrement = true;
     protected $returnType = TemplateVersion::class;
     protected $useSoftDeletes = false;
     protected $allowedFields = [
-        'id',
         'template_id',
         'version',
         'questions',
