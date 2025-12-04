@@ -103,9 +103,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useDepartments } from '~/composables/useDepartments'
+import { useAuthStore } from '~/stores/auth'
 import type { Department } from '~/types/index'
 
 const { departments, loading, fetchDepartments, createDepartment, updateDepartment, deleteDepartment } = useDepartments()
+const authStore = useAuthStore()
 
 const isModalOpen = ref(false)
 const isDeleteModalOpen = ref(false)
@@ -154,7 +156,7 @@ const handleSubmit = async () => {
     if (isEditing.value && editingId.value) {
       await updateDepartment(editingId.value, form.value.name)
     } else {
-      await createDepartment(form.value.name)
+      await createDepartment(form.value.name, authStore.currentOrganizationId)
     }
     isModalOpen.value = false
     await fetchDepartments()

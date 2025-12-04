@@ -7,6 +7,7 @@ export const useAuthStore = defineStore('auth', () => {
   const token = ref<string | null>(null)
 
   const isAuthenticated = computed(() => !!token.value && !!user.value)
+  const currentOrganizationId = computed(() => user.value?.organizationId)
 
   const isClient = () => typeof window !== 'undefined'
 
@@ -88,6 +89,7 @@ export const useAuthStore = defineStore('auth', () => {
     user,
     token,
     isAuthenticated,
+    currentOrganizationId,
     setUser,
     setToken,
     clearToken,

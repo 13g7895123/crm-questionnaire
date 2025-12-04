@@ -20,10 +20,14 @@ export const useDepartments = () => {
     }
   }
 
-  const createDepartment = async (name: string) => {
+  const createDepartment = async (name: string, organizationId?: string) => {
     loading.value = true
     try {
-      const response = await api.post('/departments', { name })
+      const payload: any = { name }
+      if (organizationId) {
+        payload.organizationId = organizationId
+      }
+      const response = await api.post('/departments', payload)
       departments.value.push(response.data)
       return response
     } finally {
