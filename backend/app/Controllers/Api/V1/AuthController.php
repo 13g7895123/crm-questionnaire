@@ -73,14 +73,19 @@ class AuthController extends BaseApiController
         // Set httpOnly cookies
         $response = $this->response;
         
+        // Determine if connection is secure (via proxy or direct)
+        $isSecure = $this->request->isSecure();
+        $cookieDomain = 'crm.l';
+        
         // Access token cookie (1 hour)
         $response->setCookie([
             'name' => 'access_token',
             'value' => $accessToken,
             'expire' => $this->jwtService->getAccessTokenTTL(),
             'path' => '/',
+            'domain' => $cookieDomain,
             'httponly' => true,
-            'secure' => ENVIRONMENT === 'production',
+            'secure' => $isSecure,
             'samesite' => 'Lax',
         ]);
 
@@ -90,8 +95,9 @@ class AuthController extends BaseApiController
             'value' => $refreshTokenData['token'],
             'expire' => $this->jwtService->getRefreshTokenTTL(),
             'path' => '/api/v1/auth',
+            'domain' => $cookieDomain,
             'httponly' => true,
-            'secure' => ENVIRONMENT === 'production',
+            'secure' => $isSecure,
             'samesite' => 'Lax',
         ]);
 
@@ -238,13 +244,16 @@ class AuthController extends BaseApiController
         ]);
 
         // Set new access token cookie
+        $isSecure = $this->request->isSecure();
+        $cookieDomain = 'crm.l';
         $this->response->setCookie([
             'name' => 'access_token',
             'value' => $accessToken,
             'expire' => $this->jwtService->getAccessTokenTTL(),
             'path' => '/',
+            'domain' => $cookieDomain,
             'httponly' => true,
-            'secure' => ENVIRONMENT === 'production',
+            'secure' => $isSecure,
             'samesite' => 'Lax',
         ]);
 

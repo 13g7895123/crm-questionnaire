@@ -8,10 +8,16 @@ export const useAuth = () => {
   const login = async (username: string, password: string) => {
     try {
       const response = await api.post('/auth/login', { username, password })
-      authStore.setToken(response.token)
-      authStore.setUser(response.user)
+      // API returns { success: true, data: { accessToken, user, ... } }
+      if (response.data && response.data.accessToken) {
+        authStore.setToken(response.data.accessToken)
+        authStore.setUser(response.data.user)
+      } else {
+        throw new Error('Invalid login response')
+      }
       return response
     } catch (error) {
+      console.error('Login error:', error)
       throw error
     }
   }

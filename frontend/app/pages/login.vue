@@ -63,15 +63,14 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useAuthStore } from '~/stores/auth'
-import type { User } from '~/types/index'
+import { useAuth } from '~/composables/useAuth'
 
 definePageMeta({
   layout: 'blank',
   middleware: []
 })
 
-const authStore = useAuthStore()
+const { login } = useAuth()
 const isLoading = ref(false)
 const error = ref<string | null>(null)
 
@@ -86,26 +85,13 @@ const handleLogin = async () => {
     isLoading.value = true
     error.value = null
 
-    // Mock login - in real app, call API
-    const mockUser: User = {
-      id: 'user-1',
-      username: form.value.username,
-      email: form.value.username + '@example.com',
-      phone: '+886-1234567890',
-      departmentId: 'dept-1',
-      role: 'HOST',
-      organizationId: 'org-1'
-    }
-
-    const mockToken = 'mock-jwt-token-' + Math.random().toString(36).substring(7)
-
-    authStore.setUser(mockUser)
-    authStore.setToken(mockToken)
+    const res = await login(form.value.username, form.value.password)
+    console.log('Login response:', res)
 
     // Redirect to home
     await navigateTo('/')
   } catch (err: any) {
-    error.value = err.message || 'Login failed'
+    error.value = err.message || '登入失敗'
   } finally {
     isLoading.value = false
   }
