@@ -223,6 +223,8 @@ class ProjectController extends BaseApiController
 
         // Validate review config
         $reviewConfig = $this->request->getJsonVar('reviewConfig');
+        $reviewConfig = json_decode(json_encode($reviewConfig), true);
+
         if (!is_array($reviewConfig) || count($reviewConfig) < 1 || count($reviewConfig) > 5) {
             return $this->errorResponse(
                 'REVIEW_STAGE_INVALID',
@@ -327,6 +329,10 @@ class ProjectController extends BaseApiController
 
         // Review config can only be updated before submission
         $reviewConfig = $this->request->getJsonVar('reviewConfig');
+        if ($reviewConfig) {
+            $reviewConfig = json_decode(json_encode($reviewConfig), true);
+        }
+
         if ($reviewConfig && in_array($project->status, ['DRAFT', 'IN_PROGRESS', 'RETURNED'])) {
             $this->reviewConfigModel->createConfigForProject($projectId, $reviewConfig);
         } elseif ($reviewConfig) {

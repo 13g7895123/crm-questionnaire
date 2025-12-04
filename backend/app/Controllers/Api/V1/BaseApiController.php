@@ -168,11 +168,20 @@ class BaseApiController extends ResourceController
 
     /**
      * Get pagination parameters from request
+     * If no limit specified, returns null to indicate fetching all records
      */
     protected function getPaginationParams(): array
     {
-        $page = max(1, (int) $this->request->getGet('page', 1));
-        $limit = min(100, max(1, (int) $this->request->getGet('limit', 20)));
+        $page = max(1, (int) ($this->request->getGet('page') ?? 1));
+        $limitParam = $this->request->getGet('limit');
+        
+        // If limit is not specified, use a very large number to get all records
+        // If limit is specified, cap it at 100
+        if ($limitParam === null || $limitParam === '') {
+            $limit = 10000; // Effectively no limit
+        } else {
+            $limit = min(100, max(1, (int) $limitParam));
+        }
 
         return ['page' => $page, 'limit' => $limit];
     }
