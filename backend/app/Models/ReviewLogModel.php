@@ -13,7 +13,7 @@ class ReviewLogModel extends Model
     protected $returnType = ReviewLog::class;
     protected $useSoftDeletes = false;
     protected $allowedFields = [
-        'project_id',
+        'project_supplier_id',
         'reviewer_id',
         'stage',
         'action',
@@ -25,7 +25,7 @@ class ReviewLogModel extends Model
     protected $updatedField = false;
 
     protected $validationRules = [
-        'project_id' => 'required',
+        'project_supplier_id' => 'required',
         'reviewer_id' => 'required',
         'stage' => 'required|integer',
         'action' => 'required|in_list[APPROVE,RETURN]',
@@ -33,15 +33,15 @@ class ReviewLogModel extends Model
     ];
 
     /**
-     * Get review history for a project
+     * Get review history for a project supplier
      */
-    public function getHistoryForProject(int $projectId): array
+    public function getHistoryForProjectSupplier(int $projectSupplierId): array
     {
         return $this->builder()
             ->select('review_logs.*, users.username as reviewer_name, departments.id as department_id, departments.name as department_name')
             ->join('users', 'users.id = review_logs.reviewer_id', 'left')
             ->join('departments', 'departments.id = users.department_id', 'left')
-            ->where('review_logs.project_id', $projectId)
+            ->where('review_logs.project_supplier_id', $projectSupplierId)
             ->orderBy('review_logs.created_at', 'ASC')
             ->get()
             ->getResult();
@@ -55,7 +55,8 @@ class ReviewLogModel extends Model
         $builder = $this->builder()
             ->select('review_logs.action, COUNT(*) as count')
             ->join('users', 'users.id = review_logs.reviewer_id')
-            ->join('projects', 'projects.id = review_logs.project_id')
+            ->join('project_suppliers', 'project_suppliers.id = review_logs.project_supplier_id')
+            ->join('projects', 'projects.id = project_suppliers.project_id')
             ->where('users.department_id', $departmentId)
             ->groupBy('review_logs.action');
 
@@ -84,10 +85,10 @@ class ReviewLogModel extends Model
     /**
      * Create a review log entry
      */
-    public function createLog(int $projectId, int $reviewerId, int $stage, string $action, string $comment): ReviewLog
+    public function createLog(int $projectSupplierId, int $reviewerId, int $stage, string $action, string $comment): ReviewLog
     {
         $data = [
-            'project_id' => $projectId,
+            'project_supplier_id' => $projectSupplierId,
             'reviewer_id' => $reviewerId,
             'stage' => $stage,
             'action' => $action,
@@ -97,5 +98,13 @@ class ReviewLogModel extends Model
         $id = $this->insert($data);
 
         return $this->find($id);
+    }
+
+    /**
+     * @deprecated Use getHistoryForProjectSupplier instead
+     */
+    public function getHistoryForProject(int $projectId): array
+    {
+        return $this->getHistoryForProjectSupplier($projectId);
     }
 }

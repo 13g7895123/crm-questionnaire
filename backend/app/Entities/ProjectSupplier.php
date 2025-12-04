@@ -4,7 +4,7 @@ namespace App\Entities;
 
 use CodeIgniter\Entity\Entity;
 
-class Project extends Entity
+class ProjectSupplier extends Entity
 {
     protected $datamap = [];
     
@@ -12,23 +12,25 @@ class Project extends Entity
         'created_at',
         'updated_at',
         'deleted_at',
+        'submitted_at',
     ];
     
     protected $casts = [
         'id' => 'integer',
-        'template_id' => 'integer',
-        'year' => 'integer',
+        'project_id' => 'integer',
+        'supplier_id' => 'integer',
+        'current_stage' => 'integer',
     ];
 
     public function toApiResponse(): array
     {
         return [
             'id' => $this->id,
-            'name' => $this->name,
-            'year' => $this->year,
-            'type' => $this->type,
-            'templateId' => $this->template_id,
-            'templateVersion' => $this->template_version,
+            'projectId' => $this->project_id,
+            'supplierId' => $this->supplier_id,
+            'status' => $this->status,
+            'currentStage' => $this->current_stage,
+            'submittedAt' => $this->submitted_at?->format('c'),
             'createdAt' => $this->created_at?->format('c'),
             'updatedAt' => $this->updated_at?->format('c'),
         ];

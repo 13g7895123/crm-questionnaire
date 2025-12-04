@@ -18,10 +18,6 @@ class ProjectModel extends Model
         'type',
         'template_id',
         'template_version',
-        'supplier_id',
-        'status',
-        'current_stage',
-        'submitted_at',
     ];
 
     protected $useTimestamps = true;
@@ -35,42 +31,17 @@ class ProjectModel extends Model
         'type' => 'required|in_list[SAQ,CONFLICT]',
         'template_id' => 'required',
         'template_version' => 'required',
-        'supplier_id' => 'required',
-        'status' => 'in_list[DRAFT,IN_PROGRESS,SUBMITTED,REVIEWING,APPROVED,RETURNED]',
     ];
 
     /**
-     * Get projects with relations (for HOST)
+     * Get projects with supplier stats (for HOST)
      */
     public function getProjectsForHost(array $filters = [], int $page = 1, int $limit = 20): array
     {
         $builder = $this->builder();
-        $builder->select('projects.*, organizations.name as supplier_name')
-                ->join('organizations', 'organizations.id = projects.supplier_id', 'left')
-                ->where('projects.deleted_at IS NULL');
-
-        $this->applyFilters($builder, $filters);
-
-        $total = $builder->countAllResults(false);
-        $data = $builder->limit($limit, ($page - 1) * $limit)->get()->getResult();
-
-        return [
-            'data' => $data,
-            'total' => $total,
-            'page' => $page,
-            'limit' => $limit,
-            'totalPages' => ceil($total / $limit),
-        ];
-    }
-
-    /**
-     * Get projects for supplier (only assigned projects)
-     */
-    public function getProjectsForSupplier(string $organizationId, array $filters = [], int $page = 1, int $limit = 20): array
-    {
-        $builder = $this->builder();
-        $builder->select('projects.*')
-                ->where('projects.supplier_id', $organizationId)
+        $builder->select('projects.*,
+                         (SELECT COUNT(*) FROM project_suppliers ps WHERE ps.project_id = projects.id AND ps.deleted_at IS NULL) as supplier_count,
+                         (SELECT COUNT(*) FROM project_suppliers ps WHERE ps.project_id = projects.id AND ps.status = "APPROVED" AND ps.deleted_at IS NULL) as approved_count')
                 ->where('projects.deleted_at IS NULL');
 
         $this->applyFilters($builder, $filters);
@@ -94,10 +65,6 @@ class ProjectModel extends Model
     {
         if (!empty($filters['type'])) {
             $builder->where('projects.type', $filters['type']);
-        }
-
-        if (!empty($filters['status'])) {
-            $builder->where('projects.status', $filters['status']);
         }
 
         if (!empty($filters['year'])) {
@@ -132,58 +99,29 @@ class ProjectModel extends Model
             $builder->where('year', $year);
         }
 
-        $total = $builder->countAllResults(false);
-
-        // By status
-        $byStatus = [];
-        $statuses = ['DRAFT', 'IN_PROGRESS', 'SUBMITTED', 'REVIEWING', 'APPROVED', 'RETURNED'];
-        foreach ($statuses as $status) {
-            $byStatus[$status] = $this->builder()
-                ->where('status', $status)
-                ->where('deleted_at IS NULL')
-                ->when($type, fn($q) => $q->where('type', $type))
-                ->when($year, fn($q) => $q->where('year', $year))
-                ->countAllResults();
-        }
+        $total = $builder->countAllResults();
 
         return [
             'total' => $total,
-            'byStatus' => $byStatus,
         ];
     }
 
     /**
-     * Get pending review projects for a department
+     * Get project with suppliers detail
      */
-    public function getPendingReviewsForDepartment(string $departmentId, array $filters = [], int $page = 1, int $limit = 20): array
+    public function getProjectWithSuppliers(int $projectId): ?object
     {
-        $builder = $this->builder();
-        $builder->select('projects.*, organizations.name as supplier_name,
-                         review_stage_configs.stage_order,
-                         (SELECT COUNT(*) FROM review_stage_configs WHERE review_stage_configs.project_id = projects.id) as total_stages')
-                ->join('organizations', 'organizations.id = projects.supplier_id', 'left')
-                ->join('review_stage_configs', 'review_stage_configs.project_id = projects.id AND review_stage_configs.stage_order = projects.current_stage', 'inner')
-                ->where('projects.status', 'REVIEWING')
-                ->where('review_stage_configs.department_id', $departmentId)
-                ->where('projects.deleted_at IS NULL');
-
-        if (!empty($filters['type'])) {
-            $builder->where('projects.type', $filters['type']);
+        $project = $this->find($projectId);
+        if (!$project) {
+            return null;
         }
 
-        $sortBy = $filters['sortBy'] ?? 'submitted_at';
-        $order = ($filters['order'] ?? 'desc') === 'asc' ? 'ASC' : 'DESC';
-        $builder->orderBy('projects.' . $sortBy, $order);
+        $supplierModel = new ProjectSupplierModel();
+        $suppliers = $supplierModel->getSuppliersForProject($projectId);
 
-        $total = $builder->countAllResults(false);
-        $data = $builder->limit($limit, ($page - 1) * $limit)->get()->getResult();
+        $result = (object) $project->toArray();
+        $result->suppliers = $suppliers;
 
-        return [
-            'data' => $data,
-            'total' => $total,
-            'page' => $page,
-            'limit' => $limit,
-            'totalPages' => ceil($total / $limit),
-        ];
+        return $result;
     }
 }

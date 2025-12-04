@@ -3,6 +3,7 @@
 namespace App\Controllers\Api\V1;
 
 use App\Models\ProjectModel;
+use App\Models\ProjectSupplierModel;
 use App\Models\TemplateModel;
 use App\Models\TemplateVersionModel;
 use App\Models\OrganizationModel;
@@ -12,6 +13,7 @@ use CodeIgniter\HTTP\ResponseInterface;
 class ProjectController extends BaseApiController
 {
     protected ProjectModel $projectModel;
+    protected ProjectSupplierModel $projectSupplierModel;
     protected TemplateModel $templateModel;
     protected OrganizationModel $orgModel;
     protected ReviewStageConfigModel $reviewConfigModel;
@@ -19,6 +21,7 @@ class ProjectController extends BaseApiController
     public function __construct()
     {
         $this->projectModel = new ProjectModel();
+        $this->projectSupplierModel = new ProjectSupplierModel();
         $this->templateModel = new TemplateModel();
         $this->orgModel = new OrganizationModel();
         $this->reviewConfigModel = new ReviewStageConfigModel();
@@ -43,42 +46,52 @@ class ProjectController extends BaseApiController
 
         // Different queries based on user role
         if ($this->isSupplier()) {
-            $result = $this->projectModel->getProjectsForSupplier(
+            // Supplier sees their assigned projects via project_suppliers
+            $result = $this->projectSupplierModel->getProjectsForSupplier(
                 $this->getCurrentOrganizationId(),
                 $filters,
                 $pagination['page'],
                 $pagination['limit']
             );
+
+            // Format response for supplier
+            $data = array_map(function ($ps) {
+                return [
+                    'id' => $ps->id, // project_supplier_id
+                    'projectId' => $ps->project_id,
+                    'name' => $ps->name,
+                    'year' => (int) $ps->year,
+                    'type' => $ps->type,
+                    'templateId' => $ps->template_id,
+                    'templateVersion' => $ps->template_version,
+                    'status' => $ps->status,
+                    'currentStage' => (int) $ps->current_stage,
+                    'submittedAt' => $ps->submitted_at,
+                    'createdAt' => $ps->created_at,
+                    'updatedAt' => $ps->updated_at,
+                ];
+            }, $result['data']);
         } else {
+            // HOST sees all projects with supplier counts
             $result = $this->projectModel->getProjectsForHost(
                 $filters,
                 $pagination['page'],
                 $pagination['limit']
             );
-        }
 
-        // Format response
-        $data = array_map(function ($project) {
-            $response = [
-                'id' => $project->id,
-                'name' => $project->name,
-                'year' => (int) $project->year,
-                'type' => $project->type,
-                'templateId' => $project->template_id,
-                'templateVersion' => $project->template_version,
-                'status' => $project->status,
-                'currentStage' => (int) $project->current_stage,
-                'createdAt' => $project->created_at,
-                'updatedAt' => $project->updated_at,
-            ];
-
-            // HOST can see supplier info and review config
-            if ($this->isHost() || $this->isAdmin()) {
-                $response['supplierId'] = $project->supplier_id;
-                $response['supplier'] = [
-                    'id' => $project->supplier_id,
-                    'name' => $project->supplier_name ?? null,
-                    'type' => 'SUPPLIER',
+            // Format response for HOST
+            $data = array_map(function ($project) {
+                $response = [
+                    'id' => $project->id,
+                    'name' => $project->name,
+                    'year' => (int) $project->year,
+                    'type' => $project->type,
+                    'templateId' => $project->template_id,
+                    'templateVersion' => $project->template_version,
+                    'supplierCount' => (int) ($project->supplier_count ?? 0),
+                    'approvedCount' => (int) ($project->approved_count ?? 0),
+                    'createdAt' => $project->created_at,
+                    'updatedAt' => $project->updated_at,
                 ];
 
                 // Get review config
@@ -93,10 +106,10 @@ class ProjectController extends BaseApiController
                         ],
                     ];
                 }, $reviewConfig);
-            }
 
-            return $response;
-        }, $result['data']);
+                return $response;
+            }, $result['data']);
+        }
 
         $result['data'] = $data;
         return $this->paginatedResponse($result);
@@ -114,18 +127,28 @@ class ProjectController extends BaseApiController
             return $this->notFoundResponse('找不到指定的專案');
         }
 
-        // Supplier can only see assigned projects
-        if ($this->isSupplier() && $project->supplier_id !== $this->getCurrentOrganizationId()) {
-            return $this->errorResponse(
-                'SUPPLIER_NOT_ASSIGNED',
-                '您無權存取此專案',
-                403
-            );
-        }
-
         $template = $this->templateModel->find($project->template_id);
-        $supplier = $this->orgModel->find($project->supplier_id);
         $reviewConfig = $this->reviewConfigModel->getConfigForProject($projectId);
+        $suppliers = $this->projectSupplierModel->getSuppliersForProject($projectId);
+
+        // Supplier can only see if they are assigned
+        if ($this->isSupplier()) {
+            $isAssigned = false;
+            $currentOrgId = $this->getCurrentOrganizationId();
+            foreach ($suppliers as $s) {
+                if ($s->supplier_id == $currentOrgId) {
+                    $isAssigned = true;
+                    break;
+                }
+            }
+            if (!$isAssigned) {
+                return $this->errorResponse(
+                    'SUPPLIER_NOT_ASSIGNED',
+                    '您無權存取此專案',
+                    403
+                );
+            }
+        }
 
         $response = [
             'id' => $project->id,
@@ -140,21 +163,22 @@ class ProjectController extends BaseApiController
                 'type' => $template->type,
                 'latestVersion' => $template->latest_version,
             ] : null,
-            'status' => $project->status,
-            'currentStage' => $project->current_stage,
-            'submittedAt' => $project->submitted_at?->format("c"),
             'createdAt' => $project->created_at?->format("c"),
             'updatedAt' => $project->updated_at?->format("c"),
         ];
 
-        // HOST/ADMIN can see supplier and review config
+        // HOST/ADMIN can see suppliers and review config
         if ($this->isHost() || $this->isAdmin()) {
-            $response['supplierId'] = $project->supplier_id;
-            $response['supplier'] = $supplier ? [
-                'id' => $supplier->id,
-                'name' => $supplier->name,
-                'type' => $supplier->type,
-            ] : null;
+            $response['suppliers'] = array_map(function ($s) {
+                return [
+                    'id' => $s->id,
+                    'supplierId' => $s->supplier_id,
+                    'supplierName' => $s->supplier_name,
+                    'status' => $s->status,
+                    'currentStage' => (int) $s->current_stage,
+                    'submittedAt' => $s->submitted_at,
+                ];
+            }, $suppliers);
 
             $response['reviewConfig'] = array_map(function ($config) {
                 return [
@@ -191,7 +215,7 @@ class ProjectController extends BaseApiController
             'type' => 'required|in_list[SAQ,CONFLICT]',
             'templateId' => 'required',
             'templateVersion' => 'required',
-            'supplierId' => 'required',
+            'supplierIds' => 'required',
             'reviewConfig' => 'required',
         ];
 
@@ -214,11 +238,27 @@ class ProjectController extends BaseApiController
             return $this->notFoundResponse('找不到指定的範本版本');
         }
 
-        // Validate supplier
-        $supplierId = $this->request->getJsonVar('supplierId');
-        $supplier = $this->orgModel->find($supplierId);
-        if (!$supplier || $supplier->type !== 'SUPPLIER') {
-            return $this->notFoundResponse('找不到指定的供應商');
+        // Validate suppliers (multiple)
+        $supplierIds = $this->request->getJsonVar('supplierIds');
+        $supplierIds = json_decode(json_encode($supplierIds), true);
+
+        if (!is_array($supplierIds) || count($supplierIds) < 1) {
+            return $this->errorResponse(
+                'VALIDATION_ERROR',
+                '供應商選擇錯誤',
+                422,
+                ['supplierIds' => '必須選擇至少一個供應商']
+            );
+        }
+
+        // Validate each supplier exists and is of type SUPPLIER
+        $validSupplierIds = [];
+        foreach ($supplierIds as $supplierId) {
+            $supplier = $this->orgModel->find($supplierId);
+            if (!$supplier || $supplier->type !== 'SUPPLIER') {
+                return $this->notFoundResponse("找不到指定的供應商: {$supplierId}");
+            }
+            $validSupplierIds[] = $supplierId;
         }
 
         // Validate review config
@@ -255,9 +295,6 @@ class ProjectController extends BaseApiController
             'type' => $this->request->getJsonVar('type'),
             'template_id' => $templateId,
             'template_version' => $templateVersion,
-            'supplier_id' => $supplierId,
-            'status' => 'IN_PROGRESS',
-            'current_stage' => 0,
         ]);
 
         $projectId = $this->projectModel->getInsertID();
@@ -265,9 +302,13 @@ class ProjectController extends BaseApiController
         // Create review config
         $this->reviewConfigModel->createConfigForProject($projectId, $reviewConfig);
 
+        // Add suppliers to project
+        $this->projectSupplierModel->addSuppliersToProject($projectId, $validSupplierIds);
+
         // Fetch created project with relations
         $project = $this->projectModel->find($projectId);
         $reviewConfigData = $this->reviewConfigModel->getConfigForProject($projectId);
+        $suppliers = $this->projectSupplierModel->getSuppliersForProject($projectId);
 
         return $this->successResponse([
             'id' => $project->id,
@@ -276,9 +317,15 @@ class ProjectController extends BaseApiController
             'type' => $project->type,
             'templateId' => $project->template_id,
             'templateVersion' => $project->template_version,
-            'supplierId' => $project->supplier_id,
-            'status' => $project->status,
-            'currentStage' => $project->current_stage,
+            'suppliers' => array_map(function ($s) {
+                return [
+                    'id' => $s->id,
+                    'supplierId' => $s->supplier_id,
+                    'supplierName' => $s->supplier_name,
+                    'status' => $s->status,
+                    'currentStage' => (int) $s->current_stage,
+                ];
+            }, $suppliers),
             'reviewConfig' => array_map(function ($config) {
                 return [
                     'stageOrder' => (int) $config->stage_order,
@@ -309,11 +356,12 @@ class ProjectController extends BaseApiController
             return $this->notFoundResponse('找不到指定的專案');
         }
 
-        // Check if project can be updated
-        if (in_array($project->status, ['APPROVED'])) {
+        // Check if any supplier has already been approved
+        $stats = $this->projectSupplierModel->getStatsByProject($projectId);
+        if ($stats['byStatus']['APPROVED'] > 0) {
             return $this->conflictResponse(
-                'PROJECT_ALREADY_SUBMITTED',
-                '專案已核准，無法修改'
+                'PROJECT_HAS_APPROVED',
+                '專案已有供應商核准，無法修改'
             );
         }
 
@@ -327,19 +375,43 @@ class ProjectController extends BaseApiController
             $data['year'] = $this->request->getJsonVar('year');
         }
 
-        // Review config can only be updated before submission
+        // Review config can only be updated if no supplier has submitted
         $reviewConfig = $this->request->getJsonVar('reviewConfig');
         if ($reviewConfig) {
             $reviewConfig = json_decode(json_encode($reviewConfig), true);
+
+            // Check if any supplier has submitted
+            $hasSubmitted = $stats['byStatus']['SUBMITTED'] > 0 || 
+                           $stats['byStatus']['REVIEWING'] > 0 || 
+                           $stats['byStatus']['APPROVED'] > 0;
+
+            if ($hasSubmitted) {
+                return $this->conflictResponse(
+                    'PROJECT_ALREADY_SUBMITTED',
+                    '已有供應商提交，無法修改審核流程'
+                );
+            }
+
+            $this->reviewConfigModel->createConfigForProject($projectId, $reviewConfig);
         }
 
-        if ($reviewConfig && in_array($project->status, ['DRAFT', 'IN_PROGRESS', 'RETURNED'])) {
-            $this->reviewConfigModel->createConfigForProject($projectId, $reviewConfig);
-        } elseif ($reviewConfig) {
-            return $this->conflictResponse(
-                'PROJECT_ALREADY_SUBMITTED',
-                '專案已提交，無法修改審核流程'
-            );
+        // Handle adding/removing suppliers
+        $supplierIds = $this->request->getJsonVar('supplierIds');
+        if ($supplierIds) {
+            $supplierIds = json_decode(json_encode($supplierIds), true);
+            
+            // Get current suppliers
+            $currentSuppliers = $this->projectSupplierModel->getSuppliersForProject($projectId);
+            $currentSupplierIds = array_map(fn($s) => $s->supplier_id, $currentSuppliers);
+            
+            // Add new suppliers
+            $newSupplierIds = array_diff($supplierIds, $currentSupplierIds);
+            if (!empty($newSupplierIds)) {
+                $this->projectSupplierModel->addSuppliersToProject($projectId, $newSupplierIds);
+            }
+            
+            // Note: Removing suppliers is not implemented to prevent data loss
+            // Consider soft-delete if needed
         }
 
         if (!empty($data)) {
@@ -348,6 +420,7 @@ class ProjectController extends BaseApiController
 
         $updatedProject = $this->projectModel->find($projectId);
         $reviewConfigData = $this->reviewConfigModel->getConfigForProject($projectId);
+        $suppliers = $this->projectSupplierModel->getSuppliersForProject($projectId);
 
         return $this->successResponse([
             'id' => $updatedProject->id,
@@ -356,9 +429,15 @@ class ProjectController extends BaseApiController
             'type' => $updatedProject->type,
             'templateId' => $updatedProject->template_id,
             'templateVersion' => $updatedProject->template_version,
-            'supplierId' => $updatedProject->supplier_id,
-            'status' => $updatedProject->status,
-            'currentStage' => $updatedProject->current_stage,
+            'suppliers' => array_map(function ($s) {
+                return [
+                    'id' => $s->id,
+                    'supplierId' => $s->supplier_id,
+                    'supplierName' => $s->supplier_name,
+                    'status' => $s->status,
+                    'currentStage' => (int) $s->current_stage,
+                ];
+            }, $suppliers),
             'reviewConfig' => array_map(function ($config) {
                 return [
                     'stageOrder' => (int) $config->stage_order,
@@ -388,18 +467,29 @@ class ProjectController extends BaseApiController
             return $this->notFoundResponse('找不到指定的專案');
         }
 
-        // Only DRAFT projects can be deleted
-        if ($project->status !== 'DRAFT') {
+        // Check if any supplier has submitted
+        $stats = $this->projectSupplierModel->getStatsByProject($projectId);
+        $hasActivity = $stats['byStatus']['SUBMITTED'] > 0 || 
+                      $stats['byStatus']['REVIEWING'] > 0 || 
+                      $stats['byStatus']['APPROVED'] > 0;
+
+        if ($hasActivity) {
             return $this->conflictResponse(
                 'RESOURCE_CONFLICT',
-                '僅草稿狀態的專案可刪除'
+                '專案已有供應商提交，無法刪除'
             );
         }
 
         // Delete related data
         $this->reviewConfigModel->where('project_id', $projectId)->delete();
-        model('AnswerModel')->where('project_id', $projectId)->delete();
-        model('ReviewLogModel')->where('project_id', $projectId)->delete();
+        
+        // Delete project_suppliers and related answers/review_logs
+        $projectSuppliers = $this->projectSupplierModel->where('project_id', $projectId)->findAll();
+        foreach ($projectSuppliers as $ps) {
+            model('AnswerModel')->where('project_supplier_id', $ps->id)->delete();
+            model('ReviewLogModel')->where('project_supplier_id', $ps->id)->delete();
+        }
+        $this->projectSupplierModel->where('project_id', $projectId)->delete();
 
         $this->projectModel->delete($projectId);
 
@@ -419,7 +509,8 @@ class ProjectController extends BaseApiController
         $type = $this->request->getGet('type');
         $year = $this->request->getGet('year');
 
-        $stats = $this->projectModel->getStats($type, $year);
+        // Get project counts
+        $projectStats = $this->projectModel->getStats($type, $year);
 
         // Get by type
         $byType = [
@@ -445,11 +536,24 @@ class ProjectController extends BaseApiController
             $byYear[$y->year] = (int) $y->count;
         }
 
+        // Get supplier status counts across all projects
+        $supplierStats = $this->projectSupplierModel->builder()
+            ->select('status, COUNT(*) as count')
+            ->where('deleted_at IS NULL')
+            ->groupBy('status')
+            ->get()
+            ->getResult();
+
+        $bySupplierStatus = [];
+        foreach ($supplierStats as $s) {
+            $bySupplierStatus[$s->status] = (int) $s->count;
+        }
+
         return $this->successResponse([
-            'total' => $stats['total'],
-            'byStatus' => $stats['byStatus'],
+            'totalProjects' => $projectStats['total'],
             'byType' => $byType,
             'byYear' => $byYear,
+            'supplierStatus' => $bySupplierStatus,
         ]);
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Controllers\Api\V1;
 
 use App\Models\ProjectModel;
+use App\Models\ProjectSupplierModel;
 use App\Models\ReviewLogModel;
 use App\Models\ReviewStageConfigModel;
 use CodeIgniter\HTTP\ResponseInterface;
@@ -10,19 +11,21 @@ use CodeIgniter\HTTP\ResponseInterface;
 class ReviewController extends BaseApiController
 {
     protected ProjectModel $projectModel;
+    protected ProjectSupplierModel $projectSupplierModel;
     protected ReviewLogModel $reviewLogModel;
     protected ReviewStageConfigModel $reviewConfigModel;
 
     public function __construct()
     {
         $this->projectModel = new ProjectModel();
+        $this->projectSupplierModel = new ProjectSupplierModel();
         $this->reviewLogModel = new ReviewLogModel();
         $this->reviewConfigModel = new ReviewStageConfigModel();
     }
 
     /**
      * GET /api/v1/reviews/pending
-     * Get pending review projects for current user's department (HOST only)
+     * Get pending review project-suppliers for current user's department (HOST only)
      */
     public function pending(): ResponseInterface
     {
@@ -47,7 +50,7 @@ class ReviewController extends BaseApiController
             'order' => $this->request->getGet('order'),
         ];
 
-        $result = $this->projectModel->getPendingReviewsForDepartment(
+        $result = $this->projectSupplierModel->getPendingReviewsForDepartment(
             $departmentId,
             $filters,
             $pagination['page'],
@@ -55,22 +58,23 @@ class ReviewController extends BaseApiController
         );
 
         // Format response
-        $data = array_map(function ($project) {
+        $data = array_map(function ($ps) {
             return [
-                'id' => $project->id,
-                'name' => $project->name,
-                'year' => (int) $project->year,
-                'type' => $project->type,
-                'supplierId' => $project->supplier_id,
+                'id' => $ps->id, // project_supplier_id
+                'projectId' => $ps->project_id,
+                'name' => $ps->name,
+                'year' => (int) $ps->year,
+                'type' => $ps->type,
+                'supplierId' => $ps->supplier_id,
                 'supplier' => [
-                    'id' => $project->supplier_id,
-                    'name' => $project->supplier_name,
+                    'id' => $ps->supplier_id,
+                    'name' => $ps->supplier_name,
                 ],
-                'status' => $project->status,
-                'currentStage' => (int) $project->current_stage,
-                'totalStages' => (int) ($project->total_stages ?? 0),
-                'submittedAt' => $project->submitted_at,
-                'updatedAt' => $project->updated_at,
+                'status' => $ps->status,
+                'currentStage' => (int) $ps->current_stage,
+                'totalStages' => (int) ($ps->total_stages ?? 0),
+                'submittedAt' => $ps->submitted_at,
+                'updatedAt' => $ps->updated_at,
             ];
         }, $result['data']);
 
@@ -79,33 +83,39 @@ class ReviewController extends BaseApiController
     }
 
     /**
-     * POST /api/v1/projects/{projectId}/review
-     * Review project (approve or return)
+     * POST /api/v1/project-suppliers/{projectSupplierId}/review
+     * Review project-supplier (approve or return)
      */
-    public function review($projectId = null): ResponseInterface
+    public function review($projectSupplierId = null): ResponseInterface
     {
         if (!$this->isHost() && !$this->isAdmin()) {
             return $this->forbiddenResponse();
         }
 
-        $project = $this->projectModel->find($projectId);
-        if (!$project) {
-            return $this->notFoundResponse('找不到指定的專案');
+        $projectSupplier = $this->projectSupplierModel->find($projectSupplierId);
+        if (!$projectSupplier) {
+            return $this->notFoundResponse('找不到指定的專案供應商記錄');
         }
 
-        // Check project status
-        if ($project->status !== 'REVIEWING') {
+        // Check project supplier status
+        if ($projectSupplier->status !== 'REVIEWING') {
             return $this->conflictResponse(
                 'RESOURCE_CONFLICT',
                 '專案目前不在審核狀態'
             );
         }
 
+        // Get project for review config
+        $project = $this->projectModel->find($projectSupplier->project_id);
+        if (!$project) {
+            return $this->notFoundResponse('找不到關聯的專案');
+        }
+
         // Check if current user's department is responsible for current stage
         $departmentId = $this->getCurrentDepartmentId();
-        $currentStageConfig = $this->reviewConfigModel->getStage($projectId, $project->current_stage);
+        $currentStageConfig = $this->reviewConfigModel->getStage($project->id, $projectSupplier->current_stage);
 
-        if (!$currentStageConfig || $currentStageConfig->department_id !== $departmentId) {
+        if (!$currentStageConfig || $currentStageConfig->department_id != $departmentId) {
             return $this->errorResponse(
                 'AUTH_INSUFFICIENT_PERMISSION',
                 '您的部門不負責目前審核階段',
@@ -114,7 +124,7 @@ class ReviewController extends BaseApiController
         }
 
         // Check if specific approver is set
-        if ($currentStageConfig->approver_id && $currentStageConfig->approver_id !== $this->getCurrentUserId()) {
+        if ($currentStageConfig->approver_id && $currentStageConfig->approver_id != $this->getCurrentUserId()) {
             return $this->errorResponse(
                 'AUTH_INSUFFICIENT_PERMISSION',
                 '您不是此審核階段的指定審核者',
@@ -143,9 +153,9 @@ class ReviewController extends BaseApiController
 
         // Create review log
         $reviewLog = $this->reviewLogModel->createLog(
-            $projectId,
+            $projectSupplierId,
             $this->getCurrentUserId(),
-            $project->current_stage,
+            $projectSupplier->current_stage,
             $action,
             $comment
         );
@@ -153,21 +163,21 @@ class ReviewController extends BaseApiController
         // Get reviewer info
         $user = model('UserModel')->find($this->getCurrentUserId());
 
-        $previousStage = $project->current_stage;
-        $newStatus = $project->status;
-        $newStage = $project->current_stage;
+        $previousStage = $projectSupplier->current_stage;
+        $newStatus = $projectSupplier->status;
+        $newStage = $projectSupplier->current_stage;
         $message = '';
 
         if ($action === 'APPROVE') {
-            $totalStages = $this->reviewConfigModel->getTotalStages($projectId);
+            $totalStages = $this->reviewConfigModel->getTotalStages($project->id);
 
-            if ($project->current_stage >= $totalStages) {
+            if ($projectSupplier->current_stage >= $totalStages) {
                 // Final stage approved
                 $newStatus = 'APPROVED';
                 $message = '已核准，專案審核完成';
             } else {
                 // Move to next stage
-                $newStage = $project->current_stage + 1;
+                $newStage = $projectSupplier->current_stage + 1;
                 $message = "已核准，專案進入第 {$newStage} 階段審核";
             }
         } else {
@@ -177,14 +187,14 @@ class ReviewController extends BaseApiController
             $message = '已退回給供應商重新填寫';
         }
 
-        // Update project
-        $this->projectModel->update($projectId, [
+        // Update project supplier
+        $this->projectSupplierModel->update($projectSupplierId, [
             'status' => $newStatus,
             'current_stage' => $newStage,
         ]);
 
         return $this->successResponse([
-            'projectId' => $projectId,
+            'projectSupplierId' => (int) $projectSupplierId,
             'action' => $action,
             'previousStage' => $previousStage,
             'currentStage' => $newStage,
@@ -203,18 +213,21 @@ class ReviewController extends BaseApiController
     }
 
     /**
-     * GET /api/v1/projects/{projectId}/reviews
-     * Get review history for a project
+     * GET /api/v1/project-suppliers/{projectSupplierId}/reviews
+     * Get review history for a project-supplier
      */
-    public function history($projectId = null): ResponseInterface
+    public function history($projectSupplierId = null): ResponseInterface
     {
-        $project = $this->projectModel->find($projectId);
-        if (!$project) {
-            return $this->notFoundResponse('找不到指定的專案');
+        $projectSupplier = $this->projectSupplierModel->find($projectSupplierId);
+        if (!$projectSupplier) {
+            return $this->notFoundResponse('找不到指定的專案供應商記錄');
         }
 
+        // Get project info
+        $project = $this->projectModel->find($projectSupplier->project_id);
+
         // Supplier can only see their own project's reviews
-        if ($this->isSupplier() && $project->supplier_id !== $this->getCurrentOrganizationId()) {
+        if ($this->isSupplier() && $projectSupplier->supplier_id != $this->getCurrentOrganizationId()) {
             return $this->errorResponse(
                 'SUPPLIER_NOT_ASSIGNED',
                 '您無權存取此專案',
@@ -222,12 +235,13 @@ class ReviewController extends BaseApiController
             );
         }
 
-        $reviews = $this->reviewLogModel->getHistoryForProject($projectId);
+        $reviews = $this->reviewLogModel->getHistoryForProjectSupplier($projectSupplierId);
 
         return $this->successResponse([
-            'projectId' => $projectId,
-            'projectName' => $project->name,
-            'currentStatus' => $project->status,
+            'projectSupplierId' => (int) $projectSupplierId,
+            'projectId' => $projectSupplier->project_id,
+            'projectName' => $project?->name,
+            'currentStatus' => $projectSupplier->status,
             'reviews' => array_map(function ($review) {
                 return [
                     'id' => $review->id,
@@ -269,11 +283,13 @@ class ReviewController extends BaseApiController
         $startDate = $this->request->getGet('startDate');
         $endDate = $this->request->getGet('endDate');
 
-        // Get pending count
-        $pendingCount = $this->projectModel->builder()
-            ->join('review_stage_configs', 'review_stage_configs.project_id = projects.id AND review_stage_configs.stage_order = projects.current_stage')
-            ->where('projects.status', 'REVIEWING')
+        // Get pending count using project_suppliers
+        $pendingCount = $this->projectSupplierModel->builder()
+            ->join('projects', 'projects.id = project_suppliers.project_id')
+            ->join('review_stage_configs', 'review_stage_configs.project_id = projects.id AND review_stage_configs.stage_order = project_suppliers.current_stage')
+            ->where('project_suppliers.status', 'REVIEWING')
             ->where('review_stage_configs.department_id', $departmentId)
+            ->where('project_suppliers.deleted_at IS NULL')
             ->where('projects.deleted_at IS NULL')
             ->countAllResults();
 
@@ -296,11 +312,13 @@ class ReviewController extends BaseApiController
         $byType = [];
         foreach (['SAQ', 'CONFLICT'] as $projectType) {
             $typeStats = $this->reviewLogModel->getStatsForDepartment($departmentId, $projectType, $monthStart, null);
-            $typePending = $this->projectModel->builder()
-                ->join('review_stage_configs', 'review_stage_configs.project_id = projects.id AND review_stage_configs.stage_order = projects.current_stage')
-                ->where('projects.status', 'REVIEWING')
+            $typePending = $this->projectSupplierModel->builder()
+                ->join('projects', 'projects.id = project_suppliers.project_id')
+                ->join('review_stage_configs', 'review_stage_configs.project_id = projects.id AND review_stage_configs.stage_order = project_suppliers.current_stage')
+                ->where('project_suppliers.status', 'REVIEWING')
                 ->where('projects.type', $projectType)
                 ->where('review_stage_configs.department_id', $departmentId)
+                ->where('project_suppliers.deleted_at IS NULL')
                 ->where('projects.deleted_at IS NULL')
                 ->countAllResults();
 

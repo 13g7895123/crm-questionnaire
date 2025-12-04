@@ -60,13 +60,16 @@ $routes->group('api/v1', ['namespace' => 'App\Controllers\Api\V1'], function ($r
         $routes->post('/', 'ProjectController::create');
         $routes->put('(:segment)', 'ProjectController::update/$1');
         $routes->delete('(:segment)', 'ProjectController::delete/$1');
-        
-        // Project answers
+    });
+
+    // Project-Supplier routes (for supplier-specific operations)
+    $routes->group('project-suppliers', ['filter' => 'jwt'], function ($routes) {
+        // Answers
         $routes->get('(:segment)/answers', 'AnswerController::index/$1');
         $routes->put('(:segment)/answers', 'AnswerController::update/$1');
         $routes->post('(:segment)/submit', 'AnswerController::submit/$1');
         
-        // Project reviews
+        // Reviews
         $routes->post('(:segment)/review', 'ReviewController::review/$1');
         $routes->get('(:segment)/reviews', 'ReviewController::history/$1');
     });

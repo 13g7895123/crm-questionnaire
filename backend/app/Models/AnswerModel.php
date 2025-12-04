@@ -13,7 +13,7 @@ class AnswerModel extends Model
     protected $returnType = Answer::class;
     protected $useSoftDeletes = false;
     protected $allowedFields = [
-        'project_id',
+        'project_supplier_id',
         'question_id',
         'value',
     ];
@@ -23,11 +23,11 @@ class AnswerModel extends Model
     protected $updatedField = 'updated_at';
 
     /**
-     * Get answers for a project
+     * Get answers for a project supplier
      */
-    public function getAnswersForProject(int $projectId): array
+    public function getAnswersForProjectSupplier(int $projectSupplierId): array
     {
-        $answers = $this->where('project_id', $projectId)->findAll();
+        $answers = $this->where('project_supplier_id', $projectSupplierId)->findAll();
         
         $result = [];
         foreach ($answers as $answer) {
@@ -41,13 +41,13 @@ class AnswerModel extends Model
     }
 
     /**
-     * Save or update answers for a project
+     * Save or update answers for a project supplier
      */
-    public function saveAnswers(int $projectId, array $answers): int
+    public function saveAnswers(int $projectSupplierId, array $answers): int
     {
         $count = 0;
         foreach ($answers as $questionId => $answerData) {
-            $existing = $this->where('project_id', $projectId)
+            $existing = $this->where('project_supplier_id', $projectSupplierId)
                             ->where('question_id', $questionId)
                             ->first();
 
@@ -59,7 +59,7 @@ class AnswerModel extends Model
                 $this->update($existing->id, ['value' => $value]);
             } else {
                 $this->insert([
-                    'project_id' => $projectId,
+                    'project_supplier_id' => $projectSupplierId,
                     'question_id' => $questionId,
                     'value' => $value,
                 ]);
@@ -71,14 +71,22 @@ class AnswerModel extends Model
     }
 
     /**
-     * Get last saved timestamp for project
+     * Get last saved timestamp for project supplier
      */
-    public function getLastSavedAt(int $projectId): ?string
+    public function getLastSavedAt(int $projectSupplierId): ?string
     {
-        $answer = $this->where('project_id', $projectId)
+        $answer = $this->where('project_supplier_id', $projectSupplierId)
                        ->orderBy('updated_at', 'DESC')
                        ->first();
 
         return $answer?->updated_at?->toIso8601String();
+    }
+
+    /**
+     * @deprecated Use getAnswersForProjectSupplier instead
+     */
+    public function getAnswersForProject(int $projectId): array
+    {
+        return $this->getAnswersForProjectSupplier($projectId);
     }
 }

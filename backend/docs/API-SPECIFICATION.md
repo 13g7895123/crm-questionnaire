@@ -1,8 +1,14 @@
 # CRM 問卷系統後端 API 規格文件
 
-**版本**: 1.0.0  
-**最後更新**: 2025-12-02  
+**版本**: 2.0.0  
+**最後更新**: 2025-12-04  
 **文件編號**: API-DOC-001
+
+> **v2.0.0 變更說明**：
+> - 專案與供應商關係由 1:1 改為 1:N
+> - 新增 `project_suppliers` 表管理專案-供應商關係
+> - 答案與審核紀錄改為關聯 `project_supplier_id`
+> - 新增 `/api/v1/project-suppliers/` 路徑處理供應商特定操作
 
 ---
 
@@ -588,13 +594,13 @@ Authorization: Bearer <accessToken>
 | 參數 | 類型 | 說明 |
 |------|------|------|
 | type | string | 專案類型 (SAQ, CONFLICT) |
-| status | string | 專案狀態 |
+| status | string | 專案狀態 (僅供應商使用) |
 | year | integer | 年份 |
 | search | string | 搜尋專案名稱 |
 | sortBy | string | 排序欄位 |
 | order | string | 排序方向 (asc, desc) |
 
-**專案狀態：**
+**專案狀態（供應商層級）：**
 - `DRAFT` - 草稿
 - `IN_PROGRESS` - 進行中
 - `SUBMITTED` - 已提交
@@ -602,11 +608,107 @@ Authorization: Bearer <accessToken>
 - `APPROVED` - 已核准
 - `RETURNED` - 已退回
 
+**Response (HOST)：**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "2025 SAQ 供應商評估",
+      "year": 2025,
+      "type": "SAQ",
+      "templateId": 1,
+      "templateVersion": "1.2.0",
+      "supplierCount": 5,
+      "approvedCount": 2,
+      "reviewConfig": [...],
+      "createdAt": "2025-12-02T06:08:38.435Z",
+      "updatedAt": "2025-12-02T06:08:38.435Z"
+    }
+  ]
+}
+```
+
+**Response (SUPPLIER)：**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "projectId": 1,
+      "name": "2025 SAQ 供應商評估",
+      "year": 2025,
+      "type": "SAQ",
+      "templateId": 1,
+      "templateVersion": "1.2.0",
+      "status": "IN_PROGRESS",
+      "currentStage": 0,
+      "submittedAt": null,
+      "createdAt": "2025-12-02T06:08:38.435Z",
+      "updatedAt": "2025-12-02T06:08:38.435Z"
+    }
+  ]
+}
+```
+
 ### 6.2 取得專案詳情
 
 ```
 GET /api/v1/projects/{projectId}
 Authorization: Bearer <accessToken>
+```
+
+**Response (HOST)：**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "name": "2025 SAQ 供應商評估",
+    "year": 2025,
+    "type": "SAQ",
+    "templateId": 1,
+    "templateVersion": "1.2.0",
+    "template": {
+      "id": 1,
+      "name": "SAQ 標準範本",
+      "type": "SAQ",
+      "latestVersion": "1.2.0"
+    },
+    "suppliers": [
+      {
+        "id": 1,
+        "supplierId": 2,
+        "supplierName": "供應商 A 公司",
+        "status": "IN_PROGRESS",
+        "currentStage": 0,
+        "submittedAt": null
+      },
+      {
+        "id": 2,
+        "supplierId": 3,
+        "supplierName": "供應商 B 公司",
+        "status": "APPROVED",
+        "currentStage": 2,
+        "submittedAt": "2025-11-01T10:00:00.000Z"
+      }
+    ],
+    "reviewConfig": [
+      {
+        "stageOrder": 1,
+        "departmentId": 1,
+        "department": {
+          "id": 1,
+          "name": "品質管理部"
+        }
+      }
+    ],
+    "createdAt": "2025-12-02T06:08:38.435Z",
+    "updatedAt": "2025-12-02T06:08:38.435Z"
+  }
+}
 ```
 
 ### 6.3 建立專案 (HOST)
@@ -622,19 +724,53 @@ Authorization: Bearer <accessToken>
   "name": "2025 SAQ 供應商評估",
   "year": 2025,
   "type": "SAQ",
-  "templateId": "tmpl_def456",
+  "templateId": 1,
   "templateVersion": "1.2.0",
-  "supplierId": "org_supplier789",
+  "supplierIds": [2, 3, 4],
   "reviewConfig": [
     {
       "stageOrder": 1,
-      "departmentId": "dept_qm123"
+      "departmentId": 1
     },
     {
       "stageOrder": 2,
-      "departmentId": "dept_proc456"
+      "departmentId": 2
     }
   ]
+}
+```
+
+**Response (201)：**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "name": "2025 SAQ 供應商評估",
+    "year": 2025,
+    "type": "SAQ",
+    "templateId": 1,
+    "templateVersion": "1.2.0",
+    "suppliers": [
+      {
+        "id": 1,
+        "supplierId": 2,
+        "supplierName": "供應商 A 公司",
+        "status": "IN_PROGRESS",
+        "currentStage": 0
+      },
+      {
+        "id": 2,
+        "supplierId": 3,
+        "supplierName": "供應商 B 公司",
+        "status": "IN_PROGRESS",
+        "currentStage": 0
+      }
+    ],
+    "reviewConfig": [...],
+    "createdAt": "2025-12-02T06:08:38.435Z",
+    "updatedAt": "2025-12-02T06:08:38.435Z"
+  }
 }
 ```
 
@@ -656,6 +792,82 @@ Authorization: Bearer <accessToken>
 
 ```
 GET /api/v1/projects/stats
+Authorization: Bearer <accessToken>
+```
+
+---
+
+## 6.5 專案供應商 API (Project-Suppliers)
+
+### 6.5.1 取得答案
+
+```
+GET /api/v1/project-suppliers/{projectSupplierId}/answers
+Authorization: Bearer <accessToken>
+```
+
+**Response：**
+```json
+{
+  "success": true,
+  "data": {
+    "projectSupplierId": 1,
+    "answers": {
+      "q_001": {
+        "questionId": "q_001",
+        "value": true
+      }
+    },
+    "lastSavedAt": "2025-12-01T15:30:00.000Z"
+  }
+}
+```
+
+### 6.5.2 暫存答案 (SUPPLIER)
+
+```
+PUT /api/v1/project-suppliers/{projectSupplierId}/answers
+Authorization: Bearer <accessToken>
+```
+
+**Request Body：**
+```json
+{
+  "answers": {
+    "q_001": {
+      "questionId": "q_001",
+      "value": true
+    }
+  }
+}
+```
+
+### 6.5.3 提交專案 (SUPPLIER)
+
+```
+POST /api/v1/project-suppliers/{projectSupplierId}/submit
+Authorization: Bearer <accessToken>
+```
+
+### 6.5.4 審核專案 (HOST)
+
+```
+POST /api/v1/project-suppliers/{projectSupplierId}/review
+Authorization: Bearer <accessToken>
+```
+
+**Request Body：**
+```json
+{
+  "action": "APPROVE",
+  "comment": "資料完整，核准通過。"
+}
+```
+
+### 6.5.5 取得審核歷程
+
+```
+GET /api/v1/project-suppliers/{projectSupplierId}/reviews
 Authorization: Bearer <accessToken>
 ```
 
@@ -763,78 +975,9 @@ Authorization: Bearer <accessToken>
 
 ## 8. 問卷填寫 API
 
-### 8.1 取得專案答案
-
-```
-GET /api/v1/projects/{projectId}/answers
-Authorization: Bearer <accessToken>
-```
-
-**Response：**
-```json
-{
-  "success": true,
-  "data": {
-    "projectId": "proj_abc123",
-    "answers": {
-      "q_001": {
-        "questionId": "q_001",
-        "value": true
-      },
-      "q_002": {
-        "questionId": "q_002",
-        "value": "電子製造"
-      }
-    },
-    "lastSavedAt": "2025-12-01T15:30:00.000Z"
-  }
-}
-```
-
-### 8.2 暫存答案 (SUPPLIER)
-
-```
-PUT /api/v1/projects/{projectId}/answers
-Authorization: Bearer <accessToken>
-```
-
-**Request Body：**
-```json
-{
-  "answers": {
-    "q_001": {
-      "questionId": "q_001",
-      "value": true
-    },
-    "q_002": {
-      "questionId": "q_002",
-      "value": "電子製造"
-    }
-  }
-}
-```
-
-### 8.3 提交專案 (SUPPLIER)
-
-```
-POST /api/v1/projects/{projectId}/submit
-Authorization: Bearer <accessToken>
-```
-
-### 8.4 上傳檔案
-
-```
-POST /api/v1/files/upload
-Authorization: Bearer <accessToken>
-Content-Type: multipart/form-data
-```
-
-**Form Data：**
-| 欄位 | 類型 | 說明 |
-|------|------|------|
-| file | file | 檔案 |
-| projectId | string | 專案 ID |
-| questionId | string | 題目 ID |
+> **注意：問卷填寫 API 已移至 `/api/v1/project-suppliers/` 路徑下**
+> 
+> 請參考 [6.5 專案供應商 API](#65-專案供應商-api-project-suppliers)
 
 ---
 
@@ -847,35 +990,42 @@ GET /api/v1/reviews/pending
 Authorization: Bearer <accessToken>
 ```
 
+**Response：**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "projectId": 1,
+      "name": "2025 SAQ 供應商評估",
+      "year": 2025,
+      "type": "SAQ",
+      "supplierId": 2,
+      "supplier": {
+        "id": 2,
+        "name": "供應商 A 公司"
+      },
+      "status": "REVIEWING",
+      "currentStage": 1,
+      "totalStages": 2,
+      "submittedAt": "2025-11-01T10:00:00.000Z"
+    }
+  ]
+}
+```
+
 ### 9.2 審核專案 (HOST)
 
-```
-POST /api/v1/projects/{projectId}/review
-Authorization: Bearer <accessToken>
-```
-
-**Request Body (核准)：**
-```json
-{
-  "action": "APPROVE",
-  "comment": "資料完整，核准通過。"
-}
-```
-
-**Request Body (退回)：**
-```json
-{
-  "action": "RETURN",
-  "comment": "請補充 ISO 9001 認證文件。"
-}
-```
+> **注意：審核 API 已移至 `/api/v1/project-suppliers/{projectSupplierId}/review`**
+> 
+> 請參考 [6.5.4 審核專案](#654-審核專案-host)
 
 ### 9.3 取得審核歷程
 
-```
-GET /api/v1/projects/{projectId}/reviews
-Authorization: Bearer <accessToken>
-```
+> **注意：審核歷程 API 已移至 `/api/v1/project-suppliers/{projectSupplierId}/reviews`**
+> 
+> 請參考 [6.5.5 取得審核歷程](#655-取得審核歷程)
 
 ### 9.4 取得審核統計 (HOST)
 

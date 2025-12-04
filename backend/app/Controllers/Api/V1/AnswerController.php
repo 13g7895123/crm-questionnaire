@@ -3,6 +3,7 @@
 namespace App\Controllers\Api\V1;
 
 use App\Models\ProjectModel;
+use App\Models\ProjectSupplierModel;
 use App\Models\AnswerModel;
 use App\Models\TemplateVersionModel;
 use CodeIgniter\HTTP\ResponseInterface;
@@ -10,28 +11,30 @@ use CodeIgniter\HTTP\ResponseInterface;
 class AnswerController extends BaseApiController
 {
     protected ProjectModel $projectModel;
+    protected ProjectSupplierModel $projectSupplierModel;
     protected AnswerModel $answerModel;
 
     public function __construct()
     {
         $this->projectModel = new ProjectModel();
+        $this->projectSupplierModel = new ProjectSupplierModel();
         $this->answerModel = new AnswerModel();
     }
 
     /**
-     * GET /api/v1/projects/{projectId}/answers
-     * Get project answers
+     * GET /api/v1/project-suppliers/{projectSupplierId}/answers
+     * Get answers for a specific project-supplier
      */
-    public function index($projectId = null): ResponseInterface
+    public function index($projectSupplierId = null): ResponseInterface
     {
-        $project = $this->projectModel->find($projectId);
+        $projectSupplier = $this->projectSupplierModel->find($projectSupplierId);
 
-        if (!$project) {
-            return $this->notFoundResponse('找不到指定的專案');
+        if (!$projectSupplier) {
+            return $this->notFoundResponse('找不到指定的專案供應商記錄');
         }
 
         // Check access permission
-        if ($this->isSupplier() && $project->supplier_id !== $this->getCurrentOrganizationId()) {
+        if ($this->isSupplier() && $projectSupplier->supplier_id != $this->getCurrentOrganizationId()) {
             return $this->errorResponse(
                 'SUPPLIER_NOT_ASSIGNED',
                 '您無權存取此專案',
@@ -39,30 +42,30 @@ class AnswerController extends BaseApiController
             );
         }
 
-        $answers = $this->answerModel->getAnswersForProject($projectId);
-        $lastSavedAt = $this->answerModel->getLastSavedAt($projectId);
+        $answers = $this->answerModel->getAnswersForProjectSupplier($projectSupplierId);
+        $lastSavedAt = $this->answerModel->getLastSavedAt($projectSupplierId);
 
         return $this->successResponse([
-            'projectId' => $projectId,
+            'projectSupplierId' => (int) $projectSupplierId,
             'answers' => $answers,
             'lastSavedAt' => $lastSavedAt,
         ]);
     }
 
     /**
-     * PUT /api/v1/projects/{projectId}/answers
+     * PUT /api/v1/project-suppliers/{projectSupplierId}/answers
      * Save/update answers (draft save)
      */
-    public function update($projectId = null): ResponseInterface
+    public function update($projectSupplierId = null): ResponseInterface
     {
-        $project = $this->projectModel->find($projectId);
+        $projectSupplier = $this->projectSupplierModel->find($projectSupplierId);
 
-        if (!$project) {
-            return $this->notFoundResponse('找不到指定的專案');
+        if (!$projectSupplier) {
+            return $this->notFoundResponse('找不到指定的專案供應商記錄');
         }
 
         // Only assigned supplier can edit
-        if ($this->isSupplier() && $project->supplier_id !== $this->getCurrentOrganizationId()) {
+        if ($this->isSupplier() && $projectSupplier->supplier_id != $this->getCurrentOrganizationId()) {
             return $this->errorResponse(
                 'SUPPLIER_NOT_ASSIGNED',
                 '您無權編輯此專案',
@@ -70,8 +73,8 @@ class AnswerController extends BaseApiController
             );
         }
 
-        // Check project status
-        if (!in_array($project->status, ['IN_PROGRESS', 'RETURNED'])) {
+        // Check project supplier status
+        if (!in_array($projectSupplier->status, ['IN_PROGRESS', 'RETURNED'])) {
             return $this->conflictResponse(
                 'PROJECT_ALREADY_SUBMITTED',
                 '專案已提交，無法修改答案'
@@ -89,29 +92,29 @@ class AnswerController extends BaseApiController
             return $this->validationErrorResponse($validationErrors);
         }
 
-        $savedCount = $this->answerModel->saveAnswers($projectId, $answers);
+        $savedCount = $this->answerModel->saveAnswers($projectSupplierId, $answers);
 
         return $this->successResponse([
-            'projectId' => $projectId,
+            'projectSupplierId' => (int) $projectSupplierId,
             'savedCount' => $savedCount,
             'lastSavedAt' => date('c'),
         ]);
     }
 
     /**
-     * POST /api/v1/projects/{projectId}/submit
+     * POST /api/v1/project-suppliers/{projectSupplierId}/submit
      * Submit project for review
      */
-    public function submit($projectId = null): ResponseInterface
+    public function submit($projectSupplierId = null): ResponseInterface
     {
-        $project = $this->projectModel->find($projectId);
+        $projectSupplier = $this->projectSupplierModel->find($projectSupplierId);
 
-        if (!$project) {
-            return $this->notFoundResponse('找不到指定的專案');
+        if (!$projectSupplier) {
+            return $this->notFoundResponse('找不到指定的專案供應商記錄');
         }
 
         // Only assigned supplier can submit
-        if ($this->isSupplier() && $project->supplier_id !== $this->getCurrentOrganizationId()) {
+        if ($this->isSupplier() && $projectSupplier->supplier_id != $this->getCurrentOrganizationId()) {
             return $this->errorResponse(
                 'SUPPLIER_NOT_ASSIGNED',
                 '您無權提交此專案',
@@ -119,12 +122,18 @@ class AnswerController extends BaseApiController
             );
         }
 
-        // Check project status
-        if (!in_array($project->status, ['IN_PROGRESS', 'RETURNED'])) {
+        // Check project supplier status
+        if (!in_array($projectSupplier->status, ['IN_PROGRESS', 'RETURNED'])) {
             return $this->conflictResponse(
                 'PROJECT_ALREADY_SUBMITTED',
                 '專案已提交，無法重複提交'
             );
+        }
+
+        // Get project to validate template
+        $project = $this->projectModel->find($projectSupplier->project_id);
+        if (!$project) {
+            return $this->notFoundResponse('找不到關聯的專案');
         }
 
         // Validate all required questions are answered
@@ -140,7 +149,7 @@ class AnswerController extends BaseApiController
         }
 
         $questions = $version->questions;
-        $answers = $this->answerModel->getAnswersForProject($projectId);
+        $answers = $this->answerModel->getAnswersForProjectSupplier($projectSupplierId);
 
         $missingQuestions = [];
         foreach ($questions as $question) {
@@ -164,22 +173,19 @@ class AnswerController extends BaseApiController
             );
         }
 
-        // Update project status
-        $this->projectModel->update($projectId, [
-            'status' => 'SUBMITTED',
+        // Update project supplier status
+        $this->projectSupplierModel->update($projectSupplierId, [
+            'status' => 'REVIEWING',
             'current_stage' => 1,
             'submitted_at' => date('Y-m-d H:i:s'),
         ]);
 
-        // Auto transition to REVIEWING
-        $this->projectModel->update($projectId, ['status' => 'REVIEWING']);
-
-        $updatedProject = $this->projectModel->find($projectId);
+        $updatedProjectSupplier = $this->projectSupplierModel->find($projectSupplierId);
 
         return $this->successResponse([
-            'projectId' => $projectId,
-            'status' => $updatedProject->status,
-            'submittedAt' => $updatedProject->submitted_at?->format("c"),
+            'projectSupplierId' => (int) $projectSupplierId,
+            'status' => $updatedProjectSupplier->status,
+            'submittedAt' => $updatedProjectSupplier->submitted_at,
             'message' => '專案已成功提交，將進入審核流程',
         ]);
     }
