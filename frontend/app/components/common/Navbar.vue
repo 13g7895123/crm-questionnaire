@@ -33,17 +33,19 @@
           </button>
 
           <!-- User Profile -->
-          <div class="flex items-center gap-2 cursor-pointer">
-            <UAvatar
-              :alt="user?.username || 'User'"
-              size="sm"
-              class="bg-gray-200 text-gray-600"
-            />
-            <div class="flex items-center gap-1 text-sm font-medium text-gray-700">
-              {{ user?.username || 'User' }}
-              <UIcon name="i-heroicons-chevron-down" class="w-4 h-4" />
+          <UDropdown :items="items" :popper="{ placement: 'bottom-end' }">
+            <div class="flex items-center gap-2 cursor-pointer">
+              <UAvatar
+                :alt="user?.username || 'User'"
+                size="sm"
+                class="bg-gray-200 text-gray-600"
+              />
+              <div class="flex items-center gap-1 text-sm font-medium text-gray-700">
+                {{ user?.username || 'User' }}
+                <UIcon name="i-heroicons-chevron-down" class="w-4 h-4" />
+              </div>
             </div>
-          </div>
+          </UDropdown>
         </div>
       </div>
     </div>
@@ -54,10 +56,12 @@
 import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useAuthStore } from '~/stores/auth'
+import { useAuth } from '~/composables/useAuth'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
 const authStore = useAuthStore()
+const { logout } = useAuth()
 const router = useRouter()
 const route = useRoute()
 const { t } = useI18n()
@@ -82,8 +86,16 @@ const currentApp = computed(() => {
   }
 })
 
-const handleLogout = () => {
-  authStore.logout()
+const handleLogout = async () => {
+  await logout()
   router.push('/login')
 }
+
+const items = computed(() => [
+  [{
+    label: t('auth.logout'),
+    icon: 'i-heroicons-arrow-left-on-rectangle',
+    click: handleLogout
+  }]
+])
 </script>
