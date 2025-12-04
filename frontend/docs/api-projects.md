@@ -43,39 +43,25 @@ Authorization: Bearer <accessToken>
   "success": true,
   "data": [
     {
-      "id": "proj_abc123",
+      "id": 1,
       "name": "2025 SAQ 供應商評估",
       "year": 2025,
       "type": "SAQ",
-      "templateId": "tmpl_def456",
+      "templateId": 1,
       "templateVersion": "1.2.0",
-      "supplierId": "org_supplier789",
-      "supplier": {
-        "id": "org_supplier789",
-        "name": "供應商 A 公司",
-        "type": "SUPPLIER"
-      },
-      "status": "IN_PROGRESS",
-      "currentStage": 0,
+      "supplierCount": 5,
+      "approvedCount": 2,
       "reviewConfig": [
         {
           "stageOrder": 1,
-          "departmentId": "dept_qm123",
+          "departmentId": 1,
           "department": {
-            "id": "dept_qm123",
+            "id": 1,
             "name": "品質管理部"
-          }
-        },
-        {
-          "stageOrder": 2,
-          "departmentId": "dept_proc456",
-          "department": {
-            "id": "dept_proc456",
-            "name": "採購部"
           }
         }
       ],
-      "createdAt": "2025-01-15T00:00:00.000Z",
+      "createdAt": "2025-12-02T06:08:38.435Z",
       "updatedAt": "2025-12-02T06:08:38.435Z"
     }
   ],
@@ -94,15 +80,17 @@ Authorization: Bearer <accessToken>
   "success": true,
   "data": [
     {
-      "id": "proj_abc123",
+      "id": 101,
+      "projectId": 1,
       "name": "2025 SAQ 供應商評估",
       "year": 2025,
       "type": "SAQ",
-      "templateId": "tmpl_def456",
+      "templateId": 1,
       "templateVersion": "1.2.0",
       "status": "IN_PROGRESS",
       "currentStage": 0,
-      "createdAt": "2025-01-15T00:00:00.000Z",
+      "submittedAt": null,
+      "createdAt": "2025-12-02T06:08:38.435Z",
       "updatedAt": "2025-12-02T06:08:38.435Z"
     }
   ],
@@ -116,8 +104,8 @@ Authorization: Bearer <accessToken>
 ```
 
 **注意事項:**
-- SUPPLIER 看不到 `reviewConfig` 與 `supplier` 資訊
-- HOST 可以看到所有專案的完整資訊
+- HOST 回應包含 `supplierCount` 與 `approvedCount`
+- SUPPLIER 回應的 `id` 為 `project_supplier_id`，`projectId` 為原始專案 ID
 
 ---
 
@@ -145,46 +133,47 @@ Authorization: Bearer <accessToken>
 {
   "success": true,
   "data": {
-    "id": "proj_abc123",
+    "id": 1,
     "name": "2025 SAQ 供應商評估",
     "year": 2025,
     "type": "SAQ",
-    "templateId": "tmpl_def456",
+    "templateId": 1,
     "templateVersion": "1.2.0",
     "template": {
-      "id": "tmpl_def456",
+      "id": 1,
       "name": "SAQ 標準範本",
       "type": "SAQ",
       "latestVersion": "1.2.0"
     },
-    "supplierId": "org_supplier789",
-    "supplier": {
-      "id": "org_supplier789",
-      "name": "供應商 A 公司",
-      "type": "SUPPLIER"
-    },
-    "status": "REVIEWING",
-    "currentStage": 1,
+    "suppliers": [
+      {
+        "id": 101,
+        "supplierId": 2,
+        "supplierName": "供應商 A 公司",
+        "status": "IN_PROGRESS",
+        "currentStage": 0,
+        "submittedAt": null
+      },
+      {
+        "id": 102,
+        "supplierId": 3,
+        "supplierName": "供應商 B 公司",
+        "status": "APPROVED",
+        "currentStage": 2,
+        "submittedAt": "2025-11-01T10:00:00.000Z"
+      }
+    ],
     "reviewConfig": [
       {
         "stageOrder": 1,
-        "departmentId": "dept_qm123",
+        "departmentId": 1,
         "department": {
-          "id": "dept_qm123",
+          "id": 1,
           "name": "品質管理部"
-        }
-      },
-      {
-        "stageOrder": 2,
-        "departmentId": "dept_proc456",
-        "department": {
-          "id": "dept_proc456",
-          "name": "採購部"
         }
       }
     ],
-    "submittedAt": "2025-11-01T10:00:00.000Z",
-    "createdAt": "2025-01-15T00:00:00.000Z",
+    "createdAt": "2025-12-02T06:08:38.435Z",
     "updatedAt": "2025-12-02T06:08:38.435Z"
   }
 }
@@ -194,8 +183,9 @@ Authorization: Bearer <accessToken>
 
 | 欄位 | 類型 | 說明 |
 |------|------|------|
-| submittedAt | string | 供應商提交時間 (僅在已提交後顯示) |
-| currentStage | integer | 目前審核階段 (0: 未審核, 1+: 審核階段編號) |
+| suppliers | array | 關聯的供應商列表 |
+| suppliers[].id | integer | ProjectSupplier ID |
+| suppliers[].status | string | 該供應商的填寫/審核狀態 |
 
 ### Error Responses
 
@@ -287,70 +277,33 @@ Authorization: Bearer <accessToken>
 ```json
 {
   "success": true,
-  "data": [
-    {
-      "id": "proj_new789",
-      "name": "2025 SAQ 供應商評估",
-      "year": 2025,
-      "type": "SAQ",
-      "templateId": "tmpl_def456",
-      "templateVersion": "1.2.0",
-      "supplierId": "org_supplier789",
-      "status": "IN_PROGRESS",
-      "currentStage": 0,
-      "reviewConfig": [
-        {
-          "stageOrder": 1,
-          "departmentId": "dept_qm123",
-          "department": {
-            "id": "dept_qm123",
-            "name": "品質管理部"
-          }
-        },
-        {
-          "stageOrder": 2,
-          "departmentId": "dept_proc456",
-          "department": {
-            "id": "dept_proc456",
-            "name": "採購部"
-          }
-        }
-      ],
-      "createdAt": "2025-12-02T06:08:38.435Z",
-      "updatedAt": "2025-12-02T06:08:38.435Z"
-    },
-    {
-      "id": "proj_new790",
-      "name": "2025 SAQ 供應商評估",
-      "year": 2025,
-      "type": "SAQ",
-      "templateId": "tmpl_def456",
-      "templateVersion": "1.2.0",
-      "supplierId": "org_supplier790",
-      "status": "IN_PROGRESS",
-      "currentStage": 0,
-      "reviewConfig": [
-        {
-          "stageOrder": 1,
-          "departmentId": "dept_qm123",
-          "department": {
-            "id": "dept_qm123",
-            "name": "品質管理部"
-          }
-        },
-        {
-          "stageOrder": 2,
-          "departmentId": "dept_proc456",
-          "department": {
-            "id": "dept_proc456",
-            "name": "採購部"
-          }
-        }
-      ],
-      "createdAt": "2025-12-02T06:08:38.435Z",
-      "updatedAt": "2025-12-02T06:08:38.435Z"
-    }
-  ]
+  "data": {
+    "id": 1,
+    "name": "2025 SAQ 供應商評估",
+    "year": 2025,
+    "type": "SAQ",
+    "templateId": 1,
+    "templateVersion": "1.2.0",
+    "suppliers": [
+      {
+        "id": 101,
+        "supplierId": 2,
+        "supplierName": "供應商 A 公司",
+        "status": "IN_PROGRESS",
+        "currentStage": 0
+      },
+      {
+        "id": 102,
+        "supplierId": 3,
+        "supplierName": "供應商 B 公司",
+        "status": "IN_PROGRESS",
+        "currentStage": 0
+      }
+    ],
+    "reviewConfig": [...],
+    "createdAt": "2025-12-02T06:08:38.435Z",
+    "updatedAt": "2025-12-02T06:08:38.435Z"
+  }
 }
 ```
 
@@ -421,18 +374,11 @@ Authorization: Bearer <accessToken>
 {
   "name": "2025 SAQ 供應商評估 (更新)",
   "year": 2025,
+  "supplierIds": [2, 3, 5],
   "reviewConfig": [
     {
       "stageOrder": 1,
-      "departmentId": "dept_qm123"
-    },
-    {
-      "stageOrder": 2,
-      "departmentId": "dept_proc456"
-    },
-    {
-      "stageOrder": 3,
-      "departmentId": "dept_exec789"
+      "departmentId": 1
     }
   ]
 }
@@ -441,17 +387,18 @@ Authorization: Bearer <accessToken>
 **可更新欄位:**
 - name
 - year
-- reviewConfig (僅在專案狀態為 DRAFT 或 IN_PROGRESS 時)
+- supplierIds (可新增供應商，已存在的供應商不受影響)
+- reviewConfig (僅在所有供應商皆未提交時可修改)
 
 **不可更新欄位:**
 - type
 - templateId
 - templateVersion
-- supplierId
 
 **注意事項:**
-- 專案已提交 (SUBMITTED, REVIEWING, APPROVED) 後，無法修改審核流程
-- 專案狀態為 APPROVED 後，不可修改任何欄位
+- 若有任何供應商已提交 (SUBMITTED, REVIEWING, APPROVED)，則無法修改審核流程
+- 若有任何供應商已核准 (APPROVED)，則無法修改專案基本資訊
+- `supplierIds` 僅支援新增，移除供應商需使用其他方式 (目前未開放)
 
 ### Response (200 OK)
 
@@ -459,41 +406,14 @@ Authorization: Bearer <accessToken>
 {
   "success": true,
   "data": {
-    "id": "proj_abc123",
+    "id": 1,
     "name": "2025 SAQ 供應商評估 (更新)",
     "year": 2025,
     "type": "SAQ",
-    "templateId": "tmpl_def456",
+    "templateId": 1,
     "templateVersion": "1.2.0",
-    "supplierId": "org_supplier789",
-    "status": "IN_PROGRESS",
-    "currentStage": 0,
-    "reviewConfig": [
-      {
-        "stageOrder": 1,
-        "departmentId": "dept_qm123",
-        "department": {
-          "id": "dept_qm123",
-          "name": "品質管理部"
-        }
-      },
-      {
-        "stageOrder": 2,
-        "departmentId": "dept_proc456",
-        "department": {
-          "id": "dept_proc456",
-          "name": "採購部"
-        }
-      },
-      {
-        "stageOrder": 3,
-        "departmentId": "dept_exec789",
-        "department": {
-          "id": "dept_exec789",
-          "name": "高階主管部"
-        }
-      }
-    ],
+    "suppliers": [...],
+    "reviewConfig": [...],
     "updatedAt": "2025-12-02T06:08:38.435Z"
   }
 }
@@ -642,15 +562,16 @@ REVIEWING (審核中)
    - 名稱: "2025 Q1 供應商評估"
    - 年份: 2025
    - 選擇範本: "SAQ 標準範本 v1.2.0"
-   - 選擇供應商: "供應商 A 公司"
+   - 選擇供應商: "供應商 A 公司", "供應商 B 公司" (可多選)
 4. 設定審核流程:
    - 第一階段: 品質管理部
    - 第二階段: 採購部
 5. 呼叫 `POST /api/v1/projects`
-6. 專案建立成功，供應商可開始填寫
+6. 專案建立成功，系統為每個供應商建立獨立的填寫記錄
+7. 供應商可開始填寫
 
 ### 情境 2: 供應商查看被指派的專案
 1. 供應商登入並進入「我的專案」
 2. 呼叫 `GET /api/v1/projects?type=SAQ`
-3. 僅顯示被指派的專案列表
-4. 點擊專案進入填寫頁面
+3. 僅顯示被指派的專案列表 (顯示 `project_supplier_id`)
+4. 點擊專案進入填寫頁面 (使用 `project_supplier_id` 呼叫相關 API)

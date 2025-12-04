@@ -42,44 +42,25 @@ Authorization: Bearer <accessToken>
   "success": true,
   "data": [
     {
-      "id": "proj_abc123",
+      "id": 101,
+      "projectId": 1,
       "name": "2025 SAQ 供應商評估",
       "year": 2025,
       "type": "SAQ",
-      "supplierId": "org_supplier789",
+      "supplierId": 2,
       "supplier": {
-        "id": "org_supplier789",
+        "id": 2,
         "name": "供應商 A 公司"
       },
       "status": "REVIEWING",
       "currentStage": 1,
       "totalStages": 2,
       "currentStageDepartment": {
-        "id": "dept_qm123",
+        "id": 1,
         "name": "品質管理部"
       },
       "submittedAt": "2025-11-01T10:00:00.000Z",
       "updatedAt": "2025-11-15T14:30:00.000Z"
-    },
-    {
-      "id": "proj_def456",
-      "name": "2025 衝突資產調查",
-      "year": 2025,
-      "type": "CONFLICT",
-      "supplierId": "org_supplier456",
-      "supplier": {
-        "id": "org_supplier456",
-        "name": "供應商 B 公司"
-      },
-      "status": "REVIEWING",
-      "currentStage": 1,
-      "totalStages": 3,
-      "currentStageDepartment": {
-        "id": "dept_qm123",
-        "name": "品質管理部"
-      },
-      "submittedAt": "2025-11-05T09:00:00.000Z",
-      "updatedAt": "2025-11-20T16:00:00.000Z"
     }
   ],
   "pagination": {
@@ -95,6 +76,8 @@ Authorization: Bearer <accessToken>
 
 | 欄位 | 類型 | 說明 |
 |------|------|------|
+| id | integer | ProjectSupplier ID (用於審核操作) |
+| projectId | integer | 專案 ID |
 | currentStage | integer | 目前審核階段編號 (1-5) |
 | totalStages | integer | 總審核階段數 |
 | currentStageDepartment | object | 目前審核階段負責部門 |
@@ -104,7 +87,7 @@ Authorization: Bearer <accessToken>
 
 ## 7.2 審核專案
 
-**Endpoint**: `POST /api/v1/projects/{projectId}/review`  
+**Endpoint**: `POST /api/v1/project-suppliers/{projectSupplierId}/review`  
 **權限**: 需要認證 (HOST，且所屬部門為目前審核階段負責部門)  
 **用途**: 審核者核准或退回專案
 
@@ -118,7 +101,7 @@ Authorization: Bearer <accessToken>
 
 | 參數 | 類型 | 說明 |
 |------|------|------|
-| projectId | string | 專案 ID |
+| projectSupplierId | integer | 專案供應商 ID |
 
 ### Request Body
 
@@ -157,15 +140,15 @@ Authorization: Bearer <accessToken>
 {
   "success": true,
   "data": {
-    "projectId": "proj_abc123",
+    "projectSupplierId": 101,
     "action": "APPROVE",
     "previousStage": 1,
     "currentStage": 2,
     "status": "REVIEWING",
     "message": "已核准，專案進入第 2 階段審核",
     "reviewLog": {
-      "id": "log_abc123",
-      "reviewerId": "usr_reviewer123",
+      "id": 1,
+      "reviewerId": 10,
       "reviewerName": "審核者姓名",
       "stage": 1,
       "action": "APPROVE",
@@ -181,15 +164,15 @@ Authorization: Bearer <accessToken>
 {
   "success": true,
   "data": {
-    "projectId": "proj_abc123",
+    "projectSupplierId": 101,
     "action": "APPROVE",
     "previousStage": 2,
     "currentStage": 2,
     "status": "APPROVED",
     "message": "已核准，專案審核完成",
     "reviewLog": {
-      "id": "log_def456",
-      "reviewerId": "usr_reviewer456",
+      "id": 2,
+      "reviewerId": 11,
       "reviewerName": "審核者姓名",
       "stage": 2,
       "action": "APPROVE",
@@ -205,15 +188,15 @@ Authorization: Bearer <accessToken>
 {
   "success": true,
   "data": {
-    "projectId": "proj_abc123",
+    "projectSupplierId": 101,
     "action": "RETURN",
     "previousStage": 1,
     "currentStage": 0,
     "status": "RETURNED",
     "message": "已退回給供應商重新填寫",
     "reviewLog": {
-      "id": "log_ghi789",
-      "reviewerId": "usr_reviewer789",
+      "id": 3,
+      "reviewerId": 10,
       "reviewerName": "審核者姓名",
       "stage": 1,
       "action": "RETURN",
@@ -274,7 +257,7 @@ Authorization: Bearer <accessToken>
 
 ## 7.3 取得審核歷程
 
-**Endpoint**: `GET /api/v1/projects/{projectId}/reviews`  
+**Endpoint**: `GET /api/v1/project-suppliers/{projectSupplierId}/reviews`  
 **權限**: 需要認證 (HOST 或被指派的 SUPPLIER)  
 **用途**: 取得專案的完整審核歷程
 
@@ -288,7 +271,7 @@ Authorization: Bearer <accessToken>
 
 | 參數 | 類型 | 說明 |
 |------|------|------|
-| projectId | string | 專案 ID |
+| projectSupplierId | integer | 專案供應商 ID |
 
 ### Response (200 OK)
 
@@ -296,16 +279,17 @@ Authorization: Bearer <accessToken>
 {
   "success": true,
   "data": {
-    "projectId": "proj_abc123",
+    "projectSupplierId": 101,
+    "projectId": 1,
     "projectName": "2025 SAQ 供應商評估",
     "currentStatus": "APPROVED",
     "reviews": [
       {
-        "id": "log_001",
-        "reviewerId": "usr_reviewer123",
+        "id": 1,
+        "reviewerId": 10,
         "reviewerName": "張三",
         "reviewerDepartment": {
-          "id": "dept_qm123",
+          "id": 1,
           "name": "品質管理部"
         },
         "stage": 1,
@@ -314,11 +298,11 @@ Authorization: Bearer <accessToken>
         "timestamp": "2025-11-10T10:30:00.000Z"
       },
       {
-        "id": "log_002",
-        "reviewerId": "usr_reviewer456",
+        "id": 2,
+        "reviewerId": 11,
         "reviewerName": "李四",
         "reviewerDepartment": {
-          "id": "dept_proc456",
+          "id": 2,
           "name": "採購部"
         },
         "stage": 2,
@@ -480,16 +464,16 @@ currentStage: 0 → 1
 2. 進入「待審核專案」頁面
 3. 呼叫 `GET /api/v1/reviews/pending` 取得待審核列表
 4. 僅顯示審核者所屬部門負責的專案
-5. 點擊專案進入審核頁面
+5. 點擊專案進入審核頁面 (使用 `projectSupplierId`)
 
 ### 情境 2: 審核者核准專案 (有下一階段)
 1. 審核者進入專案審核頁面
 2. 檢視供應商填寫的答案
-3. 呼叫 `GET /api/v1/projects/{projectId}/reviews` 查看歷史審核紀錄
+3. 呼叫 `GET /api/v1/project-suppliers/{projectSupplierId}/reviews` 查看歷史審核紀錄
 4. 確認資料完整無誤
 5. 輸入審核意見: "資料完整，符合規範，核准通過。"
 6. 點擊「核准」按鈕
-7. 呼叫 `POST /api/v1/projects/{projectId}/review` (action: APPROVE)
+7. 呼叫 `POST /api/v1/project-suppliers/{projectSupplierId}/review` (action: APPROVE)
 8. 系統回應: "已核准，專案進入第 2 階段審核"
 9. 專案狀態維持 `REVIEWING`，`currentStage` 從 1 變更為 2
 10. 第二階段負責部門的審核者收到通知
@@ -499,7 +483,7 @@ currentStage: 0 → 1
 2. 檢視資料並確認無誤
 3. 輸入審核意見: "最終審核通過，專案核准。"
 4. 點擊「核准」按鈕
-5. 呼叫 `POST /api/v1/projects/{projectId}/review` (action: APPROVE)
+5. 呼叫 `POST /api/v1/project-suppliers/{projectSupplierId}/review` (action: APPROVE)
 6. 系統回應: "已核准，專案審核完成"
 7. 專案狀態從 `REVIEWING` 變更為 `APPROVED`
 8. 供應商與製造商收到通知
@@ -509,7 +493,7 @@ currentStage: 0 → 1
 2. 檢視答案後發現資料不完整
 3. 輸入退回原因: "請補充以下資料：\n1. ISO 9001 認證文件\n2. 品質管理流程說明需更詳細"
 4. 點擊「退回」按鈕
-5. 呼叫 `POST /api/v1/projects/{projectId}/review` (action: RETURN)
+5. 呼叫 `POST /api/v1/project-suppliers/{projectSupplierId}/review` (action: RETURN)
 6. 系統回應: "已退回給供應商重新填寫"
 7. 專案狀態從 `REVIEWING` 變更為 `RETURNED`
 8. `currentStage` 重置為 0
@@ -518,7 +502,7 @@ currentStage: 0 → 1
 ### 情境 5: 供應商查看退回原因
 1. 供應商收到專案被退回的通知
 2. 登入系統並進入專案
-3. 呼叫 `GET /api/v1/projects/{projectId}/reviews` 查看審核歷程
+3. 呼叫 `GET /api/v1/project-suppliers/{projectSupplierId}/reviews` 查看審核歷程
 4. 看到退回原因與審核者意見
 5. 根據意見修改答案
 6. 重新提交專案

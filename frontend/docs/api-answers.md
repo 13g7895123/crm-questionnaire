@@ -10,7 +10,7 @@
 
 ## 6.1 取得專案答案
 
-**Endpoint**: `GET /api/v1/projects/{projectId}/answers`  
+**Endpoint**: `GET /api/v1/project-suppliers/{projectSupplierId}/answers`  
 **權限**: 需要認證 (被指派的 SUPPLIER 或專案建立者 HOST)  
 **用途**: 取得專案的所有答案 (供供應商繼續填寫或檢視)
 
@@ -24,7 +24,7 @@ Authorization: Bearer <accessToken>
 
 | 參數 | 類型 | 說明 |
 |------|------|------|
-| projectId | string | 專案 ID |
+| projectSupplierId | integer | 專案供應商 ID |
 
 ### Response (200 OK)
 
@@ -32,7 +32,7 @@ Authorization: Bearer <accessToken>
 {
   "success": true,
   "data": {
-    "projectId": "proj_abc123",
+    "projectSupplierId": 101,
     "answers": {
       "q_001": {
         "questionId": "q_001",
@@ -108,7 +108,7 @@ Authorization: Bearer <accessToken>
 
 ## 6.2 暫存答案
 
-**Endpoint**: `PUT /api/v1/projects/{projectId}/answers`  
+**Endpoint**: `PUT /api/v1/project-suppliers/{projectSupplierId}/answers`  
 **權限**: 需要認證 (被指派的 SUPPLIER)  
 **用途**: 暫存專案答案 (允許部分填寫)
 
@@ -122,7 +122,7 @@ Authorization: Bearer <accessToken>
 
 | 參數 | 類型 | 說明 |
 |------|------|------|
-| projectId | string | 專案 ID |
+| projectSupplierId | integer | 專案供應商 ID |
 
 ### Request Body
 
@@ -165,7 +165,7 @@ Authorization: Bearer <accessToken>
 {
   "success": true,
   "data": {
-    "projectId": "proj_abc123",
+    "projectSupplierId": 101,
     "savedCount": 3,
     "lastSavedAt": "2025-12-02T06:08:38.435Z"
   }
@@ -218,7 +218,7 @@ Authorization: Bearer <accessToken>
 
 ## 6.3 提交專案
 
-**Endpoint**: `POST /api/v1/projects/{projectId}/submit`  
+**Endpoint**: `POST /api/v1/project-suppliers/{projectSupplierId}/submit`  
 **權限**: 需要認證 (被指派的 SUPPLIER)  
 **用途**: 提交專案進入審核流程
 
@@ -232,7 +232,7 @@ Authorization: Bearer <accessToken>
 
 | 參數 | 類型 | 說明 |
 |------|------|------|
-| projectId | string | 專案 ID |
+| projectSupplierId | integer | 專案供應商 ID |
 
 ### Request Body
 
@@ -249,7 +249,7 @@ Authorization: Bearer <accessToken>
 {
   "success": true,
   "data": {
-    "projectId": "proj_abc123",
+    "projectSupplierId": 101,
     "status": "SUBMITTED",
     "submittedAt": "2025-12-02T06:08:38.435Z",
     "message": "專案已成功提交，將進入審核流程"
@@ -397,10 +397,10 @@ Content-Type: multipart/form-data
 
 ### 情境 1: 供應商填寫問卷 (暫存)
 1. 供應商登入並進入專案
-2. 呼叫 `GET /api/v1/projects/{projectId}/answers` 載入已儲存的答案
+2. 呼叫 `GET /api/v1/project-suppliers/{projectSupplierId}/answers` 載入已儲存的答案
 3. 供應商填寫部分題目 (如: 前 5 題)
 4. 點擊「暫存」按鈕
-5. 呼叫 `PUT /api/v1/projects/{projectId}/answers` 暫存答案
+5. 呼叫 `PUT /api/v1/project-suppliers/{projectSupplierId}/answers` 暫存答案
 6. 系統提示「儲存成功」
 7. 供應商稍後可再次進入繼續填寫
 
@@ -409,7 +409,7 @@ Content-Type: multipart/form-data
 2. 完成所有必填題目
 3. 點擊「提交」按鈕
 4. 前端先驗證必填題目是否完成
-5. 呼叫 `POST /api/v1/projects/{projectId}/submit`
+5. 呼叫 `POST /api/v1/project-suppliers/{projectSupplierId}/submit`
 6. 若有未完成的必填題目，後端回傳錯誤，前端顯示未完成的題目清單
 7. 若全部完成，專案狀態變更為 `SUBMITTED`，進入審核流程
 8. 供應商無法再修改答案
@@ -419,8 +419,8 @@ Content-Type: multipart/form-data
 2. 點擊「選擇檔案」按鈕，選擇 PDF 檔案
 3. 呼叫 `POST /api/v1/files/upload` 上傳檔案
 4. 取得回傳的 `fileUrl`
-5. 將 `fileUrl` 填入該題目的答案欄位
-6. 點擊「暫存」儲存答案
+5. 將 `fileUrl` 作為答案值儲存至對應題目
+6. 呼叫 `PUT /api/v1/project-suppliers/{projectSupplierId}/answers` 暫存答案
 
 ### 情境 4: 專案被退回後重新填寫
 1. 專案被審核者退回，狀態變更為 `RETURNED`
