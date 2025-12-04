@@ -10,7 +10,7 @@ export const useAnswers = () => {
   }
 
   const saveAnswers = async (projectId: string, answers: any) => {
-    return await api.post(`/projects/${projectId}/answers`, { answers })
+    return await api.put(`/projects/${projectId}/answers`, { answers })
   }
 
   const submitAnswers = async (projectId: string, answers: any) => {

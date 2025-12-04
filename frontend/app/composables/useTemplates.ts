@@ -1,46 +1,20 @@
 import { ref } from 'vue'
+import { useApi } from './useApi'
 import type { Template } from '~/types/index'
 
-// Mock data
-const mockTemplates: Template[] = [
-  {
-    id: 'tpl_saq_2025',
-    name: 'SAQ 2025 Standard',
-    type: 'SAQ',
-    latestVersion: '1.0',
-    versions: [
-      {
-        version: '1.0',
-        questions: [],
-        createdAt: new Date().toISOString()
-      }
-    ]
-  },
-  {
-    id: 'tpl_conflict_2025',
-    name: 'CMRT 2025',
-    type: 'CONFLICT',
-    latestVersion: '1.0',
-    versions: [
-      {
-        version: '1.0',
-        questions: [],
-        createdAt: new Date().toISOString()
-      }
-    ]
-  }
-]
-
 export const useTemplates = () => {
+  const api = useApi()
   const templates = ref<Template[]>([])
   const loading = ref(false)
 
   const fetchTemplates = async (type: 'SAQ' | 'CONFLICT' = 'SAQ') => {
     loading.value = true
     try {
-      await new Promise(resolve => setTimeout(resolve, 500))
-      templates.value = mockTemplates.filter(t => t.type === type)
+      const response = await api.get(`/templates?type=${type}`)
+      templates.value = response.data || []
       return templates.value
+    } catch (error) {
+      throw error
     } finally {
       loading.value = false
     }
@@ -49,8 +23,7 @@ export const useTemplates = () => {
   const getTemplate = async (id: string) => {
     loading.value = true
     try {
-      await new Promise(resolve => setTimeout(resolve, 500))
-      return { data: mockTemplates.find(t => t.id === id) }
+      return await api.get(`/templates/${id}`)
     } finally {
       loading.value = false
     }
@@ -59,25 +32,9 @@ export const useTemplates = () => {
   const createTemplate = async (data: any) => {
     loading.value = true
     try {
-      await new Promise(resolve => setTimeout(resolve, 500))
-      const newTemplate: Template = {
-        id: `tpl_${Date.now()}`,
-        name: data.name,
-        type: data.type,
-        latestVersion: '1.0',
-        versions: [
-          {
-            version: '1.0',
-            questions: [],
-            createdAt: new Date().toISOString()
-          }
-        ]
-      }
-      mockTemplates.push(newTemplate)
-      if (data.type === templates.value[0]?.type) {
-        templates.value.push(newTemplate)
-      }
-      return { data: newTemplate }
+      const response = await api.post('/templates', data)
+      templates.value.push(response.data)
+      return response
     } finally {
       loading.value = false
     }
@@ -86,35 +43,26 @@ export const useTemplates = () => {
   const updateTemplate = async (id: string, data: any) => {
     loading.value = true
     try {
-      await new Promise(resolve => setTimeout(resolve, 500))
-      const index = mockTemplates.findIndex(t => t.id === id)
+      const response = await api.put(`/templates/${id}`, data)
+      const index = templates.value.findIndex(t => t.id === id)
       if (index !== -1) {
-        mockTemplates[index] = { ...mockTemplates[index], ...data }
-        const tplIndex = templates.value.findIndex(t => t.id === id)
-        if (tplIndex !== -1) {
-          templates.value[tplIndex] = { ...templates.value[tplIndex], ...data }
-        }
-        return { data: mockTemplates[index] }
+        templates.value[index] = response.data
       }
+      return response
     } finally {
       loading.value = false
     }
   }
 
-  const publishVersion = async (id: string) => {
-    // Mock publish logic
-    return { success: true }
+  const publishVersion = async (id: string, data: any) => {
+    return await api.post(`/templates/${id}/versions`, data)
   }
 
   const deleteTemplate = async (id: string) => {
     loading.value = true
     try {
-      await new Promise(resolve => setTimeout(resolve, 500))
-      const index = mockTemplates.findIndex(t => t.id === id)
-      if (index !== -1) {
-        mockTemplates.splice(index, 1)
-        templates.value = templates.value.filter(t => t.id !== id)
-      }
+      await api.delete(`/templates/${id}`)
+      templates.value = templates.value.filter(t => t.id !== id)
     } finally {
       loading.value = false
     }

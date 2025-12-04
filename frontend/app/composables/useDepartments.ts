@@ -1,41 +1,17 @@
 import { ref } from 'vue'
+import { useApi } from './useApi'
 import type { Department } from '~/types/index'
 
-// Mock data
-const mockDepartments: Department[] = [
-  {
-    id: 'dept_it',
-    name: 'IT Department',
-    organizationId: 'org_host',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  },
-  {
-    id: 'dept_sales',
-    name: 'Sales Department',
-    organizationId: 'org_host',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  },
-  {
-    id: 'dept_prod',
-    name: 'Production',
-    organizationId: 'org_supplier',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  }
-]
-
 export const useDepartments = () => {
+  const api = useApi()
   const departments = ref<Department[]>([])
   const loading = ref(false)
 
   const fetchDepartments = async () => {
     loading.value = true
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500))
-      departments.value = [...mockDepartments]
+      const response = await api.get('/departments')
+      departments.value = response.data || []
       return departments.value
     } catch (error) {
       throw error
@@ -47,17 +23,9 @@ export const useDepartments = () => {
   const createDepartment = async (name: string) => {
     loading.value = true
     try {
-      await new Promise(resolve => setTimeout(resolve, 500))
-      const newDept: Department = {
-        id: `dept_${Date.now()}`,
-        name,
-        organizationId: 'org_host',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }
-      mockDepartments.push(newDept)
-      departments.value.push(newDept)
-      return { data: newDept }
+      const response = await api.post('/departments', { name })
+      departments.value.push(response.data)
+      return response
     } finally {
       loading.value = false
     }
@@ -66,16 +34,12 @@ export const useDepartments = () => {
   const updateDepartment = async (id: string, name: string) => {
     loading.value = true
     try {
-      await new Promise(resolve => setTimeout(resolve, 500))
-      const index = mockDepartments.findIndex(d => d.id === id)
+      const response = await api.put(`/departments/${id}`, { name })
+      const index = departments.value.findIndex(d => d.id === id)
       if (index !== -1) {
-        mockDepartments[index].name = name
-        const deptIndex = departments.value.findIndex(d => d.id === id)
-        if (deptIndex !== -1) {
-          departments.value[deptIndex].name = name
-        }
-        return { data: mockDepartments[index] }
+        departments.value[index] = response.data
       }
+      return response
     } finally {
       loading.value = false
     }
@@ -84,12 +48,8 @@ export const useDepartments = () => {
   const deleteDepartment = async (id: string) => {
     loading.value = true
     try {
-      await new Promise(resolve => setTimeout(resolve, 500))
-      const index = mockDepartments.findIndex(d => d.id === id)
-      if (index !== -1) {
-        mockDepartments.splice(index, 1)
-        departments.value = departments.value.filter(d => d.id !== id)
-      }
+      await api.delete(`/departments/${id}`)
+      departments.value = departments.value.filter(d => d.id !== id)
     } finally {
       loading.value = false
     }

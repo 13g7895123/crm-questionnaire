@@ -43,9 +43,18 @@ export default defineNuxtConfig({
   },
   vite: {
     server: {
+      allowedHosts: ['crm.l'],
       hmr: {
         protocol: 'ws',
         host: 'localhost'
+      }
+    }
+  },
+  nitro: {
+    devProxy: {
+      '/api': {
+        target: 'http://localhost:9104',
+        changeOrigin: false
       }
     }
   }

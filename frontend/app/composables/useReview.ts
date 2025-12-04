@@ -7,12 +7,12 @@ export const useReview = () => {
   const reviewLogs = ref<ReviewLog[]>([])
 
   const getPendingReviews = async () => {
-    return await api.get('/review/pending')
+    return await api.get('/reviews/pending')
   }
 
   const getReviewLogs = async (projectId: string) => {
     try {
-      const response = await api.get(`/projects/${projectId}/review-logs`)
+      const response = await api.get(`/projects/${projectId}/reviews`)
       reviewLogs.value = response.data || []
       return reviewLogs.value
     } catch (error) {
@@ -21,11 +21,17 @@ export const useReview = () => {
   }
 
   const approveProject = async (projectId: string, comment: string) => {
-    return await api.post(`/projects/${projectId}/approve`, { comment })
+    return await api.post(`/projects/${projectId}/review`, {
+      action: 'APPROVE',
+      comment
+    })
   }
 
   const returnProject = async (projectId: string, comment: string) => {
-    return await api.post(`/projects/${projectId}/return`, { comment })
+    return await api.post(`/projects/${projectId}/review`, {
+      action: 'RETURN',
+      comment
+    })
   }
 
   return {

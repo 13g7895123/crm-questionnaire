@@ -32,8 +32,8 @@ export const useApi = () => {
     error.value = null
 
     try {
-      const baseUrl = process.client ? '' : process.env.API_BASE_URL || 'http://localhost:3000'
-      const url = `${baseUrl}/api${endpoint}`
+      const baseUrl = process.client ? '' : process.env.API_BASE_URL || 'http://localhost:9104'
+      const url = `${baseUrl}/api/v1${endpoint}`
 
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -48,7 +48,8 @@ export const useApi = () => {
       const response = await fetch(url, {
         method: options?.method || 'GET',
         headers,
-        body: options?.body ? JSON.stringify(options.body) : undefined
+        body: options?.body ? JSON.stringify(options.body) : undefined,
+        credentials: 'include'
       })
 
       // Handle non-2xx responses
