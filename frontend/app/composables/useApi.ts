@@ -72,7 +72,7 @@ export const useApi = () => {
 
       if (parsed.statusCode === 401) {
         if (process.client) {
-          await showSystemAlert('登入過期')
+          await showSystemAlert('登入過期', 'warning')
           await navigateTo('/login')
         }
       }
