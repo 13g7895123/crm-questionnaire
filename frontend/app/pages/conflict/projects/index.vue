@@ -68,13 +68,17 @@
       </div>
 
       <!-- Table -->
-      <UTable
+      <DataTable
         v-else
         v-model="selected"
-        :rows="filteredProjects"
+        :rows="paginatedProjects"
         :columns="columns"
         :loading="loading"
-        class="w-full bg-white shadow-sm rounded-lg border border-gray-200"
+        :pagination="pagination"
+        selectable
+        show-actions
+        @update:page="pagination.page = $event"
+        @update:limit="pagination.limit = $event"
       >
         <template #name-data="{ row }">
           <span 
@@ -133,7 +137,7 @@
             />
           </div>
         </template>
-      </UTable>
+      </DataTable>
     </div>
 
     <!-- Project Form Modal -->
@@ -160,6 +164,7 @@ import { useRouter } from 'vue-router'
 import ProjectStatusBadge from '~/components/project/ProjectStatusBadge.vue'
 import ProjectForm from '~/components/project/ProjectForm.vue'
 import TemplateManager from '~/components/template/TemplateManager.vue'
+import DataTable from '~/components/common/DataTable.vue'
 import { useI18n } from 'vue-i18n'
 import type { Project } from '~/types/index'
 
@@ -177,6 +182,12 @@ const selected = ref<Project[]>([])
 const showFormModal = ref(false)
 const showTemplateManager = ref(false)
 const editingProject = ref<Project | null>(null)
+
+const pagination = ref({
+  page: 1,
+  limit: 10,
+  total: 0
+})
 
 const columns = computed(() => [
   {
@@ -214,6 +225,21 @@ const filteredProjects = computed(() => {
     p.year.toString().includes(query)
   )
 })
+
+const paginatedProjects = computed(() => {
+  const start = (pagination.value.page - 1) * pagination.value.limit
+  const end = start + pagination.value.limit
+  return filteredProjects.value.slice(start, end)
+})
+
+// Update pagination total when filtered projects change
+import { watch } from 'vue'
+watch(filteredProjects, (newVal) => {
+  pagination.value.total = newVal.length
+  if (pagination.value.page > Math.ceil(newVal.length / pagination.value.limit)) {
+    pagination.value.page = 1
+  }
+}, { immediate: true })
 
 const formatDate = (dateStr: string) => {
   if (!dateStr) return '-'

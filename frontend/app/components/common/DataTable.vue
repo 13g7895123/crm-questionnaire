@@ -1,12 +1,13 @@
 <template>
-  <div class="flex flex-col gap-4">
+  <div class="w-full bg-white shadow-sm rounded-lg border border-gray-200">
     <UTable
       v-model="selectedRows"
       :rows="rows"
       :columns="tableColumns"
       :loading="loading"
       :sort="sort"
-      class="w-full bg-white shadow-sm rounded-lg border border-gray-200"
+      class="w-full"
+      :ui="{ wrapper: 'border-b border-gray-200' }"
       @update:sort="onSortChange"
     >
       <!-- Pass through all slots -->
@@ -16,35 +17,61 @@
     </UTable>
 
     <!-- Footer -->
-    <div class="flex flex-col sm:flex-row justify-between items-center gap-4 px-4 py-3 border-t border-gray-200 bg-white rounded-lg shadow-sm">
+    <div class="flex flex-col sm:flex-row justify-between items-center gap-4 px-4 py-3">
+      <!-- Left: Showing Range -->
+      <div class="text-sm text-gray-500">
+        {{ showingRange }}
+      </div>
+
+      <!-- Center: Pagination -->
+      <div class="flex items-center gap-2">
+        <UButton
+          icon="i-heroicons-chevron-double-left"
+          color="gray"
+          variant="ghost"
+          size="sm"
+          :disabled="localPage === 1"
+          @click="toFirstPage"
+        />
+        <UPagination
+          v-model="localPage"
+          :page-count="pagination.limit"
+          :total="pagination.total"
+          :max="5"
+          @update:model-value="onPageChange"
+        />
+        <UButton
+          icon="i-heroicons-chevron-double-right"
+          color="gray"
+          variant="ghost"
+          size="sm"
+          :disabled="localPage >= totalPages"
+          @click="toLastPage"
+        />
+      </div>
+
+      <!-- Right: Page Size -->
       <div class="flex items-center gap-2 text-sm text-gray-500">
-        <span>{{ $t('table.show') }}</span>
+        <span>{{ $t('table.perPage') }}</span>
         <USelectMenu
-          v-model="localLimit"
-          :options="pageSizeOptions"
-          class="w-20"
+          v-model="selectedLimit"
+          :options="limitOptions"
+          option-attribute="label"
+          value-attribute="value"
+          class="w-24"
           size="xs"
           @update:model-value="onLimitChange"
         />
-        <span>{{ $t('table.entries') }}</span>
-        <span class="ml-2 hidden sm:inline">
-          {{ showingRange }}
-        </span>
       </div>
-
-      <UPagination
-        v-model="localPage"
-        :page-count="pagination.limit"
-        :total="pagination.total"
-        :max="5"
-        @update:model-value="onPageChange"
-      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 interface Pagination {
   page: number
@@ -100,14 +127,35 @@ const selectedRows = computed({
 
 // Pagination
 const localPage = ref(props.pagination.page)
-const localLimit = ref(props.pagination.limit)
 
 watch(() => props.pagination.page, (newVal) => {
   localPage.value = newVal
 })
 
-watch(() => props.pagination.limit, (newVal) => {
-  localLimit.value = newVal
+const totalPages = computed(() => {
+  if (props.pagination.limit <= 0) return 1
+  return Math.ceil(props.pagination.total / props.pagination.limit)
+})
+
+const limitOptions = computed(() => {
+  const opts = props.pageSizeOptions.map(n => ({ label: n.toString(), value: n }))
+  opts.push({ label: t('table.all'), value: -1 })
+  return opts
+})
+
+const selectedLimit = computed({
+  get: () => {
+    if (props.pageSizeOptions.includes(props.pagination.limit)) {
+      return props.pagination.limit
+    }
+    if (props.pagination.limit === props.pagination.total && props.pagination.total > 0) {
+      return -1
+    }
+    return -1
+  },
+  set: (val) => {
+    // Handled by onLimitChange
+  }
 })
 
 const onPageChange = (page: number) => {
@@ -115,19 +163,35 @@ const onPageChange = (page: number) => {
 }
 
 const onLimitChange = (limit: number) => {
-  emit('update:limit', limit)
-  // Reset to page 1 when limit changes usually
+  if (limit === -1) {
+    emit('update:limit', props.pagination.total)
+  } else {
+    emit('update:limit', limit)
+  }
   emit('update:page', 1)
 }
 
-// i18n
-import { useI18n } from 'vue-i18n'
-const { t } = useI18n()
+const toFirstPage = () => {
+  emit('update:page', 1)
+}
+
+const toLastPage = () => {
+  emit('update:page', totalPages.value)
+}
 
 const showingRange = computed(() => {
+  if (props.pagination.total === 0) return t('table.showingRange', { start: 0, end: 0, total: 0 })
+  
   const start = (props.pagination.page - 1) * props.pagination.limit + 1
   const end = Math.min(props.pagination.page * props.pagination.limit, props.pagination.total)
-  return `${start}-${end} ${t('common.of')} ${props.pagination.total}`
+  
+  const formatNumber = (num: number) => new Intl.NumberFormat().format(num)
+  
+  return t('table.showingRange', {
+    start: formatNumber(start),
+    end: formatNumber(end),
+    total: formatNumber(props.pagination.total)
+  })
 })
 
 // Sorting

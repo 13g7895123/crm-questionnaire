@@ -1,7 +1,10 @@
 {
   "table": {
     "show": "顯示",
-    "entries": "筆"
+    "entries": "筆",
+    "showingRange": "顯示第 {start} 至 {end} 筆結果，共 {total} 筆",
+    "perPage": "每頁顯示",
+    "all": "全部"
   },
   "common": {
     "appName": "CRM 問卷系統",

@@ -1,7 +1,10 @@
 {
   "table": {
     "show": "Show",
-    "entries": "entries"
+    "entries": "entries",
+    "showingRange": "Showing {start} to {end} of {total} entries",
+    "perPage": "Per page",
+    "all": "All"
   },
   "common": {
     "appName": "CRM Questionnaire System",
