@@ -7,6 +7,7 @@
     "all": "All"
   },
   "common": {
+    "home": "Home",
     "appName": "CRM Questionnaire System",
     "save": "Save",
     "cancel": "Cancel",

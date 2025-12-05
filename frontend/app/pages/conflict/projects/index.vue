@@ -157,6 +157,7 @@ import { useSweetAlert } from '~/composables/useSweetAlert'
 import { useRouter } from 'vue-router'
 import ProjectStatusBadge from '~/components/project/ProjectStatusBadge.vue'
 import ProjectForm from '~/components/project/ProjectForm.vue'
+import { useBreadcrumbs } from '~/composables/useBreadcrumbs'
 import DataTable from '~/components/common/DataTable.vue'
 import { useI18n } from 'vue-i18n'
 import type { Project } from '~/types/index'
@@ -167,6 +168,7 @@ const { t } = useI18n()
 const router = useRouter()
 const { fetchProjects, projects, deleteProject } = useProjects()
 const { showConfirmDialog, showLoading, closeAlert, showSystemAlert } = useSweetAlert()
+const { setBreadcrumbs } = useBreadcrumbs()
 
 const loading = ref(true)
 const error = ref('')
@@ -319,6 +321,11 @@ const handleProjectSaved = (project: Project) => {
 }
 
 onMounted(() => {
+  setBreadcrumbs([
+    { label: t('common.home'), to: '/' },
+    { label: t('apps.conflict') },
+    { label: t('projects.projectManagement') }
+  ])
   loadData()
 })
 </script>

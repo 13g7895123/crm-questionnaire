@@ -3,6 +3,7 @@
     <ClientOnly>
       <Navbar v-if="isAuthenticated" />
     </ClientOnly>
+    <Breadcrumb v-if="isAuthenticated" />
     <main>
       <slot />
     </main>
@@ -13,6 +14,7 @@
 import { computed, onMounted } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import Navbar from '~/components/common/Navbar.vue'
+import Breadcrumb from '~/components/common/Breadcrumb.vue'
 
 definePageMeta({
   middleware: 'auth'

@@ -7,6 +7,7 @@
     "all": "全部"
   },
   "common": {
+    "home": "首頁",
     "appName": "CRM 問卷系統",
     "save": "保存",
     "cancel": "取消",

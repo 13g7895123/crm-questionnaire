@@ -72,3 +72,19 @@ node_modules/
 #-------------------------
 dist/
 build/
+
+#-------------------------
+# Backend (CodeIgniter 4)
+#-------------------------
+backend/vendor/
+backend/writable/
+backend/.phpunit.result.cache
+backend/builds/
+
+#-------------------------
+# Frontend (Nuxt)
+#-------------------------
+frontend/.nuxt/
+frontend/.output/
+frontend/dist/
+coverage/

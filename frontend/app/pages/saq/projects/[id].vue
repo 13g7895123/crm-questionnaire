@@ -137,10 +137,12 @@ import ProjectStatusBadge from '~/components/project/ProjectStatusBadge.vue'
 import ProjectForm from '~/components/project/ProjectForm.vue'
 import type { Project } from '~/types/index'
 import { useI18n } from 'vue-i18n'
+import { useBreadcrumbs } from '~/composables/useBreadcrumbs'
 
 definePageMeta({ middleware: 'auth' })
 
 const { t } = useI18n()
+const { setBreadcrumbs } = useBreadcrumbs()
 const route = useRoute()
 const router = useRouter()
 const { getProject } = useProjects()
@@ -180,6 +182,13 @@ const loadProject = async () => {
   try {
     const response = await getProject(id)
     project.value = response.data
+    
+    setBreadcrumbs([
+      { label: t('common.home'), to: '/' },
+      { label: t('apps.saq') },
+      { label: t('projects.projectManagement'), to: '/saq/projects' },
+      { label: project.value.name }
+    ])
   } catch (e) {
     console.error('Failed to load project:', e)
     error.value = 'Failed to load project'

@@ -136,6 +136,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useTemplates } from '~/composables/useTemplates'
 import { useSweetAlert } from '~/composables/useSweetAlert'
+import { useBreadcrumbs } from '~/composables/useBreadcrumbs'
 import DataTable from '~/components/common/DataTable.vue'
 import { useI18n } from 'vue-i18n'
 import type { Template } from '~/types/index'
@@ -145,6 +146,7 @@ definePageMeta({ middleware: 'auth' })
 const { t } = useI18n()
 const { templates, loading, fetchTemplates, createTemplate, updateTemplate, deleteTemplate } = useTemplates()
 const { showConfirmDialog, showLoading, closeAlert, showSystemAlert } = useSweetAlert()
+const { setBreadcrumbs } = useBreadcrumbs()
 
 const searchQuery = ref('')
 const selected = ref<Template[]>([])
@@ -283,6 +285,12 @@ const handleDeleteRow = async (row: Template) => {
 }
 
 onMounted(() => {
+  setBreadcrumbs([
+    { label: t('common.home'), to: '/' },
+    { label: t('apps.saq') },
+    { label: t('projects.projectManagement'), to: '/saq/projects' },
+    { label: t('templates.management') }
+  ])
   loadData()
 })
 </script>
