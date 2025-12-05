@@ -63,6 +63,11 @@ temp/
 *.bak
 
 #-------------------------
+# Dependencies
+#-------------------------
+node_modules/
+
+#-------------------------
 # Build Outputs (if accidentally created locally)
 #-------------------------
 dist/
