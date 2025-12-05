@@ -16,6 +16,7 @@
     "warning": "Warning",
     "info": "Information",
     "deleteFailed": "Delete failed",
+    "deleteSuccess": "Delete successful",
     "confirmDelete": "Are you sure you want to delete? This action cannot be undone."
   },
   "auth": {

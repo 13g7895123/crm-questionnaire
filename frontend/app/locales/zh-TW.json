@@ -21,6 +21,7 @@
     "info": "信息",
     "retry": "重試",
     "deleteFailed": "刪除失敗",
+    "deleteSuccess": "刪除成功",
     "confirmDelete": "確定要刪除嗎？此操作無法復原。"
   },
   "auth": {
