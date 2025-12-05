@@ -28,6 +28,14 @@
             @click="handleCopy"
           />
           <UButton
+            icon="i-heroicons-trash"
+            color="white"
+            class="text-red-600 hover:bg-red-50"
+            :label="$t('common.delete')"
+            :disabled="!selected.length"
+            @click="handleDelete"
+          />
+          <UButton
             icon="i-heroicons-document-text"
             color="white"
             :label="$t('templates.templates')"
@@ -106,6 +114,13 @@
               size="xs"
               @click.stop="viewProject(row)"
             />
+            <UButton
+              icon="i-heroicons-trash"
+              color="red"
+              variant="ghost"
+              size="xs"
+              @click.stop="handleDeleteRow(row)"
+            />
           </div>
         </template>
 
@@ -153,7 +168,7 @@ definePageMeta({ middleware: 'auth' })
 
 const { t } = useI18n()
 const router = useRouter()
-const { fetchProjects, projects } = useProjects()
+const { fetchProjects, projects, deleteProject } = useProjects()
 
 const loading = ref(true)
 const error = ref('')
@@ -253,6 +268,46 @@ const viewProject = (project: Project) => {
 const handleCopy = () => {
   // Implement copy logic here
   console.log('Copy projects:', selected.value)
+}
+
+const handleDelete = async () => {
+  if (!selected.value.length) return
+  
+  if (!confirm(t('common.confirmDelete'))) {
+    return
+  }
+
+  try {
+    loading.value = true
+    // Delete all selected projects
+    await Promise.all(selected.value.map(p => deleteProject(p.id)))
+    selected.value = []
+    await loadData()
+  } catch (e) {
+    console.error('Failed to delete projects:', e)
+    alert(t('common.deleteFailed'))
+  } finally {
+    loading.value = false
+  }
+}
+
+const handleDeleteRow = async (row: Project) => {
+  if (!confirm(t('common.confirmDelete'))) {
+    return
+  }
+
+  try {
+    loading.value = true
+    await deleteProject(row.id)
+    // Remove from selection if present
+    selected.value = selected.value.filter(p => p.id !== row.id)
+    await loadData()
+  } catch (e) {
+    console.error('Failed to delete project:', e)
+    alert(t('common.deleteFailed'))
+  } finally {
+    loading.value = false
+  }
 }
 
 const handleProjectSaved = (project: Project) => {
