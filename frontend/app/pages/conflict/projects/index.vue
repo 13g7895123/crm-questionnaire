@@ -157,6 +157,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useProjects } from '~/composables/useProjects'
+import { useSweetAlert } from '~/composables/useSweetAlert'
 import { useRouter } from 'vue-router'
 import ProjectStatusBadge from '~/components/project/ProjectStatusBadge.vue'
 import ProjectForm from '~/components/project/ProjectForm.vue'
@@ -169,6 +170,7 @@ definePageMeta({ middleware: 'auth' })
 const { t } = useI18n()
 const router = useRouter()
 const { fetchProjects, projects, deleteProject } = useProjects()
+const { showConfirmDialog, showLoading, closeAlert, showSystemAlert } = useSweetAlert()
 
 const loading = ref(true)
 const error = ref('')
@@ -273,40 +275,40 @@ const handleCopy = () => {
 const handleDelete = async () => {
   if (!selected.value.length) return
   
-  if (!confirm(t('common.confirmDelete'))) {
-    return
-  }
+  const confirmed = await showConfirmDialog(t('common.confirmDelete'))
+  if (!confirmed) return
 
   try {
-    loading.value = true
+    showLoading()
     // Delete all selected projects
     await Promise.all(selected.value.map(p => deleteProject(p.id)))
     selected.value = []
     await loadData()
-  } catch (e) {
+    closeAlert()
+    showSystemAlert(t('common.deleteSuccess') || '刪除成功', 'success')
+  } catch (e: any) {
     console.error('Failed to delete projects:', e)
-    alert(t('common.deleteFailed'))
-  } finally {
-    loading.value = false
+    closeAlert()
+    showSystemAlert(e.message || t('common.deleteFailed'), 'error')
   }
 }
 
 const handleDeleteRow = async (row: Project) => {
-  if (!confirm(t('common.confirmDelete'))) {
-    return
-  }
+  const confirmed = await showConfirmDialog(t('common.confirmDelete'))
+  if (!confirmed) return
 
   try {
-    loading.value = true
+    showLoading()
     await deleteProject(row.id)
     // Remove from selection if present
     selected.value = selected.value.filter(p => p.id !== row.id)
     await loadData()
-  } catch (e) {
+    closeAlert()
+    showSystemAlert(t('common.deleteSuccess') || '刪除成功', 'success')
+  } catch (e: any) {
     console.error('Failed to delete project:', e)
-    alert(t('common.deleteFailed'))
-  } finally {
-    loading.value = false
+    closeAlert()
+    showSystemAlert(e.message || t('common.deleteFailed'), 'error')
   }
 }
 
