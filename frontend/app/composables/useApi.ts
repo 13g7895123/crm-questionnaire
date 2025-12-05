@@ -20,6 +20,7 @@ export const useApi = () => {
   const authStore = useAuthStore()
   const isLoading = ref(false)
   const error = ref<ErrorResponse | null>(null)
+  const { showSystemAlert } = useSweetAlert()
 
   /**
    * Fetch with automatic token injection and error handling
@@ -68,6 +69,14 @@ export const useApi = () => {
     } catch (err) {
       const parsed = parseApiError(err)
       error.value = parsed
+
+      if (parsed.statusCode === 401) {
+        if (process.client) {
+          await showSystemAlert('登入過期')
+          await navigateTo('/login')
+        }
+      }
+
       throw parsed
     } finally {
       isLoading.value = false
