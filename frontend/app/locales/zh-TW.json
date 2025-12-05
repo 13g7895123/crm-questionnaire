@@ -100,6 +100,7 @@
   },
   "templates": {
     "templates": "範本",
+    "management": "範本管理",
     "template": "範本",
     "createTemplate": "建立範本",
     "editTemplate": "編輯範本",

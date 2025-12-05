@@ -1,7 +1,15 @@
 <template>
   <div class="py-8 px-4 sm:px-6 lg:px-8">
     <div class="w-full">
-      <h1 class="text-3xl font-bold mb-8 text-gray-900">{{ $t('templates.templates') }}</h1>
+      <div class="flex items-center gap-4 mb-8">
+        <UButton
+          icon="i-heroicons-arrow-left"
+          color="gray"
+          variant="ghost"
+          to="/conflict/projects"
+        />
+        <h1 class="text-3xl font-bold text-gray-900">{{ $t('templates.management') }}</h1>
+      </div>
 
       <!-- Toolbar -->
       <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">

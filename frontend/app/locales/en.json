@@ -94,6 +94,7 @@
   },
   "templates": {
     "templates": "Templates",
+    "management": "Template Management",
     "createTemplate": "Create Template",
     "editTemplate": "Edit Template",
     "deleteTemplate": "Delete Template",
