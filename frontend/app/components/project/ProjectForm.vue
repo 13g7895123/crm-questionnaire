@@ -269,7 +269,7 @@ watch(() => props.project, (newProject) => {
     form.value.year = newProject.year
     form.value.templateId = newProject.templateId
     form.value.templateVersion = newProject.templateVersion
-    form.value.supplierIds = [newProject.supplierId]
+    form.value.supplierIds = newProject.supplierId ? [newProject.supplierId] : []
     form.value.reviewConfig = newProject.reviewConfig?.map((r, i) => ({
       stageOrder: i + 1,
       departmentId: r.departmentId

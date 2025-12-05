@@ -1,4 +1,8 @@
 {
+  "table": {
+    "show": "Show",
+    "entries": "entries"
+  },
   "common": {
     "appName": "CRM Questionnaire System",
     "save": "Save",
@@ -57,23 +61,33 @@
   },
   "projects": {
     "projects": "Projects",
+    "projectManagement": "Project Management",
     "createProject": "Create Project",
     "editProject": "Edit Project",
     "deleteProject": "Delete Project",
+    "projectDetail": "Project Detail",
     "projectName": "Project Name",
     "projectYear": "Year",
+    "projectType": "Project Type",
     "template": "Template",
     "supplier": "Supplier",
     "status": "Status",
+    "currentStage": "Current Stage",
     "createdAt": "Created At",
     "updatedAt": "Updated At",
+    "submittedAt": "Submitted At",
+    "basicInfo": "Basic Info",
     "draft": "Draft",
     "inProgress": "In Progress",
     "submitted": "Submitted",
     "reviewing": "Reviewing",
     "approved": "Approved",
     "returned": "Returned",
-    "noProjects": "No projects"
+    "noProjects": "No projects",
+    "noProjectData": "No project data available",
+    "createFirst": "Create your first project",
+    "fillQuestionnaire": "Fill Questionnaire",
+    "progress": "Progress"
   },
   "templates": {
     "templates": "Templates",
@@ -102,6 +116,9 @@
   },
   "review": {
     "review": "Review",
+    "reviewFlow": "Review Flow",
+    "stage": "Stage",
+    "addStage": "Add Review Stage",
     "pending": "Pending Review",
     "approve": "Approve",
     "return": "Return",
@@ -132,6 +149,7 @@
     "supplierName": "Supplier Name",
     "selectSupplier": "Select Supplier",
     "supplierInfo": "Supplier Info",
+    "supplierList": "Supplier List",
     "confirmDelete": "Are you sure you want to delete this supplier? This action cannot be undone."
   },
   "users": {
@@ -140,6 +158,9 @@
     "editUser": "Edit User",
     "role": "Role",
     "confirmDelete": "Are you sure you want to delete this user? This action cannot be undone."
+  },
+  "conflict": {
+    "projectManagement": "Conflict Minerals Project Management"
   },
   "validation": {
     "required": "This field is required",

@@ -51,6 +51,15 @@ export interface ReviewStageConfig {
   approverId?: string
 }
 
+export interface ProjectSupplier {
+  id: string
+  supplierId: string
+  supplierName: string
+  status: ProjectStatus
+  currentStage: number
+  submittedAt: string | null
+}
+
 export interface Project {
   id: string
   name: string
@@ -58,12 +67,17 @@ export interface Project {
   type: 'SAQ' | 'CONFLICT'
   templateId: string
   templateVersion: string
-  supplierId: string
-  status: ProjectStatus
-  currentStage: number
+  supplierId?: string
+  status?: ProjectStatus
+  currentStage?: number
+  supplierCount?: number
+  approvedCount?: number
+  suppliers?: ProjectSupplier[]
   reviewConfig: ReviewStageConfig[]
   createdAt: string
   updatedAt: string
+  supplier?: { id: string, name: string }
+  projectId?: number
 }
 
 // Template & Questions

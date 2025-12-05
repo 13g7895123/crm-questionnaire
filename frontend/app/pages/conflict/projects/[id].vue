@@ -2,19 +2,28 @@
   <div class="py-8 px-4 sm:px-6 lg:px-8">
     <div class="w-full">
       <!-- Back Button & Title -->
-      <div class="flex items-center gap-4 mb-8">
-        <UButton
-          icon="i-heroicons-arrow-left"
-          color="gray"
-          variant="ghost"
-          @click="router.back()"
-        />
-        <div>
-          <h1 class="text-2xl font-bold text-gray-900">{{ project?.name || $t('projects.projectDetail') }}</h1>
-          <p class="text-sm text-gray-500 mt-1" v-if="project">
-            {{ project.year }} · {{ project.type }}
-          </p>
+      <div class="flex items-center justify-between mb-8">
+        <div class="flex items-center gap-4">
+          <UButton
+            icon="i-heroicons-arrow-left"
+            color="gray"
+            variant="ghost"
+            @click="router.back()"
+          />
+          <div>
+            <h1 class="text-2xl font-bold text-gray-900">{{ project?.name || $t('projects.projectDetail') }}</h1>
+            <p class="text-sm text-gray-500 mt-1" v-if="project">
+              {{ project.year }} · {{ project.type }}
+            </p>
+          </div>
         </div>
+        <UButton
+          v-if="project"
+          icon="i-heroicons-pencil-square"
+          color="white"
+          :label="$t('common.edit')"
+          @click="openEditModal"
+        />
       </div>
 
       <!-- Loading -->
@@ -36,34 +45,6 @@
 
       <!-- Project Details -->
       <div v-else-if="project" class="space-y-6">
-        <!-- Status Card -->
-        <UCard>
-          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div class="flex items-center gap-4">
-              <ProjectStatusBadge :status="project.status" size="lg" />
-              <div>
-                <p class="text-sm text-gray-500">{{ $t('projects.currentStage') }}</p>
-                <p class="font-medium">{{ $t('review.stage') }} {{ project.currentStage || 0 }}</p>
-              </div>
-            </div>
-            <div class="flex gap-2">
-              <UButton
-                icon="i-heroicons-pencil-square"
-                color="white"
-                :label="$t('common.edit')"
-                @click="openEditModal"
-              />
-              <UButton
-                v-if="project.status === 'IN_PROGRESS' || project.status === 'RETURNED'"
-                icon="i-heroicons-document-text"
-                color="primary"
-                :label="$t('projects.fillQuestionnaire')"
-                :to="`/supplier/projects/${project.id}/answer`"
-              />
-            </div>
-          </div>
-        </UCard>
-
         <!-- Info Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <!-- Basic Info -->
@@ -95,59 +76,45 @@
             </dl>
           </UCard>
 
-          <!-- Supplier & Review Info -->
-          <UCard>
+          <!-- Review Config -->
+          <UCard v-if="project.reviewConfig?.length">
             <template #header>
-              <h3 class="font-semibold text-gray-900">{{ $t('suppliers.supplierInfo') }}</h3>
+              <h3 class="font-semibold text-gray-900">{{ $t('review.reviewFlow') }}</h3>
             </template>
-            <dl class="space-y-4">
-              <div>
-                <dt class="text-sm text-gray-500">{{ $t('suppliers.supplier') }}</dt>
-                <dd class="font-medium">{{ project.supplier?.name || '-' }}</dd>
+            <div class="flex flex-col gap-4">
+              <div
+                v-for="(stage, index) in project.reviewConfig"
+                :key="index"
+                class="flex items-center"
+              >
+                <div class="px-4 py-2 rounded-lg border border-gray-200 bg-gray-50 w-full">
+                  <p class="text-xs text-gray-500">{{ $t('review.stage') }} {{ stage.stageOrder }}</p>
+                  <p class="font-medium">{{ stage.department?.name || stage.departmentId }}</p>
+                </div>
               </div>
-              <div>
-                <dt class="text-sm text-gray-500">{{ $t('projects.submittedAt') }}</dt>
-                <dd class="font-medium">{{ project.submittedAt ? formatDate(project.submittedAt) : '-' }}</dd>
-              </div>
-              <div>
-                <dt class="text-sm text-gray-500">{{ $t('projects.createdAt') }}</dt>
-                <dd class="font-medium">{{ formatDate(project.createdAt) }}</dd>
-              </div>
-              <div>
-                <dt class="text-sm text-gray-500">{{ $t('projects.updatedAt') }}</dt>
-                <dd class="font-medium">{{ formatDate(project.updatedAt) }}</dd>
-              </div>
-            </dl>
+            </div>
           </UCard>
         </div>
 
-        <!-- Review Config -->
-        <UCard v-if="project.reviewConfig?.length">
+        <!-- Suppliers List -->
+        <UCard>
           <template #header>
-            <h3 class="font-semibold text-gray-900">{{ $t('review.reviewFlow') }}</h3>
+            <h3 class="font-semibold text-gray-900">{{ $t('suppliers.supplierList') }}</h3>
           </template>
-          <div class="flex items-center gap-4 flex-wrap">
-            <div
-              v-for="(stage, index) in project.reviewConfig"
-              :key="index"
-              class="flex items-center"
-            >
-              <div 
-                class="px-4 py-2 rounded-lg border"
-                :class="project.currentStage === stage.stageOrder 
-                  ? 'border-primary-500 bg-primary-50 text-primary-700' 
-                  : 'border-gray-200 bg-gray-50'"
-              >
-                <p class="text-xs text-gray-500">{{ $t('review.stage') }} {{ stage.stageOrder }}</p>
-                <p class="font-medium">{{ stage.department?.name || stage.departmentId }}</p>
-              </div>
-              <UIcon 
-                v-if="index < project.reviewConfig.length - 1"
-                name="i-heroicons-arrow-right"
-                class="w-5 h-5 mx-2 text-gray-400"
-              />
-            </div>
-          </div>
+          <UTable
+            :rows="project.suppliers || []"
+            :columns="supplierColumns"
+          >
+            <template #status-data="{ row }">
+              <ProjectStatusBadge :status="row.status" />
+            </template>
+            <template #currentStage-data="{ row }">
+              <span>{{ row.currentStage }}</span>
+            </template>
+            <template #submittedAt-data="{ row }">
+              {{ formatDate(row.submittedAt) }}
+            </template>
+          </UTable>
         </UCard>
       </div>
     </div>
@@ -163,15 +130,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useProjects } from '~/composables/useProjects'
 import ProjectStatusBadge from '~/components/project/ProjectStatusBadge.vue'
 import ProjectForm from '~/components/project/ProjectForm.vue'
 import type { Project } from '~/types/index'
+import { useI18n } from 'vue-i18n'
 
 definePageMeta({ middleware: 'auth' })
 
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const { getProject } = useProjects()
@@ -180,6 +149,13 @@ const loading = ref(true)
 const error = ref('')
 const project = ref<Project | null>(null)
 const showEditModal = ref(false)
+
+const supplierColumns = computed(() => [
+  { key: 'supplierName', label: t('suppliers.supplier') },
+  { key: 'status', label: t('projects.status') },
+  { key: 'currentStage', label: t('review.stage') },
+  { key: 'submittedAt', label: t('projects.submittedAt') }
+])
 
 const formatDate = (dateStr: string) => {
   if (!dateStr) return '-'

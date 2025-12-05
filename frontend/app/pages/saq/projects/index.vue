@@ -86,13 +86,11 @@
           </span>
         </template>
         
-        <template #status-data="{ row }">
-          <ProjectStatusBadge :status="row.status" />
-        </template>
-        
-        <template #supplier-data="{ row }">
-          <span v-if="row.supplier">{{ row.supplier.name }}</span>
-          <span v-else class="text-gray-400">-</span>
+        <template #progress-data="{ row }">
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-medium">{{ row.approvedCount || 0 }} / {{ row.supplierCount || 0 }}</span>
+            <span class="text-xs text-gray-500">{{ $t('projects.approved') }}</span>
+          </div>
         </template>
         
         <template #updatedAt-data="{ row }">
@@ -193,14 +191,9 @@ const columns = computed(() => [
     sortable: true
   },
   {
-    key: 'supplier',
-    label: t('suppliers.supplier'),
+    key: 'progress',
+    label: t('projects.progress'),
     sortable: false
-  },
-  {
-    key: 'status',
-    label: t('projects.status'),
-    sortable: true
   },
   {
     key: 'updatedAt',
@@ -219,8 +212,7 @@ const filteredProjects = computed(() => {
   const query = searchQuery.value.toLowerCase()
   return projects.value.filter(p => 
     p.name.toLowerCase().includes(query) || 
-    p.year.toString().includes(query) ||
-    p.supplier?.name?.toLowerCase().includes(query)
+    p.year.toString().includes(query)
   )
 })
 
