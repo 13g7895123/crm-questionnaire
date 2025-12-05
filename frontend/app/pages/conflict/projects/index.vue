@@ -209,11 +209,6 @@ const columns = computed(() => [
     key: 'updatedAt',
     label: t('projects.updatedAt'),
     sortable: true
-  },
-  {
-    key: 'actions',
-    label: '',
-    sortable: false
   }
 ])
 

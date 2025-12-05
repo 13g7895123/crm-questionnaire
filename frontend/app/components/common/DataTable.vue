@@ -27,10 +27,11 @@
       <div class="flex items-center gap-2">
         <UButton
           icon="i-heroicons-chevron-double-left"
-          color="gray"
+          color="white"
           variant="ghost"
           size="sm"
           :disabled="localPage === 1"
+          :ui="{ rounded: 'rounded-full' }"
           @click="toFirstPage"
         />
         <UPagination
@@ -42,10 +43,11 @@
         />
         <UButton
           icon="i-heroicons-chevron-double-right"
-          color="gray"
+          color="white"
           variant="ghost"
           size="sm"
           :disabled="localPage >= totalPages"
+          :ui="{ rounded: 'rounded-full' }"
           @click="toLastPage"
         />
       </div>
