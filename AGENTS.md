@@ -12,3 +12,8 @@ We're going to be using slash command from `.github\prompts\`
     - `frontend/docs/api-projects.md`: Project management requirements.
     - `frontend/docs/api-answers.md`: Questionnaire answering requirements.
     - `frontend/docs/api-reviews.md`: Review process requirements.
+
+## Frontend Guidelines
+
+- **Data Lists**: Whenever displaying a list of data, ALWAYS use the shared `DataTable` component (`frontend/app/components/common/DataTable.vue`).
+  - This component provides built-in support for pagination, sorting, selection, and consistent styling.
