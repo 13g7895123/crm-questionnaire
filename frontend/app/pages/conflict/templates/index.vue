@@ -160,11 +160,6 @@ const columns = computed(() => [
     key: 'latestVersion',
     label: t('templates.version'),
     sortable: true
-  },
-  {
-    key: 'actions',
-    label: '',
-    sortable: false
   }
 ])
 
