@@ -69,6 +69,10 @@ $routes->group('api/v1', ['namespace' => 'App\Controllers\Api\V1'], function ($r
         $routes->put('(:segment)/answers', 'AnswerController::update/$1');
         $routes->post('(:segment)/submit', 'AnswerController::submit/$1');
         
+        // Basic Info (for SAQ templates)
+        $routes->get('(:segment)/basic-info', 'AnswerController::getBasicInfo/$1');
+        $routes->put('(:segment)/basic-info', 'AnswerController::saveBasicInfo/$1');
+        
         // Reviews
         $routes->post('(:segment)/review', 'ReviewController::review/$1');
         $routes->get('(:segment)/reviews', 'ReviewController::history/$1');
@@ -83,6 +87,10 @@ $routes->group('api/v1', ['namespace' => 'App\Controllers\Api\V1'], function ($r
         $routes->delete('(:segment)', 'TemplateController::delete/$1');
         $routes->post('(:segment)/versions', 'TemplateController::createVersion/$1');
         $routes->get('(:segment)/versions/(:segment)', 'TemplateController::showVersion/$1/$2');
+        
+        // v2.0 Structure API
+        $routes->get('(:segment)/structure', 'TemplateController::getStructure/$1');
+        $routes->put('(:segment)/structure', 'TemplateController::saveStructure/$1');
     });
 
     // Review routes

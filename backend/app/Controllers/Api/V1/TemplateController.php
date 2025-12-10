@@ -4,17 +4,20 @@ namespace App\Controllers\Api\V1;
 
 use App\Models\TemplateModel;
 use App\Models\TemplateVersionModel;
+use App\Repositories\TemplateStructureRepository;
 use CodeIgniter\HTTP\ResponseInterface;
 
 class TemplateController extends BaseApiController
 {
     protected TemplateModel $templateModel;
     protected TemplateVersionModel $versionModel;
+    protected TemplateStructureRepository $structureRepo;
 
     public function __construct()
     {
         $this->templateModel = new TemplateModel();
         $this->versionModel = new TemplateVersionModel();
+        $this->structureRepo = new TemplateStructureRepository();
     }
 
     /**
@@ -376,5 +379,79 @@ class TemplateController extends BaseApiController
         }
 
         return ['error' => false, 'questions' => $validatedQuestions];
+    }
+
+    /**
+     * GET /api/v1/templates/{templateId}/structure
+     * Get template v2.0 hierarchical structure (sections, subsections, questions)
+     */
+    public function getStructure($templateId = null): ResponseInterface
+    {
+        $template = $this->templateModel->find($templateId);
+        if (!$template) {
+            return $this->notFoundResponse('找不到指定的範本');
+        }
+
+        // Check if template has v2.0 structure
+        if (!$this->structureRepo->hasV2Structure($templateId)) {
+            return $this->successResponse([
+                'templateId' => $templateId,
+                'hasV2Structure' => false,
+                'structure' => [
+                    'includeBasicInfo' => false,
+                    'sections' => [],
+                ],
+            ]);
+        }
+
+        $sections = $this->structureRepo->getTemplateStructure($templateId);
+
+        return $this->successResponse([
+            'templateId' => $templateId,
+            'hasV2Structure' => true,
+            'structure' => [
+                'includeBasicInfo' => $template->type === 'SAQ',
+                'sections' => $sections,
+            ],
+        ]);
+    }
+
+    /**
+     * PUT /api/v1/templates/{templateId}/structure
+     * Save/update template v2.0 structure (HOST only)
+     */
+    public function saveStructure($templateId = null): ResponseInterface
+    {
+        if (!$this->isHost() && !$this->isAdmin()) {
+            return $this->forbiddenResponse();
+        }
+
+        $template = $this->templateModel->find($templateId);
+        if (!$template) {
+            return $this->notFoundResponse('找不到指定的範本');
+        }
+
+        $rules = [
+            'sections' => 'required',
+        ];
+
+        if (!$this->validate($rules)) {
+            return $this->validationErrorResponse($this->validator->getErrors());
+        }
+
+        $sections = $this->request->getJsonVar('sections');
+        if (!is_array($sections)) {
+            return $this->validationErrorResponse(['sections' => '結構格式錯誤']);
+        }
+
+        // Save structure
+        $success = $this->structureRepo->saveTemplateStructure($templateId, $sections);
+
+        if (!$success) {
+            return $this->internalErrorResponse('儲存範本結構失敗');
+        }
+
+        // Return updated structure
+        return $this->getStructure($templateId);
     }
 }

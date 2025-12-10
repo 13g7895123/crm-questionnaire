@@ -6,6 +6,7 @@ use App\Models\ProjectModel;
 use App\Models\ProjectSupplierModel;
 use App\Models\AnswerModel;
 use App\Models\TemplateVersionModel;
+use App\Repositories\ProjectBasicInfoRepository;
 use CodeIgniter\HTTP\ResponseInterface;
 
 class AnswerController extends BaseApiController
@@ -13,12 +14,14 @@ class AnswerController extends BaseApiController
     protected ProjectModel $projectModel;
     protected ProjectSupplierModel $projectSupplierModel;
     protected AnswerModel $answerModel;
+    protected ProjectBasicInfoRepository $basicInfoRepo;
 
     public function __construct()
     {
         $this->projectModel = new ProjectModel();
         $this->projectSupplierModel = new ProjectSupplierModel();
         $this->answerModel = new AnswerModel();
+        $this->basicInfoRepo = new ProjectBasicInfoRepository();
     }
 
     /**
@@ -215,5 +218,96 @@ class AnswerController extends BaseApiController
         if ($value === '') return true;
         if (is_array($value) && empty($value)) return true;
         return false;
+    }
+
+    /**
+     * GET /api/v1/project-suppliers/{projectSupplierId}/basic-info
+     * Get basic company info for SAQ template
+     */
+    public function getBasicInfo($projectSupplierId = null): ResponseInterface
+    {
+        $projectSupplier = $this->projectSupplierModel->find($projectSupplierId);
+
+        if (!$projectSupplier) {
+            return $this->notFoundResponse('找不到指定的專案供應商記錄');
+        }
+
+        // Check access permission
+        if ($this->isSupplier() && $projectSupplier->supplier_id != $this->getCurrentOrganizationId()) {
+            return $this->errorResponse(
+                'SUPPLIER_NOT_ASSIGNED',
+                '您無權存取此專案',
+                403
+            );
+        }
+
+        $basicInfo = $this->basicInfoRepo->getByProjectSupplierId($projectSupplierId);
+
+        if (!$basicInfo) {
+            return $this->successResponse([
+                'projectSupplierId' => (int) $projectSupplierId,
+                'basicInfo' => null,
+            ]);
+        }
+
+        return $this->successResponse([
+            'projectSupplierId' => (int) $projectSupplierId,
+            'basicInfo' => $basicInfo->toApiResponse(),
+        ]);
+    }
+
+    /**
+     * PUT /api/v1/project-suppliers/{projectSupplierId}/basic-info
+     * Save/update basic company info
+     */
+    public function saveBasicInfo($projectSupplierId = null): ResponseInterface
+    {
+        $projectSupplier = $this->projectSupplierModel->find($projectSupplierId);
+
+        if (!$projectSupplier) {
+            return $this->notFoundResponse('找不到指定的專案供應商記錄');
+        }
+
+        // Only assigned supplier can edit
+        if ($this->isSupplier() && $projectSupplier->supplier_id != $this->getCurrentOrganizationId()) {
+            return $this->errorResponse(
+                'SUPPLIER_NOT_ASSIGNED',
+                '您無權編輯此專案',
+                403
+            );
+        }
+
+        // Check project supplier status
+        if (!in_array($projectSupplier->status, ['IN_PROGRESS', 'RETURNED'])) {
+            return $this->conflictResponse(
+                'PROJECT_ALREADY_SUBMITTED',
+                '專案已提交，無法修改資料'
+            );
+        }
+
+        $data = $this->request->getJsonVar('basicInfo');
+        if (!is_array($data)) {
+            return $this->validationErrorResponse(['basicInfo' => '資料格式錯誤']);
+        }
+
+        // Validate data
+        $errors = $this->basicInfoRepo->validateBasicInfoData($data);
+        if (!empty($errors)) {
+            return $this->validationErrorResponse($errors);
+        }
+
+        // Save data
+        $success = $this->basicInfoRepo->saveBasicInfo($projectSupplierId, $data);
+
+        if (!$success) {
+            return $this->errorResponse(
+                'SAVE_ERROR',
+                '儲存資料失敗',
+                500
+            );
+        }
+
+        // Return updated data
+        return $this->getBasicInfo($projectSupplierId);
     }
 }
