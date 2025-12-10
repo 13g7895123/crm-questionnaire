@@ -100,22 +100,82 @@
 </template>
 
 <script setup lang="ts">
+import type { TemplateStructure } from '~/types/template-v2';
+
 const route = useRoute();
 const router = useRouter();
+const config = useRuntimeConfig();
 
-const templateName = ref('2025 SAQ 供應商評估範本');
+const templateId = computed(() => route.params.id);
+const templateName = ref('載入中...');
 const currentStep = ref(1);
+const loading = ref(true);
+const error = ref<string | null>(null);
 
-const steps = [
-  { number: 1, title: '公司基本資料' },
-  { number: 2, title: 'A. 勞工' },
-  { number: 3, title: 'B. 健康與安全' },
-  { number: 4, title: 'C. 環境' },
-  { number: 5, title: 'D. 道德規範' },
-  { number: 6, title: '評估結果' },
-];
+// 從 API 載入範本結構
+const templateStructure = ref<TemplateStructure | null>(null);
 
-const sections = [
+const { data: templateData, error: apiError } = await useFetch(
+  `${config.public.apiBase}/api/v1/templates/${templateId.value}/structure`,
+  {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  }
+);
+
+if (apiError.value) {
+  error.value = '無法載入範本資料';
+  loading.value = false;
+} else if (templateData.value?.data) {
+  const data = templateData.value.data as any;
+  templateStructure.value = data.structure;
+  templateName.value = '範本預覽'; // 可以從 templates 表取得真實名稱
+  loading.value = false;
+}
+
+// 動態生成步驟
+const steps = computed(() => {
+  if (!templateStructure.value) return [];
+  
+  const stepList = [];
+  let stepNumber = 1;
+  
+  // 如果有基本資訊，加入第一步
+  if (templateStructure.value.includeBasicInfo) {
+    stepList.push({
+      number: stepNumber++,
+      title: '公司基本資料',
+    });
+  }
+  
+  // 加入所有區段
+  if (templateStructure.value.sections) {
+    for (const section of templateStructure.value.sections) {
+      stepList.push({
+        number: stepNumber++,
+        title: section.title,
+      });
+    }
+  }
+  
+  // 加入結果頁
+  stepList.push({
+    number: stepNumber,
+    title: '評估結果',
+  });
+  
+  return stepList;
+});
+
+// 取得當前區段資料
+const sections = computed(() => {
+  if (!templateStructure.value?.sections) return [];
+  return templateStructure.value.sections;
+});
+
+// 舊的硬編碼資料（作為後備）
+const fallbackSections = [
   {
     id: 'A',
     title: 'A. 勞工 (Labor)',

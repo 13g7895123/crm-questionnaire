@@ -30,10 +30,11 @@
             {{ template.type }}
           </span>
         </div>
-        <p class="text-gray-600 text-sm mb-4">{{ template.description }}</p>
+        <p class="text-gray-600 text-sm mb-4">{{ template.description || '無說明' }}</p>
         <div class="flex justify-between items-center text-sm text-gray-500">
-          <span>版本: {{ template.version }}</span>
-          <span>{{ template.questionCount }} 題</span>
+          <span>版本: {{ template.latestVersion || template.version || '1.0.0' }}</span>
+          <span v-if="template.hasV2Structure" class="text-blue-600 font-medium">v2.0 新架構</span>
+          <span v-else-if="template.questionCount">{{ template.questionCount }} 題</span>
         </div>
       </div>
     </div>
@@ -41,22 +42,55 @@
 </template>
 
 <script setup lang="ts">
-const templates = ref([
+const config = useRuntimeConfig();
+const loading = ref(true);
+const error = ref<string | null>(null);
+
+// 從 API 載入範本列表
+const { data: templatesData, error: apiError } = await useFetch(
+  `${config.public.apiBase}/api/v1/templates`,
   {
-    id: 1,
-    name: '2025 SAQ 供應商評估範本',
-    type: 'SAQ',
-    description: '完整的供應商自我評估問卷，包含公司基本資料與A-E五大評估面向',
-    version: '1.0.0',
-    questionCount: 45,
-  },
-  {
-    id: 2,
-    name: '利益衝突聲明範本',
-    type: 'CONFLICT',
-    description: '供應商利益衝突聲明問卷',
-    version: '1.0.0',
-    questionCount: 12,
-  },
-]);
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  }
+);
+
+const templates = ref<any[]>([]);
+
+if (apiError.value) {
+  error.value = '無法載入範本列表';
+  // 使用後備資料
+  templates.value = [
+    {
+      id: 1,
+      name: '2025 SAQ 供應商評估範本',
+      type: 'SAQ',
+      description: '完整的供應商自我評估問卷，包含公司基本資料與A-E五大評估面向',
+      latestVersion: '1.0.0',
+      questionCount: 45,
+    },
+    {
+      id: 2,
+      name: '利益衝突聲明範本',
+      type: 'CONFLICT',
+      description: '供應商利益衝突聲明問卷',
+      latestVersion: '1.0.0',
+      questionCount: 12,
+    },
+    {
+      id: 4,
+      name: 'SAQ 完整範本 v2.0',
+      type: 'SAQ',
+      description: '新版階層式 SAQ 範本，支援條件邏輯與表格問題',
+      latestVersion: '2.0.0',
+      hasV2Structure: true,
+      questionCount: 12,
+    },
+  ];
+} else if (templatesData.value?.data) {
+  templates.value = templatesData.value.data;
+}
+
+loading.value = false;
 </script>
