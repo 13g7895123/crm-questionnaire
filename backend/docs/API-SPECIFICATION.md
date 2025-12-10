@@ -979,6 +979,424 @@ Authorization: Bearer <accessToken>
 > 
 > 請參考 [6.5 專案供應商 API](#65-專案供應商-api-project-suppliers)
 
+### 8.1 Template v2.0 API (新架構)
+
+#### 8.1.1 取得範本結構 (Template Structure)
+
+```
+GET /api/v1/templates/{templateId}/structure
+Authorization: Bearer <accessToken>
+```
+
+**說明：** 取得範本的完整階層結構（Section → Subsection → Question）
+
+**Response (200)：**
+```json
+{
+  "success": true,
+  "data": {
+    "templateId": 4,
+    "hasV2Structure": true,
+    "structure": {
+      "includeBasicInfo": true,
+      "sections": [
+        {
+          "id": "A",
+          "order": 1,
+          "title": "勞工 (Labor)",
+          "description": "評估供應商的勞工政策與實踐",
+          "subsections": [
+            {
+              "id": "A.1",
+              "order": 1,
+              "title": "勞動自由",
+              "description": null,
+              "questions": [
+                {
+                  "id": "A.1.1",
+                  "order": 1,
+                  "text": "貴公司是否禁止使用強迫勞工？",
+                  "type": "BOOLEAN",
+                  "required": true,
+                  "config": null,
+                  "conditionalLogic": {
+                    "followUpQuestions": [
+                      {
+                        "condition": {
+                          "operator": "equals",
+                          "value": true
+                        },
+                        "questions": [
+                          {
+                            "id": "A.1.1.1",
+                            "order": 1,
+                            "text": "請說明貴公司如何確保沒有強迫勞工",
+                            "type": "TEXT",
+                            "required": true
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
+```
+
+**題目類型 (QuestionType)：**
+- `BOOLEAN` - 是非題
+- `TEXT` - 簡答題
+- `NUMBER` - 數字題
+- `RADIO` - 單選題
+- `CHECKBOX` - 複選題
+- `SELECT` - 下拉選單
+- `DATE` - 日期題
+- `FILE` - 檔案上傳
+- `TABLE` - 表格題（v2.0 新增）
+
+**條件邏輯運算子 (ConditionalOperator)：**
+- `equals` - 等於
+- `notEquals` - 不等於
+- `contains` - 包含
+- `greaterThan` - 大於
+- `lessThan` - 小於
+- `greaterThanOrEqual` - 大於等於
+- `lessThanOrEqual` - 小於等於
+- `isEmpty` - 為空
+- `isNotEmpty` - 不為空
+
+#### 8.1.2 取得基本資訊 (Basic Info)
+
+```
+GET /api/v1/project-suppliers/{projectSupplierId}/basic-info
+Authorization: Bearer <accessToken>
+```
+
+**說明：** 取得供應商填寫的基本資訊（SAQ 第一步）
+
+**Response (200)：**
+```json
+{
+  "success": true,
+  "data": {
+    "projectSupplierId": 1,
+    "basicInfo": {
+      "companyName": "供應商 A 公司",
+      "companyAddress": "台北市信義區信義路五段 7 號",
+      "employees": {
+        "total": 150,
+        "male": 80,
+        "female": 70,
+        "foreign": 20
+      },
+      "facilities": [
+        {
+          "location": "台北工廠",
+          "address": "新北市土城區工業路 123 號",
+          "area": "5000",
+          "type": "製造"
+        },
+        {
+          "location": "新竹工廠",
+          "address": "新竹縣湖口鄉科學園路 456 號",
+          "area": "3000",
+          "type": "研發"
+        }
+      ],
+      "certifications": [
+        "ISO 9001",
+        "ISO 14001",
+        "OHSAS 18001"
+      ],
+      "rbaOnlineMember": true,
+      "contacts": [
+        {
+          "name": "張經理",
+          "title": "品保經理",
+          "department": "品質保證部",
+          "email": "zhang@supplier-a.com",
+          "phone": "02-1234-5678"
+        },
+        {
+          "name": "李主任",
+          "title": "環安主任",
+          "department": "環安部",
+          "email": "li@supplier-a.com",
+          "phone": "02-2345-6789"
+        }
+      ]
+    }
+  }
+}
+```
+
+**Response (404) - 尚未填寫：**
+```json
+{
+  "success": true,
+  "data": {
+    "projectSupplierId": 1,
+    "basicInfo": null
+  }
+}
+```
+
+#### 8.1.3 儲存基本資訊 (Save Basic Info)
+
+```
+PUT /api/v1/project-suppliers/{projectSupplierId}/basic-info
+Authorization: Bearer <accessToken>
+```
+
+**Request Body：**
+```json
+{
+  "companyName": "供應商 A 公司",
+  "companyAddress": "台北市信義區信義路五段 7 號",
+  "employees": {
+    "total": 150,
+    "male": 80,
+    "female": 70,
+    "foreign": 20
+  },
+  "facilities": [
+    {
+      "location": "台北工廠",
+      "address": "新北市土城區工業路 123 號",
+      "area": "5000",
+      "type": "製造"
+    }
+  ],
+  "certifications": ["ISO 9001", "ISO 14001"],
+  "rbaOnlineMember": true,
+  "contacts": [
+    {
+      "name": "張經理",
+      "title": "品保經理",
+      "department": "品質保證部",
+      "email": "zhang@supplier-a.com",
+      "phone": "02-1234-5678"
+    }
+  ]
+}
+```
+
+**Response (200)：**
+```json
+{
+  "success": true,
+  "data": {
+    "projectSupplierId": 1,
+    "saved": true,
+    "savedAt": "2025-12-04T10:30:00.000Z"
+  }
+}
+```
+
+#### 8.1.4 計算分數 (Calculate Score)
+
+```
+POST /api/v1/project-suppliers/{projectSupplierId}/calculate-score
+Authorization: Bearer <accessToken>
+```
+
+**說明：** 計算當前答案的各區段分數及總分
+
+**Response (200)：**
+```json
+{
+  "success": true,
+  "data": {
+    "breakdown": {
+      "A": {
+        "sectionId": "A",
+        "sectionName": "勞工 (Labor)",
+        "score": 18,
+        "maxScore": 20,
+        "weight": 25,
+        "answeredCount": 9,
+        "totalCount": 10,
+        "completionRate": 90
+      },
+      "B": {
+        "sectionId": "B",
+        "sectionName": "健康與安全 (Health & Safety)",
+        "score": 16,
+        "maxScore": 20,
+        "weight": 25,
+        "answeredCount": 8,
+        "totalCount": 10,
+        "completionRate": 80
+      },
+      "C": {
+        "sectionId": "C",
+        "sectionName": "環境 (Environment)",
+        "score": 19,
+        "maxScore": 20,
+        "weight": 20,
+        "answeredCount": 10,
+        "totalCount": 10,
+        "completionRate": 100
+      },
+      "D": {
+        "sectionId": "D",
+        "sectionName": "道德規範 (Ethics)",
+        "score": 17,
+        "maxScore": 20,
+        "weight": 15,
+        "answeredCount": 9,
+        "totalCount": 10,
+        "completionRate": 90
+      },
+      "E": {
+        "sectionId": "E",
+        "sectionName": "管理系統 (Management System)",
+        "score": 18,
+        "maxScore": 20,
+        "weight": 15,
+        "answeredCount": 10,
+        "totalCount": 10,
+        "completionRate": 100
+      }
+    },
+    "totalScore": 88,
+    "grade": "良好",
+    "calculatedAt": "2025-12-04T10:35:00.000Z"
+  }
+}
+```
+
+**等級評定標準：**
+| 等級 | 分數範圍 |
+|------|---------|
+| 優秀 | 90-100 |
+| 良好 | 80-89 |
+| 合格 | 70-79 |
+| 待改進 | 60-69 |
+| 不合格 | 0-59 |
+
+#### 8.1.5 取得可見問題清單 (Get Visible Questions)
+
+```
+GET /api/v1/project-suppliers/{projectSupplierId}/visible-questions
+Authorization: Bearer <accessToken>
+```
+
+**說明：** 根據條件邏輯計算當前應顯示的問題清單
+
+**Response (200)：**
+```json
+{
+  "success": true,
+  "data": {
+    "projectSupplierId": 1,
+    "visibleQuestions": [
+      "A.1.1",
+      "A.1.1.1",
+      "A.1.2",
+      "A.2.1",
+      "A.2.2",
+      "B.1.1",
+      "B.1.2",
+      "B.1.2.1",
+      "B.2.1",
+      "C.1.1",
+      "C.1.2",
+      "D.1.1",
+      "D.1.2",
+      "E.1.1",
+      "E.1.2"
+    ]
+  }
+}
+```
+
+**說明：**
+- 此 API 會根據已填寫的答案評估條件邏輯
+- 返回應該顯示給使用者的問題 ID 清單
+- 前端應根據此清單隱藏不符合條件的問題
+
+#### 8.1.6 驗證答案 (Validate Answers)
+
+```
+POST /api/v1/project-suppliers/{projectSupplierId}/validate
+Authorization: Bearer <accessToken>
+```
+
+**說明：** 驗證當前答案是否符合要求（提交前檢查）
+
+**Response (200) - 驗證通過：**
+```json
+{
+  "success": true,
+  "data": {
+    "projectSupplierId": 1,
+    "valid": true,
+    "errors": {}
+  }
+}
+```
+
+**Response (200) - 驗證失敗：**
+```json
+{
+  "success": true,
+  "data": {
+    "projectSupplierId": 1,
+    "valid": false,
+    "errors": {
+      "basicInfo": {
+        "companyName": "公司名稱為必填欄位",
+        "facilities": "至少需要提供一個設施資訊",
+        "contacts": "至少需要提供一位聯絡人"
+      },
+      "missingRequired": [
+        {
+          "questionId": "A.1.1",
+          "questionText": "貴公司是否禁止使用強迫勞工？"
+        },
+        {
+          "questionId": "B.2.1",
+          "questionText": "貴公司是否定期進行安全演練？"
+        }
+      ],
+      "conditionalLogic": {
+        "A.1.1.1": "當 A.1.1 回答「是」時，此問題為必填",
+        "B.1.2.1": "當 B.1.2 選擇「每季一次」時，此問題為必填"
+      },
+      "tableAnswers": {
+        "A.2.2": "表格至少需要 3 筆資料，目前只有 1 筆"
+      }
+    }
+  }
+}
+```
+
+**驗證項目：**
+1. **基本資訊驗證**：
+   - 必填欄位檢查（公司名稱、員工統計）
+   - 至少一個設施資訊
+   - 至少一位聯絡人
+   - Email 格式驗證
+
+2. **必填問題檢查**：
+   - 檢查所有標記為 `required: true` 的問題是否已回答
+
+3. **條件邏輯驗證**：
+   - 檢查因條件觸發而變為必填的問題
+   - 驗證條件式必填欄位是否已填寫
+
+4. **表格答案驗證**：
+   - 檢查表格行數是否符合 `minRows` 和 `maxRows` 限制
+   - 驗證必填欄位是否完整
+   - 檢查資料型別是否正確
+
 ---
 
 ## 9. 審核流程 API

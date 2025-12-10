@@ -7,6 +7,10 @@ use App\Models\ProjectSupplierModel;
 use App\Models\AnswerModel;
 use App\Models\TemplateVersionModel;
 use App\Repositories\ProjectBasicInfoRepository;
+use App\Repositories\TemplateStructureRepository;
+use App\Libraries\ScoringEngine;
+use App\Libraries\ConditionalLogicEngine;
+use App\Libraries\AnswerValidator;
 use CodeIgniter\HTTP\ResponseInterface;
 
 class AnswerController extends BaseApiController
@@ -15,6 +19,10 @@ class AnswerController extends BaseApiController
     protected ProjectSupplierModel $projectSupplierModel;
     protected AnswerModel $answerModel;
     protected ProjectBasicInfoRepository $basicInfoRepo;
+    protected TemplateStructureRepository $structureRepo;
+    protected ScoringEngine $scoringEngine;
+    protected ConditionalLogicEngine $conditionalEngine;
+    protected AnswerValidator $answerValidator;
 
     public function __construct()
     {
@@ -22,6 +30,10 @@ class AnswerController extends BaseApiController
         $this->projectSupplierModel = new ProjectSupplierModel();
         $this->answerModel = new AnswerModel();
         $this->basicInfoRepo = new ProjectBasicInfoRepository();
+        $this->structureRepo = new TemplateStructureRepository();
+        $this->scoringEngine = new ScoringEngine();
+        $this->conditionalEngine = new ConditionalLogicEngine();
+        $this->answerValidator = new AnswerValidator();
     }
 
     /**
@@ -309,5 +321,126 @@ class AnswerController extends BaseApiController
 
         // Return updated data
         return $this->getBasicInfo($projectSupplierId);
+    }
+
+    /**
+     * POST /api/v1/project-suppliers/{projectSupplierId}/calculate-score
+     * Calculate scores for SAQ template
+     */
+    public function calculateScore($projectSupplierId = null): ResponseInterface
+    {
+        $projectSupplier = $this->projectSupplierModel->find($projectSupplierId);
+
+        if (!$projectSupplier) {
+            return $this->notFoundResponse('找不到指定的專案供應商記錄');
+        }
+
+        // Check access permission
+        if ($this->isSupplier() && $projectSupplier->supplier_id != $this->getCurrentOrganizationId()) {
+            return $this->errorResponse(
+                'SUPPLIER_NOT_ASSIGNED',
+                '您無權存取此專案',
+                403
+            );
+        }
+
+        // Calculate scores
+        $scoreData = $this->scoringEngine->getScoreBreakdown($projectSupplierId);
+
+        return $this->successResponse($scoreData);
+    }
+
+    /**
+     * GET /api/v1/project-suppliers/{projectSupplierId}/visible-questions
+     * Get visible questions based on current answers and conditional logic
+     */
+    public function getVisibleQuestions($projectSupplierId = null): ResponseInterface
+    {
+        $projectSupplier = $this->projectSupplierModel->find($projectSupplierId);
+
+        if (!$projectSupplier) {
+            return $this->notFoundResponse('找不到指定的專案供應商記錄');
+        }
+
+        // Check access permission
+        if ($this->isSupplier() && $projectSupplier->supplier_id != $this->getCurrentOrganizationId()) {
+            return $this->errorResponse(
+                'SUPPLIER_NOT_ASSIGNED',
+                '您無權存取此專案',
+                403
+            );
+        }
+
+        // Get project to find template
+        $project = $this->projectModel->find($projectSupplier->project_id);
+        if (!$project) {
+            return $this->notFoundResponse('找不到關聯的專案');
+        }
+
+        // Get template structure
+        $structure = $this->structureRepo->getTemplateStructure($project->template_id);
+        
+        // Get current answers
+        $answers = $this->answerModel->getAnswersForProjectSupplier($projectSupplierId);
+
+        // Calculate visible questions
+        $visibleQuestions = $this->conditionalEngine->getVisibleQuestions($structure, $answers);
+
+        return $this->successResponse([
+            'projectSupplierId' => (int) $projectSupplierId,
+            'visibleQuestions' => $visibleQuestions,
+        ]);
+    }
+
+    /**
+     * POST /api/v1/project-suppliers/{projectSupplierId}/validate
+     * Validate answers before submission
+     */
+    public function validateAnswers($projectSupplierId = null): ResponseInterface
+    {
+        $projectSupplier = $this->projectSupplierModel->find($projectSupplierId);
+
+        if (!$projectSupplier) {
+            return $this->notFoundResponse('找不到指定的專案供應商記錄');
+        }
+
+        // Check access permission
+        if ($this->isSupplier() && $projectSupplier->supplier_id != $this->getCurrentOrganizationId()) {
+            return $this->errorResponse(
+                'SUPPLIER_NOT_ASSIGNED',
+                '您無權存取此專案',
+                403
+            );
+        }
+
+        // Get project to find template
+        $project = $this->projectModel->find($projectSupplier->project_id);
+        if (!$project) {
+            return $this->notFoundResponse('找不到關聯的專案');
+        }
+
+        // Get template structure
+        $structure = $this->structureRepo->getTemplateStructure($project->template_id);
+        
+        // Get current answers
+        $answers = $this->answerModel->getAnswersForProjectSupplier($projectSupplierId);
+        
+        // Get basic info if SAQ template
+        $basicInfo = null;
+        $templateModel = model('TemplateModel');
+        $template = $templateModel->find($project->template_id);
+        if ($template && $template->type === 'SAQ') {
+            $basicInfoEntity = $this->basicInfoRepo->getByProjectSupplierId($projectSupplierId);
+            $basicInfo = $basicInfoEntity ? $basicInfoEntity->toApiResponse() : null;
+        }
+
+        // Validate
+        $validation = $this->answerValidator->validateForSubmission($structure, $answers, $basicInfo);
+
+        return $this->successResponse([
+            'projectSupplierId' => (int) $projectSupplierId,
+            'valid' => $validation['valid'],
+            'errors' => $validation['errors'],
+        ]);
     }
 }

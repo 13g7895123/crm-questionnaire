@@ -73,6 +73,11 @@ $routes->group('api/v1', ['namespace' => 'App\Controllers\Api\V1'], function ($r
         $routes->get('(:segment)/basic-info', 'AnswerController::getBasicInfo/$1');
         $routes->put('(:segment)/basic-info', 'AnswerController::saveBasicInfo/$1');
         
+        // Scoring & Validation
+        $routes->post('(:segment)/calculate-score', 'AnswerController::calculateScore/$1');
+        $routes->get('(:segment)/visible-questions', 'AnswerController::getVisibleQuestions/$1');
+        $routes->post('(:segment)/validate', 'AnswerController::validateAnswers/$1');
+        
         // Reviews
         $routes->post('(:segment)/review', 'ReviewController::review/$1');
         $routes->get('(:segment)/reviews', 'ReviewController::history/$1');
