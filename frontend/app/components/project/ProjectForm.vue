@@ -198,7 +198,7 @@ const isEditing = computed(() => !!props.project?.id)
 
 const form = ref({
   name: '',
-  year: new Date().getFullYear(),
+  year: 0,
   templateId: '',
   templateVersion: '',
   supplierIds: [] as string[],
@@ -241,7 +241,7 @@ const departmentOptions = computed(() =>
 const resetForm = () => {
   form.value = {
     name: '',
-    year: new Date().getFullYear(),
+    year: 0,
     templateId: '',
     templateVersion: '',
     supplierIds: [],
@@ -282,6 +282,7 @@ watch(() => props.project, (newProject) => {
 
 watch(isOpen, async (open) => {
   if (open && !isEditing.value) {
+    form.value.year = new Date().getFullYear()
     await loadInitialData()
   }
 })

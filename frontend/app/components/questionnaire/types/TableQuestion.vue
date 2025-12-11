@@ -100,6 +100,7 @@
 </template>
 
 <script setup lang="ts">
+import { ref, computed, watch } from 'vue'
 import type { TableConfig, TableAnswer } from '~/types/template-v2'
 
 const props = defineProps<{
@@ -114,12 +115,6 @@ const emit = defineEmits<{
 const rows = ref<TableAnswer[]>(props.modelValue || [])
 const validationError = ref<string>('')
 
-// 初始化至少一行
-if (rows.value.length === 0 && props.config?.minRows) {
-  for (let i = 0; i < Math.min(props.config.minRows, 1); i++) {
-    addRow()
-  }
-}
 
 const canAddRow = computed(() => {
   if (!props.config?.maxRows) return true
@@ -159,6 +154,13 @@ const removeRow = (index: number) => {
 
 const emitUpdate = () => {
   emit('update:modelValue', rows.value)
+}
+
+// 初始化至少一行
+if (rows.value.length === 0 && props.config?.minRows) {
+  for (let i = 0; i < Math.min(props.config!.minRows, 1); i++) {
+    addRow()
+  }
 }
 
 watch(

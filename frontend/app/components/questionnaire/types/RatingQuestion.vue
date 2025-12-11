@@ -1,25 +1,35 @@
 <template>
-  <div class="mb-4">
-    <label class="block text-sm font-medium text-gray-700">
-      {{ question.text }}
-      <span v-if="question.required" class="text-red-500">*</span>
-    </label>
-    <input
-      type="text"
-      class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md"
-      placeholder="RatingQuestion"
-      @input="$emit('update', $event.target.value)"
-    />
+  <div class="flex space-x-2">
+    <button
+      v-for="rating in maxRating"
+      :key="rating"
+      type="button"
+      class="w-10 h-10 rounded-full border focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+      :class="[
+        modelValue === rating
+          ? 'bg-blue-600 text-white border-blue-600'
+          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+      ]"
+      @click="handleClick(rating)"
+    >
+      {{ rating }}
+    </button>
   </div>
 </template>
+
 <script setup lang="ts">
-import type { Question } from '~/types/index'
-
-defineProps<{
-  question: Question
+const props = defineProps<{
+  modelValue?: number
+  config?: any
 }>()
 
-defineEmits<{
-  update: [value: any]
+const emit = defineEmits<{
+  'update:modelValue': [value: number]
 }>()
+
+const maxRating = props.config?.max || 5
+
+const handleClick = (rating: number) => {
+  emit('update:modelValue', rating)
+}
 </script>

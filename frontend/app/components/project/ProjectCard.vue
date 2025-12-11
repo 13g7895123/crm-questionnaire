@@ -9,7 +9,9 @@
     </div>
     
     <div class="flex justify-between items-center text-sm text-gray-500 mt-4 pt-4 border-t border-gray-50">
-      <span>{{ new Date(project.updatedAt).toLocaleDateString() }}</span>
+      <ClientOnly>
+        <span>{{ new Date(project.updatedAt).toLocaleDateString() }}</span>
+      </ClientOnly>
       <NuxtLink :to="`/saq/projects/${project.id}`" class="text-blue-600 hover:text-blue-700 font-medium">
         {{ $t('common.edit') }}
       </NuxtLink>

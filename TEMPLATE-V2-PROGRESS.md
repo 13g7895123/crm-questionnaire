@@ -348,9 +348,9 @@ docker compose exec backend php spark db:table project_basic_info
 - End-to-end workflow tests
 
 ### Phase 5: 整合
-- Frontend integration
-- Data migration from v1.0
-- Documentation updates
+- ✅ Frontend integration (Questionnaire Rendering)
+- [ ] Data migration from v1.0
+- ✅ Documentation updates
 
 ---
 

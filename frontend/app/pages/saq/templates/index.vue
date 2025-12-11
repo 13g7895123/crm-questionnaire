@@ -22,6 +22,13 @@
             @click="openCreateModal"
           />
           <UButton
+            icon="i-heroicons-eye"
+            color="blue"
+            :label="$t('common.preview') || '預覽'"
+            :disabled="!selected.length || selected.length > 1"
+            @click="openPreview(selected[0])"
+          />
+          <UButton
             icon="i-heroicons-pencil-square"
             color="white"
             :label="$t('common.edit')"
@@ -80,10 +87,19 @@
         <template #actions-data="{ row }">
           <div class="flex items-center gap-1">
             <UButton
+              icon="i-heroicons-eye"
+              color="blue"
+              variant="ghost"
+              size="xs"
+              :title="$t('common.preview') || '預覽'"
+              @click.stop="openPreview(row)"
+            />
+            <UButton
               icon="i-heroicons-pencil-square"
               color="gray"
               variant="ghost"
               size="xs"
+              :title="$t('common.edit') || '編輯'"
               @click.stop="openEditModal(row)"
             />
             <UButton
@@ -91,6 +107,7 @@
               color="red"
               variant="ghost"
               size="xs"
+              :title="$t('common.delete') || '刪除'"
               @click.stop="handleDeleteRow(row)"
             />
           </div>
@@ -282,6 +299,14 @@ const handleDeleteRow = async (row: Template) => {
     closeAlert()
     showSystemAlert(e.message || t('common.deleteFailed'), 'error')
   }
+}
+
+const openPreview = (template?: Template) => {
+  const target = template || selected.value[0]
+  if (!target) return
+  
+  // 導航到預覽頁面
+  navigateTo(`/saq/templates/${target.id}`)
 }
 
 onMounted(() => {

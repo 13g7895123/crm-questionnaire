@@ -1,36 +1,37 @@
 <template>
   <div class="space-y-2">
-    <label class="flex items-center space-x-3 cursor-pointer">
+    <label
+      v-for="option in options"
+      :key="option.value"
+      class="flex items-center space-x-3 cursor-pointer"
+    >
       <input
         type="radio"
-        :checked="modelValue === true"
+        :checked="modelValue === option.value"
         class="w-4 h-4 text-blue-600 focus:ring-blue-500"
-        @change="handleChange(true)"
+        @change="handleChange(option.value)"
       />
-      <span class="text-sm font-medium text-gray-700">是</span>
-    </label>
-    <label class="flex items-center space-x-3 cursor-pointer">
-      <input
-        type="radio"
-        :checked="modelValue === false"
-        class="w-4 h-4 text-blue-600 focus:ring-blue-500"
-        @change="handleChange(false)"
-      />
-      <span class="text-sm font-medium text-gray-700">否</span>
+      <span class="text-sm font-medium text-gray-700">{{ option.label }}</span>
     </label>
   </div>
 </template>
 
 <script setup lang="ts">
+interface Option {
+  label: string
+  value: string
+}
+
 const props = defineProps<{
-  modelValue?: boolean | null
+  modelValue?: string | null
+  options?: Option[]
 }>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean]
+  'update:modelValue': [value: string]
 }>()
 
-const handleChange = (value: boolean) => {
+const handleChange = (value: string) => {
   emit('update:modelValue', value)
 }
 </script>

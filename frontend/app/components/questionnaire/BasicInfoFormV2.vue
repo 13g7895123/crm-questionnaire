@@ -35,7 +35,7 @@
     <!-- 員工統計 -->
     <div class="border-b pb-6">
       <h3 class="text-xl font-semibold text-gray-700 mb-4">員工統計 <span class="text-red-500">*</span></h3>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4" v-if="formData.employees">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">
             總人數 <span class="text-red-500">*</span>
@@ -111,7 +111,7 @@
           <div class="flex justify-between items-start mb-3">
             <h4 class="font-medium text-gray-700">設施 {{ index + 1 }}</h4>
             <button
-              v-if="formData.facilities.length > 1"
+              v-if="(formData.facilities?.length || 0) > 1"
               type="button"
               class="text-red-600 hover:text-red-800 text-sm"
               @click="removeFacility(index)"
@@ -257,7 +257,7 @@
           <div class="flex justify-between items-start mb-3">
             <h4 class="font-medium text-gray-700">聯絡人 {{ index + 1 }}</h4>
             <button
-              v-if="formData.contacts.length > 1"
+              v-if="(formData.contacts?.length || 0) > 1"
               type="button"
               class="text-red-600 hover:text-red-800 text-sm"
               @click="removeContact(index)"
@@ -329,6 +329,7 @@
 </template>
 
 <script setup lang="ts">
+import { ref, watch } from 'vue'
 import type { BasicInfo } from '~/types/template-v2'
 
 const props = defineProps<{

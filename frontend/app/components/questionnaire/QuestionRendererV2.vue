@@ -149,7 +149,7 @@ const getTriggeredFollowUps = (question: Question): Question[] => {
   const currentAnswer = getAnswerValue(question.id)
   const triggeredQuestions: Question[] = []
 
-  for (const rule of question.conditionalLogic.followUpQuestions) {
+  for (const rule of question.conditionalLogic!.followUpQuestions) {
     if (evaluateCondition(currentAnswer, rule.condition)) {
       triggeredQuestions.push(...rule.questions)
     }

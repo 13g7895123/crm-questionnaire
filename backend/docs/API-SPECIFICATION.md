@@ -1049,6 +1049,65 @@ Authorization: Bearer <accessToken>
 }
 ```
 
+#### 8.1.2 儲存範本結構 (Save Template Structure)
+
+```
+PUT /api/v1/templates/{templateId}/structure
+Authorization: Bearer <accessToken>
+```
+
+**說明：** 儲存或更新範本的完整階層結構（Section → Subsection → Question）
+
+**Request Body：**
+```json
+{
+  "sections": [
+    {
+      "id": "A",
+      "order": 1,
+      "title": "A. 勞工 (Labor)",
+      "description": "勞工權益與工作條件評估",
+      "subsections": [
+        {
+          "id": "A.1",
+          "order": 1,
+          "title": "A.1 僱傭自由選擇",
+          "description": null,
+          "questions": [
+            {
+              "id": "A.1.1",
+              "order": 1,
+              "text": "貴公司是否有制定並執行禁止強迫勞動的政策？",
+              "type": "BOOLEAN",
+              "required": true,
+              "conditionalLogic": {
+                "followUpQuestions": [
+                  {
+                    "condition": {"operator": "equals", "value": true},
+                    "questions": [
+                      {
+                        "id": "A.1.1.1",
+                        "text": "請簡述該政策的內容",
+                        "type": "TEXT",
+                        "required": false,
+                        "config": {"maxLength": 500}
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Response (200)：**
+同 `GET /api/v1/templates/{templateId}/structure` 回應格式
+
 **題目類型 (QuestionType)：**
 - `BOOLEAN` - 是非題
 - `TEXT` - 簡答題
@@ -1071,7 +1130,7 @@ Authorization: Bearer <accessToken>
 - `isEmpty` - 為空
 - `isNotEmpty` - 不為空
 
-#### 8.1.2 取得基本資訊 (Basic Info)
+#### 8.1.3 取得基本資訊 (Basic Info)
 
 ```
 GET /api/v1/project-suppliers/{projectSupplierId}/basic-info
@@ -1147,7 +1206,7 @@ Authorization: Bearer <accessToken>
 }
 ```
 
-#### 8.1.3 儲存基本資訊 (Save Basic Info)
+#### 8.1.4 儲存基本資訊 (Save Basic Info)
 
 ```
 PUT /api/v1/project-suppliers/{projectSupplierId}/basic-info
@@ -1199,7 +1258,7 @@ Authorization: Bearer <accessToken>
 }
 ```
 
-#### 8.1.4 計算分數 (Calculate Score)
+#### 8.1.5 計算分數 (Calculate Score)
 
 ```
 POST /api/v1/project-suppliers/{projectSupplierId}/calculate-score
@@ -1281,7 +1340,7 @@ Authorization: Bearer <accessToken>
 | 待改進 | 60-69 |
 | 不合格 | 0-59 |
 
-#### 8.1.5 取得可見問題清單 (Get Visible Questions)
+#### 8.1.6 取得可見問題清單 (Get Visible Questions)
 
 ```
 GET /api/v1/project-suppliers/{projectSupplierId}/visible-questions
@@ -1322,7 +1381,7 @@ Authorization: Bearer <accessToken>
 - 返回應該顯示給使用者的問題 ID 清單
 - 前端應根據此清單隱藏不符合條件的問題
 
-#### 8.1.6 驗證答案 (Validate Answers)
+#### 8.1.7 驗證答案 (Validate Answers)
 
 ```
 POST /api/v1/project-suppliers/{projectSupplierId}/validate

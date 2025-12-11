@@ -1,25 +1,28 @@
 <template>
-  <div class="mb-4">
-    <label class="block text-sm font-medium text-gray-700">
-      {{ question.text }}
-      <span v-if="question.required" class="text-red-500">*</span>
-    </label>
-    <input
-      type="text"
-      class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md"
-      placeholder="NumberQuestion"
-      @input="$emit('update', $event.target.value)"
-    />
-  </div>
+  <input
+    type="number"
+    :value="modelValue"
+    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+    :placeholder="config?.placeholder"
+    @input="handleInput"
+  />
 </template>
+
 <script setup lang="ts">
-import type { Question } from '~/types/index'
-
-defineProps<{
-  question: Question
+const props = defineProps<{
+  modelValue?: number | string
+  config?: any
 }>()
 
-defineEmits<{
-  update: [value: any]
+const emit = defineEmits<{
+  'update:modelValue': [value: number]
 }>()
+
+const handleInput = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const val = target.value === '' ? undefined : Number(target.value)
+  if (val !== undefined) {
+    emit('update:modelValue', val)
+  }
+}
 </script>

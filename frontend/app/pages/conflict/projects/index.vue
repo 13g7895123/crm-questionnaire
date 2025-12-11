@@ -97,7 +97,9 @@
         </template>
         
         <template #updatedAt-data="{ row }">
-          {{ formatDate(row.updatedAt) }}
+          <ClientOnly>
+            {{ formatDate(row.updatedAt) }}
+          </ClientOnly>
         </template>
 
         <template #actions-data="{ row }">
