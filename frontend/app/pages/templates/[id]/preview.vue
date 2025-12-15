@@ -50,7 +50,7 @@
       </div>
 
       <!-- 表单内容 -->
-      <div class="bg-white rounded-lg shadow-md p-8 max-w-4xl mx-auto">
+      <div class="bg-white rounded-lg shadow-md p-8 mx-auto">
         <!-- 第一步：公司基本资料 -->
         <div v-if="currentStep === 1">
           <QuestionnaireStepOneBasicInfo v-model="formData.step1" />
@@ -71,7 +71,7 @@
       </div>
 
       <!-- 操作按钮 -->
-      <div class="flex justify-between max-w-4xl mx-auto mt-6">
+      <div class="flex justify-between mx-auto mt-6">
         <button
           v-if="currentStep > 1"
           @click="previousStep"

@@ -18,6 +18,11 @@ export default defineNuxtConfig({
     '@pinia/nuxt',
     '@nuxtjs/i18n'
   ],
+  runtimeConfig: {
+    public: {
+      apiBase: process.env.NUXT_PUBLIC_API_BASE || ''
+    }
+  },
   colorMode: {
     preference: process.env.COLOR_MODE || 'light',
     fallback: 'light',

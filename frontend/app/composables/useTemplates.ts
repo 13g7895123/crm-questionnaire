@@ -54,6 +54,24 @@ export const useTemplates = () => {
     }
   }
 
+  const getTemplateStructure = async (id: string) => {
+    loading.value = true
+    try {
+      return await api.get(`/templates/${id}/structure`)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const saveTemplateStructure = async (id: string, data: any) => {
+    loading.value = true
+    try {
+      return await api.put(`/templates/${id}/structure`, data)
+    } finally {
+      loading.value = false
+    }
+  }
+
   const publishVersion = async (id: string, data: any) => {
     return await api.post(`/templates/${id}/versions`, data)
   }
@@ -75,6 +93,8 @@ export const useTemplates = () => {
     getTemplate,
     createTemplate,
     updateTemplate,
+    getTemplateStructure,
+    saveTemplateStructure,
     publishVersion,
     deleteTemplate
   }

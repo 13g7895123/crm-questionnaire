@@ -25,7 +25,12 @@
     "info": "Information",
     "deleteFailed": "Delete failed",
     "deleteSuccess": "Delete successful",
-    "confirmDelete": "Are you sure you want to delete? This action cannot be undone."
+    "confirmDelete": "Are you sure you want to delete? This action cannot be undone.",
+    "step": "Step",
+    "previous": "Previous",
+    "next": "Next",
+    "finish": "Finish",
+    "previewComplete": "Preview Complete"
   },
   "auth": {
     "login": "Log In",
@@ -104,7 +109,12 @@
     "version": "Version",
     "publishVersion": "Publish Version",
     "questions": "Questions",
-    "noTemplates": "No templates"
+    "noTemplates": "No templates",
+    "previewNote": "This is a template preview mode. Answers will be saved and scored during actual questionnaire filling.",
+    "templateInfo": "Template Information",
+    "sectionCount": "Section Count",
+    "totalSteps": "Total Steps",
+    "answeredCount": "Answered Count"
   },
   "questionnaire": {
     "answer": "Answer",

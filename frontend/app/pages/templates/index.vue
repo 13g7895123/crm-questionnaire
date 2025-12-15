@@ -1,6 +1,7 @@
 <template>
-  <div class="container mx-auto p-6">
-    <div class="flex justify-between items-center mb-6">
+  <div class="py-8 px-4 sm:px-6 lg:px-8">
+    <div class="w-full">
+      <div class="flex justify-between items-center mb-6">
       <h1 class="text-3xl font-bold">範本管理</h1>
       <button
         @click="$router.push('/templates/create')"
@@ -37,6 +38,7 @@
           <span v-else-if="template.questionCount">{{ template.questionCount }} 題</span>
         </div>
       </div>
+    </div>
     </div>
   </div>
 </template>
