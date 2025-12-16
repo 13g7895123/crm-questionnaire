@@ -35,7 +35,10 @@
     "previous": "上一步",
     "next": "下一步",
     "finish": "完成",
-    "previewComplete": "預覽完成"
+    "previewComplete": "預覽完成",
+    "preview": "預覽",
+    "import": "匯入",
+    "importQuestions": "匯入題目"
   },
   "auth": {
     "login": "登入",

@@ -30,7 +30,10 @@
     "previous": "Previous",
     "next": "Next",
     "finish": "Finish",
-    "previewComplete": "Preview Complete"
+    "previewComplete": "Preview Complete",
+    "preview": "Preview",
+    "import": "Import",
+    "importQuestions": "Import Questions"
   },
   "auth": {
     "login": "Log In",

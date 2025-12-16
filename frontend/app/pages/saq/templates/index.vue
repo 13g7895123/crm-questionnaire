@@ -22,13 +22,6 @@
             @click="openCreateModal"
           />
           <UButton
-            icon="i-heroicons-eye"
-            color="blue"
-            :label="$t('common.preview') || '預覽'"
-            :disabled="!selected.length || selected.length > 1"
-            @click="openPreview(selected[0])"
-          />
-          <UButton
             icon="i-heroicons-pencil-square"
             color="white"
             :label="$t('common.edit')"
@@ -42,6 +35,20 @@
             :label="$t('common.delete')"
             :disabled="!selected.length"
             @click="handleDelete"
+          />
+          <UButton
+            icon="i-heroicons-eye"
+            color="blue"
+            :label="$t('common.preview')"
+            :disabled="!canPreview"
+            @click="openPreview(selected[0])"
+          />
+          <UButton
+            icon="i-heroicons-arrow-down-tray"
+            color="white"
+            :label="$t('common.importQuestions')"
+            :disabled="!selected.length || selected.length > 1"
+            @click="openImportModal"
           />
         </div>
 
@@ -91,7 +98,8 @@
               color="blue"
               variant="ghost"
               size="xs"
-              :title="$t('common.preview') || '預覽'"
+              :title="$t('common.preview')"
+              :disabled="!hasQuestions(row)"
               @click.stop="openPreview(row)"
             />
             <UButton
@@ -146,6 +154,49 @@
         </form>
       </UCard>
     </UModal>
+
+    <!-- Import Modal -->
+    <UModal v-model="isImportOpen">
+      <UCard>
+        <template #header>
+          <h3 class="text-lg font-semibold">
+            {{ $t('common.importQuestions') }}
+          </h3>
+        </template>
+        
+        <div class="space-y-4">
+          <p class="text-sm text-gray-500">
+            匯入題目至範本: {{ selected[0]?.name }}
+          </p>
+          <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center bg-gray-50">
+            <UIcon name="i-heroicons-document-arrow-up" class="w-12 h-12 text-gray-400 mx-auto mb-2" />
+            <p class="text-sm text-gray-600">
+              點擊或拖這檔案至此處上傳
+            </p>
+            <p class="text-xs text-gray-400 mt-1">
+              支援 .json, .xlsx 格式
+            </p>
+          </div>
+        </div>
+
+        <template #footer>
+          <div class="flex justify-end gap-3">
+            <UButton
+              color="gray"
+              variant="soft"
+              :label="$t('common.cancel')"
+              @click="isImportOpen = false"
+            />
+            <UButton
+              color="primary"
+              :label="$t('common.import')"
+              :loading="loading"
+              @click="handleImport"
+            />
+          </div>
+        </template>
+      </UCard>
+    </UModal>
   </div>
 </template>
 
@@ -168,6 +219,7 @@ const { setBreadcrumbs } = useBreadcrumbs()
 const searchQuery = ref('')
 const selected = ref<Template[]>([])
 const isFormOpen = ref(false)
+const isImportOpen = ref(false)
 const editingId = ref<string | null>(null)
 const form = ref({ name: '' })
 
@@ -301,12 +353,53 @@ const handleDeleteRow = async (row: Template) => {
   }
 }
 
+const hasQuestions = (template: Template) => {
+  // Check if template has versions or latestVersion is NOT '0.0' or just check existence
+  // Assuming if latestVersion is present, it has some content, or if versions array has length
+  if (template.versions && template.versions.length > 0) return true
+  if (template.latestVersion && template.latestVersion !== '0.0') return true
+  return false
+}
+
+const canPreview = computed(() => {
+  if (selected.value.length !== 1) return false
+  return hasQuestions(selected.value[0])
+})
+
+
 const openPreview = (template?: Template) => {
   const target = template || selected.value[0]
   if (!target) return
   
+  if (!hasQuestions(target)) {
+    showSystemAlert('此範本尚無題目，無法預覽', 'warning')
+    return
+  }
+
   // 導航到預覽頁面
   navigateTo(`/saq/templates/${target.id}`)
+}
+
+const openImportModal = () => {
+  if (selected.value.length !== 1) return
+  isImportOpen.value = true
+}
+
+const handleImport = async () => {
+  // Mock import logic for now
+  try {
+    showLoading()
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    isImportOpen.value = false
+    closeAlert()
+    showSystemAlert('匯入成功 (模擬)', 'success')
+    // Optionally refresh data if import changed version/etc
+    await loadData()
+  } catch (e) {
+    closeAlert()
+    showSystemAlert('匯入失敗', 'error')
+  }
 }
 
 onMounted(() => {
