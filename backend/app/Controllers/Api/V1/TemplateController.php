@@ -479,25 +479,15 @@ class TemplateController extends BaseApiController
 
         try {
             $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file->getTempName());
-            $worksheet = $spreadsheet->getActiveSheet();
 
-            $data = [];
-            foreach ($worksheet->getRowIterator() as $row) {
-                $rowData = [];
-                $cellIterator = $row->getCellIterator();
-                $cellIterator->setIterateOnlyExistingCells(false);
-
-                foreach ($cellIterator as $cell) {
-                    $rowData[] = $cell->getValue();
-                }
-                $data[] = $rowData;
-            }
+            // Use ExcelQuestionParser to parse structured data
+            $parser = new \App\Libraries\ExcelQuestionParser();
+            $result = $parser->parse($spreadsheet);
 
             return $this->successResponse([
                 'fileName' => $file->getClientName(),
-                'sheetName' => $worksheet->getTitle(),
-                'rowCount' => count($data),
-                'data' => $data,
+                'sections' => $result['sections'],
+                'metadata' => $result['metadata'],
             ]);
         } catch (\Exception $e) {
             return $this->internalErrorResponse('解析 Excel 檔案失敗：' . $e->getMessage());
