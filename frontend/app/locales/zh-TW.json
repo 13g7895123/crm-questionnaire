@@ -38,7 +38,8 @@
     "previewComplete": "預覽完成",
     "preview": "預覽",
     "import": "匯入",
-    "importQuestions": "匯入題目"
+    "importQuestions": "匯入題目",
+    "test": "測試"
   },
   "auth": {
     "login": "登入",

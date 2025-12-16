@@ -96,6 +96,9 @@ $routes->group('api/v1', ['namespace' => 'App\Controllers\Api\V1'], function ($r
         // v2.0 Structure API
         $routes->get('(:segment)/structure', 'TemplateController::getStructure/$1');
         $routes->put('(:segment)/structure', 'TemplateController::saveStructure/$1');
+        
+        // Test Excel Import
+        $routes->post('test-excel', 'TemplateController::testExcel');
     });
 
     // Review routes

@@ -50,6 +50,12 @@
             :disabled="!selected.length || selected.length > 1"
             @click="openImportModal"
           />
+          <UButton
+            icon="i-heroicons-beaker"
+            color="white"
+            :label="$t('common.test')"
+            @click="navigateTo('/saq/templates/test')"
+          />
         </div>
 
         <!-- Right: Search & Refresh -->

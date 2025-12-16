@@ -31,7 +31,7 @@ class TemplateController extends BaseApiController
         }
 
         $pagination = $this->getPaginationParams();
-        
+
         $filters = [
             'type' => $this->request->getGet('type'),
             'search' => $this->request->getGet('search'),
@@ -79,8 +79,8 @@ class TemplateController extends BaseApiController
 
         // Get all versions
         $versions = $this->versionModel->where('template_id', $templateId)
-                                       ->orderBy('created_at', 'DESC')
-                                       ->findAll();
+            ->orderBy('created_at', 'DESC')
+            ->findAll();
 
         // Get latest version questions
         $latestVersion = $this->versionModel->getVersion($templateId, $template->latest_version);
@@ -226,7 +226,7 @@ class TemplateController extends BaseApiController
 
         // Delete versions
         $this->versionModel->where('template_id', $templateId)->delete();
-        
+
         // Delete template
         $this->templateModel->delete($templateId);
 
@@ -287,8 +287,8 @@ class TemplateController extends BaseApiController
 
         // Get all versions
         $versions = $this->versionModel->where('template_id', $templateId)
-                                       ->orderBy('created_at', 'DESC')
-                                       ->findAll();
+            ->orderBy('created_at', 'DESC')
+            ->findAll();
 
         $newVersion = $this->versionModel->find($versionId);
         $updatedTemplate = $this->templateModel->find($templateId);
@@ -453,5 +453,54 @@ class TemplateController extends BaseApiController
 
         // Return updated structure
         return $this->getStructure($templateId);
+    }
+
+    /**
+     * POST /api/v1/templates/test-excel
+     * Test Excel file upload and return parsed contents
+     */
+    public function testExcel(): ResponseInterface
+    {
+        if (!$this->isHost() && !$this->isAdmin()) {
+            return $this->forbiddenResponse();
+        }
+
+        $file = $this->request->getFile('file');
+
+        if (!$file || !$file->isValid()) {
+            return $this->validationErrorResponse(['file' => '請上傳有效的檔案']);
+        }
+
+        // Check file extension
+        $extension = strtolower($file->getClientExtension());
+        if (!in_array($extension, ['xlsx', 'xls'])) {
+            return $this->validationErrorResponse(['file' => '只支援 .xlsx 或 .xls 格式']);
+        }
+
+        try {
+            $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file->getTempName());
+            $worksheet = $spreadsheet->getActiveSheet();
+
+            $data = [];
+            foreach ($worksheet->getRowIterator() as $row) {
+                $rowData = [];
+                $cellIterator = $row->getCellIterator();
+                $cellIterator->setIterateOnlyExistingCells(false);
+
+                foreach ($cellIterator as $cell) {
+                    $rowData[] = $cell->getValue();
+                }
+                $data[] = $rowData;
+            }
+
+            return $this->successResponse([
+                'fileName' => $file->getClientName(),
+                'sheetName' => $worksheet->getTitle(),
+                'rowCount' => count($data),
+                'data' => $data,
+            ]);
+        } catch (\Exception $e) {
+            return $this->internalErrorResponse('解析 Excel 檔案失敗：' . $e->getMessage());
+        }
     }
 }
