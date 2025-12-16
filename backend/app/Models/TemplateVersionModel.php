@@ -15,7 +15,7 @@ class TemplateVersionModel extends Model
     protected $allowedFields = [
         'template_id',
         'version',
-        'questions',
+        // 'questions' - deprecated in v2.0, structure is stored in template_sections/subsections/questions tables
     ];
 
     protected $useTimestamps = true;
@@ -25,7 +25,6 @@ class TemplateVersionModel extends Model
     protected $validationRules = [
         'template_id' => 'required',
         'version' => 'required|regex_match[/^\d+\.\d+\.\d+$/]',
-        'questions' => 'required',
     ];
 
     /**
@@ -50,8 +49,8 @@ class TemplateVersionModel extends Model
     public function isVersionGreater(string $templateId, string $newVersion): bool
     {
         $latest = $this->where('template_id', $templateId)
-                       ->orderBy('created_at', 'DESC')
-                       ->first();
+            ->orderBy('created_at', 'DESC')
+            ->first();
 
         if (!$latest) return true;
 
@@ -64,7 +63,7 @@ class TemplateVersionModel extends Model
     public function getVersion(string $templateId, string $version): ?TemplateVersion
     {
         return $this->where('template_id', $templateId)
-                    ->where('version', $version)
-                    ->first();
+            ->where('version', $version)
+            ->first();
     }
 }

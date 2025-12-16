@@ -9,12 +9,12 @@ $routes->get('/', 'Home::index');
 
 // API v1 Routes
 $routes->group('api/v1', ['namespace' => 'App\Controllers\Api\V1'], function ($routes) {
-    
+
     // Auth routes (public)
     $routes->post('auth/login', 'AuthController::login');
     $routes->post('auth/verify', 'AuthController::verify');
     $routes->post('auth/refresh', 'AuthController::refresh');
-    
+
     // Auth routes (authenticated)
     $routes->group('auth', ['filter' => 'jwt'], function ($routes) {
         $routes->post('logout', 'AuthController::logout');
@@ -68,16 +68,16 @@ $routes->group('api/v1', ['namespace' => 'App\Controllers\Api\V1'], function ($r
         $routes->get('(:segment)/answers', 'AnswerController::index/$1');
         $routes->put('(:segment)/answers', 'AnswerController::update/$1');
         $routes->post('(:segment)/submit', 'AnswerController::submit/$1');
-        
+
         // Basic Info (for SAQ templates)
         $routes->get('(:segment)/basic-info', 'AnswerController::getBasicInfo/$1');
         $routes->put('(:segment)/basic-info', 'AnswerController::saveBasicInfo/$1');
-        
+
         // Scoring & Validation
         $routes->post('(:segment)/calculate-score', 'AnswerController::calculateScore/$1');
         $routes->get('(:segment)/visible-questions', 'AnswerController::getVisibleQuestions/$1');
         $routes->post('(:segment)/validate', 'AnswerController::validateAnswers/$1');
-        
+
         // Reviews
         $routes->post('(:segment)/review', 'ReviewController::review/$1');
         $routes->get('(:segment)/reviews', 'ReviewController::history/$1');
@@ -92,13 +92,16 @@ $routes->group('api/v1', ['namespace' => 'App\Controllers\Api\V1'], function ($r
         $routes->delete('(:segment)', 'TemplateController::delete/$1');
         $routes->post('(:segment)/versions', 'TemplateController::createVersion/$1');
         $routes->get('(:segment)/versions/(:segment)', 'TemplateController::showVersion/$1/$2');
-        
+
         // v2.0 Structure API
         $routes->get('(:segment)/structure', 'TemplateController::getStructure/$1');
         $routes->put('(:segment)/structure', 'TemplateController::saveStructure/$1');
-        
+
         // Test Excel Import
         $routes->post('test-excel', 'TemplateController::testExcel');
+
+        // Import Excel to template
+        $routes->post('(:segment)/import-excel', 'TemplateController::importExcel/$1');
     });
 
     // Review routes

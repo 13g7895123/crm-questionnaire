@@ -104,7 +104,8 @@ class TemplateController extends BaseApiController
 
     /**
      * POST /api/v1/templates
-     * Create template (HOST only) - auto creates version 1.0.0
+     * Create template (HOST only)
+     * In v2.0, template structure is imported via Excel, not created inline
      */
     public function create(): ResponseInterface
     {
@@ -115,22 +116,10 @@ class TemplateController extends BaseApiController
         $rules = [
             'name' => 'required|max_length[200]',
             'type' => 'required|in_list[SAQ,CONFLICT]',
-            'questions' => 'required',
         ];
 
         if (!$this->validate($rules)) {
             return $this->validationErrorResponse($this->validator->getErrors());
-        }
-
-        $questions = $this->request->getJsonVar('questions');
-        if (!is_array($questions) || count($questions) < 1) {
-            return $this->validationErrorResponse(['questions' => '至少需要 1 個題目']);
-        }
-
-        // Validate questions
-        $validatedQuestions = $this->validateQuestions($questions);
-        if ($validatedQuestions['error']) {
-            return $this->validationErrorResponse($validatedQuestions['errors']);
         }
 
         // Create template
@@ -142,27 +131,20 @@ class TemplateController extends BaseApiController
 
         $templateId = $this->templateModel->getInsertID();
 
-        // Create version 1.0.0
+        // Create initial version record (structure will be imported via Excel)
         $this->versionModel->insert([
             'template_id' => $templateId,
             'version' => '1.0.0',
-            'questions' => json_encode($validatedQuestions['questions']),
         ]);
 
-        $versionId = $this->versionModel->getInsertID();
         $template = $this->templateModel->find($templateId);
-        $version = $this->versionModel->find($versionId);
 
         return $this->successResponse([
             'id' => $template->id,
             'name' => $template->name,
             'type' => $template->type,
             'latestVersion' => $template->latest_version,
-            'versions' => [[
-                'version' => '1.0.0',
-                'createdAt' => $version->created_at?->format("c"),
-            ]],
-            'currentVersionQuestions' => $version->questions,
+            'hasV2Structure' => false,
             'createdAt' => $template->created_at?->format("c"),
             'updatedAt' => $template->updated_at?->format("c"),
         ], 201);
@@ -491,6 +473,65 @@ class TemplateController extends BaseApiController
             ]);
         } catch (\Exception $e) {
             return $this->internalErrorResponse('解析 Excel 檔案失敗：' . $e->getMessage());
+        }
+    }
+
+    /**
+     * POST /api/v1/templates/{id}/import-excel
+     * Import template structure from Excel file
+     */
+    public function importExcel($id = null): ResponseInterface
+    {
+        if (!$this->isHost() && !$this->isAdmin()) {
+            return $this->forbiddenResponse();
+        }
+
+        // Validate template exists
+        $template = $this->templateModel->find($id);
+        if (!$template) {
+            return $this->notFoundResponse('範本不存在');
+        }
+
+        $file = $this->request->getFile('file');
+
+        if (!$file || !$file->isValid()) {
+            return $this->validationErrorResponse(['file' => '請上傳有效的檔案']);
+        }
+
+        // Check file extension
+        $extension = strtolower($file->getClientExtension());
+        if (!in_array($extension, ['xlsx', 'xls'])) {
+            return $this->validationErrorResponse(['file' => '只支援 .xlsx 或 .xls 格式']);
+        }
+
+        try {
+            $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file->getTempName());
+
+            // Use ExcelQuestionParser to parse structured data
+            $parser = new \App\Libraries\ExcelQuestionParser();
+            $result = $parser->parse($spreadsheet);
+
+            if (empty($result['sections'])) {
+                return $this->validationErrorResponse([
+                    'file' => '未找到符合格式的分頁，請確保分頁名稱以 A.、B.、C. 等格式開頭'
+                ]);
+            }
+
+            // Save the structure to database
+            $saved = $this->structureRepo->saveTemplateStructure((int)$id, $result['sections']);
+
+            if (!$saved) {
+                return $this->internalErrorResponse('儲存範本結構失敗');
+            }
+
+            return $this->successResponse([
+                'message' => 'Excel 匯入成功',
+                'templateId' => $id,
+                'metadata' => $result['metadata'],
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Import Excel failed: ' . $e->getMessage());
+            return $this->internalErrorResponse('匯入 Excel 檔案失敗：' . $e->getMessage());
         }
     }
 }

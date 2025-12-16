@@ -172,31 +172,63 @@
         
         <div class="space-y-4">
           <p class="text-sm text-gray-500">
-            匯入題目至範本: {{ selected[0]?.name }}
+            匯入題目至範本: <span class="font-medium">{{ selected[0]?.name }}</span>
           </p>
-          <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center bg-gray-50">
-            <UIcon name="i-heroicons-document-arrow-up" class="w-12 h-12 text-gray-400 mx-auto mb-2" />
-            <p class="text-sm text-gray-600">
-              點擊或拖這檔案至此處上傳
-            </p>
-            <p class="text-xs text-gray-400 mt-1">
-              支援 .json, .xlsx 格式
-            </p>
+          
+          <div 
+            class="border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer"
+            :class="importFile ? 'border-green-400 bg-green-50' : 'border-gray-300 bg-gray-50 hover:bg-gray-100'"
+            @click="triggerImportFileInput"
+            @dragover.prevent
+            @drop.prevent="handleImportDrop"
+          >
+            <input
+              ref="importFileInput"
+              type="file"
+              accept=".xlsx,.xls"
+              class="hidden"
+              @change="handleImportFileChange"
+            />
+            <template v-if="importFile">
+              <UIcon name="i-heroicons-check-circle" class="w-12 h-12 text-green-500 mx-auto mb-2" />
+              <p class="text-sm text-green-700 font-medium">{{ importFile.name }}</p>
+              <p class="text-xs text-gray-500 mt-1">點擊選擇其他檔案</p>
+            </template>
+            <template v-else>
+              <UIcon name="i-heroicons-document-arrow-up" class="w-12 h-12 text-gray-400 mx-auto mb-2" />
+              <p class="text-sm text-gray-600">點擊或拖曳檔案至此處上傳</p>
+              <p class="text-xs text-gray-400 mt-1">支援 .xlsx, .xls 格式</p>
+            </template>
           </div>
+          
+          <UAlert
+            v-if="importError"
+            color="red"
+            icon="i-heroicons-exclamation-triangle"
+            :title="importError"
+          />
         </div>
 
         <template #footer>
           <div class="flex justify-end gap-3">
             <UButton
+              icon="i-heroicons-document-text"
+              color="gray"
+              variant="soft"
+              label="查看格式範例"
+              @click="navigateTo('/saq/templates/test/example')"
+            />
+            <UButton
               color="gray"
               variant="soft"
               :label="$t('common.cancel')"
-              @click="isImportOpen = false"
+              @click="closeImportModal"
             />
             <UButton
               color="primary"
-              :label="$t('common.import')"
-              :loading="loading"
+              :label="importing ? '匯入中...' : $t('common.import')"
+              :loading="importing"
+              :disabled="!importFile"
               @click="handleImport"
             />
           </div>
@@ -211,6 +243,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useTemplates } from '~/composables/useTemplates'
 import { useSweetAlert } from '~/composables/useSweetAlert'
 import { useBreadcrumbs } from '~/composables/useBreadcrumbs'
+import { useAuthStore } from '~/stores/auth'
 import DataTable from '~/components/common/DataTable.vue'
 import { useI18n } from 'vue-i18n'
 import type { Template } from '~/types/index'
@@ -228,6 +261,12 @@ const isFormOpen = ref(false)
 const isImportOpen = ref(false)
 const editingId = ref<string | null>(null)
 const form = ref({ name: '' })
+
+// Import states
+const importFileInput = ref<HTMLInputElement | null>(null)
+const importFile = ref<File | null>(null)
+const importing = ref(false)
+const importError = ref<string | null>(null)
 
 const pagination = ref({
   page: 1,
@@ -388,23 +427,88 @@ const openPreview = (template?: Template) => {
 
 const openImportModal = () => {
   if (selected.value.length !== 1) return
+  importFile.value = null
+  importError.value = null
   isImportOpen.value = true
 }
 
+const closeImportModal = () => {
+  isImportOpen.value = false
+  importFile.value = null
+  importError.value = null
+}
+
+const triggerImportFileInput = () => {
+  importFileInput.value?.click()
+}
+
+const handleImportFileChange = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  if (target.files && target.files.length > 0) {
+    const file = target.files[0]
+    const ext = file.name.split('.').pop()?.toLowerCase()
+    if (ext === 'xlsx' || ext === 'xls') {
+      importFile.value = file
+      importError.value = null
+    } else {
+      importError.value = '只支援 .xlsx 或 .xls 格式'
+    }
+  }
+}
+
+const handleImportDrop = (event: DragEvent) => {
+  const files = event.dataTransfer?.files
+  if (files && files.length > 0) {
+    const file = files[0]
+    const ext = file.name.split('.').pop()?.toLowerCase()
+    if (ext === 'xlsx' || ext === 'xls') {
+      importFile.value = file
+      importError.value = null
+    } else {
+      importError.value = '只支援 .xlsx 或 .xls 格式'
+    }
+  }
+}
+
 const handleImport = async () => {
-  // Mock import logic for now
+  if (!importFile.value || !selected.value[0]) return
+
+  importing.value = true
+  importError.value = null
+
   try {
-    showLoading()
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    isImportOpen.value = false
-    closeAlert()
-    showSystemAlert('匯入成功 (模擬)', 'success')
-    // Optionally refresh data if import changed version/etc
-    await loadData()
-  } catch (e) {
-    closeAlert()
-    showSystemAlert('匯入失敗', 'error')
+    const formData = new FormData()
+    formData.append('file', importFile.value)
+
+    // Get auth token
+    const authStore = useAuthStore()
+    const headers: Record<string, string> = {}
+    if (authStore.token) {
+      headers['Authorization'] = `Bearer ${authStore.token}`
+    }
+
+    const templateId = selected.value[0].id
+    const response = await fetch(`/api/v1/templates/${templateId}/import-excel`, {
+      method: 'POST',
+      headers,
+      body: formData,
+      credentials: 'include'
+    })
+
+    const data = await response.json()
+
+    if (data.success) {
+      closeImportModal()
+      showSystemAlert(`匯入成功！\n區段: ${data.data.metadata.totalSections}, 子區段: ${data.data.metadata.totalSubsections}, 題目: ${data.data.metadata.totalQuestions}`, 'success')
+      await loadData()
+    } else {
+      importError.value = data.error?.message || data.message || '匯入失敗'
+    }
+  } catch (e: any) {
+    console.error('Import failed:', e)
+    importError.value = e.message || '匯入失敗'
+  } finally {
+    importing.value = false
   }
 }
 

@@ -39,8 +39,9 @@ class ExcelQuestionParser
 
             $sectionId = $matches[1];
             $sheet = $spreadsheet->getSheetByName($sheetName);
+            $sectionOrder = count($sections) + 1;
 
-            $section = $this->parseSheet($sheet, $sectionId, $sheetName);
+            $section = $this->parseSheet($sheet, $sectionId, $sheetName, $sectionOrder);
             if ($section) {
                 $sections[] = $section;
             }
@@ -58,11 +59,13 @@ class ExcelQuestionParser
     /**
      * 解析單一工作表
      */
-    protected function parseSheet(Worksheet $sheet, string $sectionId, string $sheetName): ?array
+    protected function parseSheet(Worksheet $sheet, string $sectionId, string $sheetName, int $sectionOrder): ?array
     {
         $subsections = [];
         $currentSubsection = null;
         $highestRow = $sheet->getHighestRow();
+        $subsectionOrder = 0;
+        $questionOrder = 0;
 
         // 從第 4 列開始（第 3 列是標題列）
         $row = 4;
@@ -88,15 +91,18 @@ class ExcelQuestionParser
             // 先檢查題目（A.1.1 格式更具體）
             if ($this->isQuestionNo($no, $sectionId)) {
                 // 這是題目行 (如 A.1.1)
-                $question = $this->parseQuestion($sheet, $row, $no, $item);
+                $questionOrder++;
+                $question = $this->parseQuestion($sheet, $row, $no, $item, $questionOrder);
 
                 if ($currentSubsection) {
                     $currentSubsection['questions'][] = $question['question'];
                     $row = $question['nextRow'];
                 } else {
                     // 沒有小標題，直接加入預設小標題
+                    $subsectionOrder++;
                     $currentSubsection = [
                         'id' => $sectionId . '.0',
+                        'order' => $subsectionOrder,
                         'title' => $sectionId . '.0 General',
                         'questions' => [$question['question']],
                     ];
@@ -111,8 +117,11 @@ class ExcelQuestionParser
                 if ($currentSubsection) {
                     $subsections[] = $currentSubsection;
                 }
+                $subsectionOrder++;
+                $questionOrder = 0; // Reset question order for new subsection
                 $currentSubsection = [
                     'id' => $this->extractSubsectionId($no),
+                    'order' => $subsectionOrder,
                     'title' => trim($no),
                     'questions' => [],
                 ];
@@ -134,6 +143,7 @@ class ExcelQuestionParser
 
         return [
             'id' => $sectionId,
+            'order' => $sectionOrder,
             'title' => $sheetName,
             'subsections' => $subsections,
         ];
@@ -142,10 +152,11 @@ class ExcelQuestionParser
     /**
      * 解析單一題目
      */
-    protected function parseQuestion(Worksheet $sheet, int $startRow, string $no, ?string $item): array
+    protected function parseQuestion(Worksheet $sheet, int $startRow, string $no, ?string $item, int $order): array
     {
         $question = [
             'id' => $no,
+            'order' => $order,
             'text' => $item ?? '',
             'type' => 'BOOLEAN',
             'required' => true,
@@ -235,11 +246,30 @@ class ExcelQuestionParser
             }
         }
 
+        // 將表頭轉換為 v2.0 TableColumn 格式
+        $tableColumns = [];
+        // 第一欄是列標籤欄位
+        $tableColumns[] = [
+            'id' => 'row_label',
+            'label' => '項目',
+            'type' => 'text',
+            'required' => true,
+        ];
+        foreach ($columns as $idx => $colLabel) {
+            $tableColumns[] = [
+                'id' => 'col_' . ($idx + 1),
+                'label' => (string) $colLabel,
+                'type' => 'text',
+                'required' => false,
+            ];
+        }
+
         return [
             'endRow' => $endRow,
             'tableConfig' => [
-                'rowLabels' => $rowLabels,
-                'columns' => $columns,
+                'columns' => $tableColumns,
+                'minRows' => count($rowLabels),
+                'maxRows' => count($rowLabels),
             ],
         ];
     }
