@@ -17,48 +17,48 @@
       <div class="mt-3">
         <BooleanQuestion
           v-if="question.type === 'BOOLEAN'"
-          :model-value="getAnswerValue(question.id)"
+          :model-value="getAnswerValue(question.id) as boolean | null"
           @update:model-value="updateAnswer(question.id, $event)"
         />
 
         <TextQuestion
           v-else-if="question.type === 'TEXT'"
-          :model-value="getAnswerValue(question.id)"
+          :model-value="getAnswerValue(question.id) as string"
           :config="question.config"
           @update:model-value="updateAnswer(question.id, $event)"
         />
 
         <NumberQuestion
           v-else-if="question.type === 'NUMBER'"
-          :model-value="getAnswerValue(question.id)"
+          :model-value="getAnswerValue(question.id) as number"
           :config="question.config"
           @update:model-value="updateAnswer(question.id, $event)"
         />
 
         <RadioQuestion
           v-else-if="question.type === 'RADIO'"
-          :model-value="getAnswerValue(question.id)"
+          :model-value="getAnswerValue(question.id) as string"
           :options="question.config?.options"
           @update:model-value="updateAnswer(question.id, $event)"
         />
 
         <CheckboxQuestion
           v-else-if="question.type === 'CHECKBOX'"
-          :model-value="getAnswerValue(question.id)"
+          :model-value="getAnswerValue(question.id) as string[]"
           :options="question.config?.options"
           @update:model-value="updateAnswer(question.id, $event)"
         />
 
         <SelectQuestion
           v-else-if="question.type === 'SELECT'"
-          :model-value="getAnswerValue(question.id)"
+          :model-value="getAnswerValue(question.id) as string"
           :options="question.config?.options"
           @update:model-value="updateAnswer(question.id, $event)"
         />
 
         <DateQuestion
           v-else-if="question.type === 'DATE'"
-          :model-value="getAnswerValue(question.id)"
+          :model-value="getAnswerValue(question.id) as string"
           @update:model-value="updateAnswer(question.id, $event)"
         />
 
@@ -70,14 +70,14 @@
 
         <TableQuestion
           v-else-if="question.type === 'TABLE'"
-          :model-value="getAnswerValue(question.id)"
+          :model-value="getAnswerValue(question.id) as any[]"
           :config="question.tableConfig"
           @update:model-value="updateAnswer(question.id, $event)"
         />
 
         <RatingQuestion
           v-else-if="question.type === 'RATING'"
-          :model-value="getAnswerValue(question.id)"
+          :model-value="getAnswerValue(question.id) as number"
           :config="question.config"
           @update:model-value="updateAnswer(question.id, $event)"
         />
@@ -102,6 +102,10 @@
 </template>
 
 <script setup lang="ts">
+defineOptions({
+  name: 'QuestionRendererV2'
+})
+
 import type { Question, Answers, AnswerValue } from '~/types/template-v2'
 import BooleanQuestion from './types/BooleanQuestion.vue'
 import TextQuestion from './types/TextQuestion.vue'
