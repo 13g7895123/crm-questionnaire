@@ -15,7 +15,6 @@ class TemplateVersionModel extends Model
     protected $allowedFields = [
         'template_id',
         'version',
-        // 'questions' - deprecated in v2.0, structure is stored in template_sections/subsections/questions tables
     ];
 
     protected $useTimestamps = true;

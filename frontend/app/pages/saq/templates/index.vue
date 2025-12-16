@@ -311,6 +311,8 @@ watch(filteredTemplates, (newVal) => {
 const loadData = async () => {
   try {
     await fetchTemplates('SAQ')
+    // Clear selection after reload to avoid stale references
+    selected.value = []
   } catch (e) {
     console.error('Failed to load templates:', e)
   }

@@ -206,13 +206,19 @@ class TemplateController extends BaseApiController
             );
         }
 
+        // Delete v2.0 structure if exists
+        $this->structureRepo->deleteTemplateStructure((int)$templateId);
+
         // Delete versions
         $this->versionModel->where('template_id', $templateId)->delete();
 
         // Delete template
         $this->templateModel->delete($templateId);
 
-        return $this->respond(null, 204);
+        return $this->successResponse([
+            'message' => '範本已刪除',
+            'deletedId' => $templateId,
+        ]);
     }
 
     /**
