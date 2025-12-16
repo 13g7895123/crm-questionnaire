@@ -436,7 +436,7 @@ class TemplateController extends BaseApiController
         $success = $this->structureRepo->saveTemplateStructure($templateId, $sections);
 
         if (!$success) {
-            return $this->internalErrorResponse('儲存範本結構失敗');
+            return $this->errorResponse('INTERNAL_ERROR', '儲存範本結構失敗', 500);
         }
 
         // Return updated structure
@@ -478,7 +478,7 @@ class TemplateController extends BaseApiController
                 'metadata' => $result['metadata'],
             ]);
         } catch (\Exception $e) {
-            return $this->internalErrorResponse('解析 Excel 檔案失敗：' . $e->getMessage());
+            return $this->errorResponse('EXCEL_PARSE_ERROR', '解析 Excel 檔案失敗：' . $e->getMessage(), 500);
         }
     }
 
@@ -527,7 +527,7 @@ class TemplateController extends BaseApiController
             $saved = $this->structureRepo->saveTemplateStructure((int)$id, $result['sections']);
 
             if (!$saved) {
-                return $this->internalErrorResponse('儲存範本結構失敗');
+                return $this->errorResponse('INTERNAL_ERROR', '儲存範本結構失敗', 500);
             }
 
             return $this->successResponse([
@@ -537,7 +537,7 @@ class TemplateController extends BaseApiController
             ]);
         } catch (\Exception $e) {
             log_message('error', 'Import Excel failed: ' . $e->getMessage());
-            return $this->internalErrorResponse('匯入 Excel 檔案失敗：' . $e->getMessage());
+            return $this->errorResponse('EXCEL_IMPORT_ERROR', '匯入 Excel 檔案失敗：' . $e->getMessage(), 500);
         }
     }
 }

@@ -25,22 +25,22 @@ class TemplateStructureRepository
     public function getTemplateStructure(int $templateId): array
     {
         $sections = $this->sectionModel->where('template_id', $templateId)
-                                      ->orderBy('order', 'ASC')
-                                      ->findAll();
+            ->orderBy('order', 'ASC')
+            ->findAll();
 
         $structure = [];
-        
+
         foreach ($sections as $section) {
             $subsections = $this->subsectionModel->where('section_id', $section->id)
-                                                ->orderBy('order', 'ASC')
-                                                ->findAll();
+                ->orderBy('order', 'ASC')
+                ->findAll();
 
             $subsectionsData = [];
-            
+
             foreach ($subsections as $subsection) {
                 $questions = $this->questionModel->where('subsection_id', $subsection->id)
-                                                ->orderBy('order', 'ASC')
-                                                ->findAll();
+                    ->orderBy('order', 'ASC')
+                    ->findAll();
 
                 $questionsData = array_map(function ($question) {
                     return $question->toApiResponse();
@@ -78,47 +78,59 @@ class TemplateStructureRepository
             $this->sectionModel->deleteSectionsByTemplateId($templateId);
 
             // Insert new structure
-            foreach ($sections as $sectionData) {
-                $sectionId = $this->sectionModel->insert([
+            foreach ($sections as $sectionIndex => $sectionData) {
+                $sectionInsertData = [
                     'template_id' => $templateId,
                     'section_id' => $sectionData['id'],
-                    'order' => $sectionData['order'],
+                    'order' => $sectionData['order'] ?? ($sectionIndex + 1),
                     'title' => $sectionData['title'],
                     'description' => $sectionData['description'] ?? null,
-                ]);
+                ];
+
+                $sectionId = $this->sectionModel->insert($sectionInsertData);
 
                 if (!$sectionId) {
-                    throw new \RuntimeException('Failed to insert section');
+                    $errors = $this->sectionModel->errors();
+                    log_message('error', 'Failed to insert section: ' . json_encode($errors) . ' Data: ' . json_encode($sectionInsertData));
+                    throw new \RuntimeException('Failed to insert section: ' . json_encode($errors));
                 }
 
-                foreach ($sectionData['subsections'] ?? [] as $subsectionData) {
-                    $subsectionId = $this->subsectionModel->insert([
+                foreach ($sectionData['subsections'] ?? [] as $subsectionIndex => $subsectionData) {
+                    $subsectionInsertData = [
                         'section_id' => $sectionId,
                         'subsection_id' => $subsectionData['id'],
-                        'order' => $subsectionData['order'],
+                        'order' => $subsectionData['order'] ?? ($subsectionIndex + 1),
                         'title' => $subsectionData['title'],
                         'description' => $subsectionData['description'] ?? null,
-                    ]);
+                    ];
+
+                    $subsectionId = $this->subsectionModel->insert($subsectionInsertData);
 
                     if (!$subsectionId) {
-                        throw new \RuntimeException('Failed to insert subsection');
+                        $errors = $this->subsectionModel->errors();
+                        log_message('error', 'Failed to insert subsection: ' . json_encode($errors) . ' Data: ' . json_encode($subsectionInsertData));
+                        throw new \RuntimeException('Failed to insert subsection: ' . json_encode($errors));
                     }
 
-                    foreach ($subsectionData['questions'] ?? [] as $questionData) {
-                        $inserted = $this->questionModel->insert([
+                    foreach ($subsectionData['questions'] ?? [] as $questionIndex => $questionData) {
+                        $questionInsertData = [
                             'subsection_id' => $subsectionId,
                             'question_id' => $questionData['id'],
-                            'order' => $questionData['order'],
+                            'order' => $questionData['order'] ?? ($questionIndex + 1),
                             'text' => $questionData['text'],
                             'type' => $questionData['type'],
                             'required' => $questionData['required'] ? 1 : 0,
                             'config' => !empty($questionData['config']) ? json_encode($questionData['config']) : null,
                             'conditional_logic' => !empty($questionData['conditionalLogic']) ? json_encode($questionData['conditionalLogic']) : null,
                             'table_config' => !empty($questionData['tableConfig']) ? json_encode($questionData['tableConfig']) : null,
-                        ]);
+                        ];
+
+                        $inserted = $this->questionModel->insert($questionInsertData);
 
                         if (!$inserted) {
-                            throw new \RuntimeException('Failed to insert question');
+                            $errors = $this->questionModel->errors();
+                            log_message('error', 'Failed to insert question: ' . json_encode($errors) . ' Data: ' . json_encode($questionInsertData));
+                            throw new \RuntimeException('Failed to insert question: ' . json_encode($errors));
                         }
                     }
                 }
@@ -139,7 +151,7 @@ class TemplateStructureRepository
     public function hasV2Structure(int $templateId): bool
     {
         return $this->sectionModel->where('template_id', $templateId)
-                                 ->countAllResults() > 0;
+            ->countAllResults() > 0;
     }
 
     /**

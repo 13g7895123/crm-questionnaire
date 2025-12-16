@@ -315,8 +315,14 @@ class ExcelQuestionParser
         if (!$no) {
             return false;
         }
-        // 匹配 "A.1." 或 "A.1. xxx" 格式
-        return preg_match('/^' . preg_quote($sectionId, '/') . '\.\d+\.\s*\w/i', $no) === 1;
+        // 匹配 "A.1." 或 "A.1. xxx" 格式，但排除題目編號格式 "A.1.1"
+        // 小標題格式：A.1. (後面接文字或空白)
+        // 排除題目格式：A.1.1 (後面接數字)
+        if (preg_match('/^' . preg_quote($sectionId, '/') . '\\.\\d+\\.\\d+/i', $no)) {
+            // 如果匹配題目格式 (X.n.n)，則不是小標題
+            return false;
+        }
+        return preg_match('/^' . preg_quote($sectionId, '/') . '\\.\\d+\\.\\s*\\w/i', $no) === 1;
     }
 
     /**
