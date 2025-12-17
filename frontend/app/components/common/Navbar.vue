@@ -43,7 +43,7 @@
               size="sm"
               class="flex items-center gap-1 text-slate-600 hover:text-slate-900 transition-colors hover:bg-slate-100/50 rounded-lg px-2"
             >
-              <UIcon name="i-heroicons-language" class="w-5 h-5" />
+              <UIcon name="i-heroicons-globe-alt" class="w-5 h-5" />
               <span class="text-xs font-semibold">{{ currentLanguageLabel }}</span>
             </UButton>
           </UDropdown>

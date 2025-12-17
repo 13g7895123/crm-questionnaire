@@ -23,6 +23,7 @@
     "vue-router": "^4.3.3"
   },
   "devDependencies": {
+    "@iconify-json/heroicons": "^1.2.3",
     "@nuxt/test-utils": "^3.13.1",
     "@vitejs/plugin-vue": "^5.0.5",
     "@vue/test-utils": "^2.4.6",
