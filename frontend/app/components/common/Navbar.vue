@@ -26,7 +26,21 @@
         </div>
 
         <!-- Right: User Info & Actions -->
-        <div class="flex items-center gap-6">
+        <div class="flex items-center gap-4">
+          <!-- Language Switcher -->
+          <UDropdown :items="languageItems" :popper="{ placement: 'bottom-end' }">
+            <UButton
+              color="gray"
+              variant="ghost"
+              size="sm"
+              class="flex items-center gap-1"
+            >
+              <UIcon name="i-heroicons-language" class="w-5 h-5" />
+              <span class="text-sm font-medium">{{ currentLanguageLabel }}</span>
+              <UIcon name="i-heroicons-chevron-down" class="w-4 h-4" />
+            </UButton>
+          </UDropdown>
+
           <!-- Notification -->
           <button class="text-gray-600 hover:text-gray-900">
             <UIcon name="i-heroicons-bell" class="w-6 h-6" />
@@ -64,7 +78,7 @@ const authStore = useAuthStore()
 const { logout } = useAuth()
 const router = useRouter()
 const route = useRoute()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const { user } = storeToRefs(authStore)
 
 const currentApp = computed(() => {
@@ -91,6 +105,32 @@ const handleLogout = async () => {
   router.push('/login')
 }
 
+// Language switcher
+const currentLanguageLabel = computed(() => {
+  return locale.value === 'zh-TW' ? '繁中' : 'EN'
+})
+
+const setLanguage = (lang: string) => {
+  locale.value = lang
+  // Persist to localStorage
+  localStorage.setItem('locale', lang)
+}
+
+const languageItems = computed(() => [
+  [
+    {
+      label: '繁體中文',
+      icon: locale.value === 'zh-TW' ? 'i-heroicons-check' : undefined,
+      click: () => setLanguage('zh-TW')
+    },
+    {
+      label: 'English',
+      icon: locale.value === 'en' ? 'i-heroicons-check' : undefined,
+      click: () => setLanguage('en')
+    }
+  ]
+])
+
 const items = computed(() => [
   [{
     label: t('auth.logout'),
@@ -99,3 +139,4 @@ const items = computed(() => [
   }]
 ])
 </script>
+

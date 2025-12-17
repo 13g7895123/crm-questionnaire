@@ -360,4 +360,9 @@ onMounted(async () => {
     ])
   }
 })
+
+// 監聽語系變更，重新載入資料
+watch(locale, async () => {
+  await loadTemplateStructure()
+})
 </script>
