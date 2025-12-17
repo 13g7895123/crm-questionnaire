@@ -380,11 +380,15 @@ class TemplateController extends BaseApiController
             return $this->notFoundResponse('找不到指定的範本');
         }
 
+        // Get locale from request parameter
+        $locale = $this->getRequestLocale();
+
         // Check if template has v2.0 structure
         if (!$this->structureRepo->hasV2Structure($templateId)) {
             return $this->successResponse([
                 'templateId' => $templateId,
                 'hasV2Structure' => false,
+                'locale' => $locale,
                 'structure' => [
                     'includeBasicInfo' => false,
                     'sections' => [],
@@ -392,11 +396,12 @@ class TemplateController extends BaseApiController
             ]);
         }
 
-        $sections = $this->structureRepo->getTemplateStructure($templateId);
+        $sections = $this->structureRepo->getTemplateStructure($templateId, $locale);
 
         return $this->successResponse([
             'templateId' => $templateId,
             'hasV2Structure' => true,
+            'locale' => $locale,
             'structure' => [
                 'includeBasicInfo' => $template->type === 'SAQ',
                 'sections' => $sections,

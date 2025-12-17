@@ -113,16 +113,21 @@ class ExcelQuestionParser
 
             // 再檢查小標題（A.1. 格式較寬鬆）
             if ($this->isSubsectionTitle($no, $sectionId)) {
-                // 這是小標題行 (如 A.1. Labor Management)
+                // 這是小標題行 (如 A.1. Labor Management\n勞動管理)
                 if ($currentSubsection) {
                     $subsections[] = $currentSubsection;
                 }
                 $subsectionOrder++;
                 $questionOrder = 0; // Reset question order for new subsection
+
+                // 解析多語系標題
+                $i18nTitle = $this->parseI18nTitle($no);
                 $currentSubsection = [
                     'id' => $this->extractSubsectionId($no),
                     'order' => $subsectionOrder,
                     'title' => trim($no),
+                    'title_en' => $i18nTitle['en'],
+                    'title_zh' => $i18nTitle['zh'],
                     'questions' => [],
                 ];
                 $row++;
@@ -141,10 +146,17 @@ class ExcelQuestionParser
             return null;
         }
 
+        // 解析區段標題的多語系
+        // 從分頁第 4 列取得完整的區段標題
+        $sectionTitleRow = $this->getCellValue($sheet, 'B', 4);
+        $sectionI18n = $this->parseI18nTitle($sectionTitleRow ?? $sheetName);
+
         return [
             'id' => $sectionId,
             'order' => $sectionOrder,
-            'title' => $sheetName,
+            'title' => $sectionTitleRow ?? $sheetName,
+            'title_en' => $sectionI18n['en'],
+            'title_zh' => $sectionI18n['zh'],
             'subsections' => $subsections,
         ];
     }
@@ -154,10 +166,15 @@ class ExcelQuestionParser
      */
     protected function parseQuestion(Worksheet $sheet, int $startRow, string $no, ?string $item, int $order): array
     {
+        // 解析題目文字的多語系
+        $textI18n = $this->parseI18nText($item);
+
         $question = [
             'id' => $no,
             'order' => $order,
             'text' => $item ?? '',
+            'text_en' => $textI18n['en'],
+            'text_zh' => $textI18n['zh'],
             'type' => 'BOOLEAN',
             'required' => true,
         ];
@@ -406,6 +423,80 @@ class ExcelQuestionParser
             'totalSections' => count($sections),
             'totalSubsections' => $totalSubsections,
             'totalQuestions' => $totalQuestions,
+        ];
+    }
+
+    /**
+     * 解析多語系文本
+     * 
+     * 支援格式：
+     * - "English Text\n中文文字" (換行分隔)
+     * - "English Text 中文文字" (空白分隔，中文開頭判斷)
+     * 
+     * @param string|null $text
+     * @return array ['en' => string, 'zh' => string]
+     */
+    public function parseI18nText(?string $text): array
+    {
+        if (!$text) {
+            return ['en' => '', 'zh' => ''];
+        }
+
+        $text = trim($text);
+
+        // 換行分隔優先
+        if (str_contains($text, "\n")) {
+            $parts = preg_split('/\r?\n/', $text, 2);
+            return [
+                'en' => trim($parts[0]),
+                'zh' => trim($parts[1] ?? $parts[0]),
+            ];
+        }
+
+        // 空白分隔，偵測中文開始位置
+        // 匹配：英文部分 + 空白 + 中文開頭
+        if (preg_match('/^(.+?)\s+([\x{4e00}-\x{9fff}].*)$/su', $text, $matches)) {
+            return [
+                'en' => trim($matches[1]),
+                'zh' => trim($matches[2]),
+            ];
+        }
+
+        // 無法分離，兩者相同
+        return ['en' => trim($text), 'zh' => trim($text)];
+    }
+
+    /**
+     * 解析區段/小標題的多語系標題
+     * 
+     * 格式：A. Labor Rights 勞動權益 或 A.1. Labor Management\n勞動管理
+     * 
+     * @param string $titleWithId 包含編號的標題
+     * @return array ['id' => string, 'en' => string, 'zh' => string]
+     */
+    public function parseI18nTitle(string $titleWithId): array
+    {
+        $titleWithId = trim($titleWithId);
+
+        // 提取編號部分（例如 A. 或 A.1.）
+        if (preg_match('/^([A-Z](?:\.\d+)?\.)\s*(.*)$/s', $titleWithId, $matches)) {
+            $id = trim($matches[1], '.');
+            $titlePart = $matches[2];
+            $i18n = $this->parseI18nText($titlePart);
+
+            return [
+                'id' => $id,
+                'en' => $i18n['en'],
+                'zh' => $i18n['zh'],
+            ];
+        }
+
+        // 無法匹配編號，整個作為標題
+        $i18n = $this->parseI18nText($titleWithId);
+        return [
+            'id' => '',
+            'en' => $i18n['en'],
+            'zh' => $i18n['zh'],
         ];
     }
 }

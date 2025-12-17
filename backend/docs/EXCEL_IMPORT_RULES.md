@@ -111,3 +111,32 @@ Row | B 欄      | C 欄                    | D 欄
 ### Q2: 為什麼出現 Duplicate entry 錯誤？
 **原因**: 題目編號被誤判為小標題（例如 `C.2.4.1` 被識別為 `C.2.`）。
 **解法**: 確認 Excel 編號格式正確，或聯絡開發人員檢查解析器邏輯。
+
+---
+
+## 8. 多語系支援 (i18n)
+
+系統支援中英文雙語顯示。
+
+### 8.1 Excel 格式
+
+中英文以 **換行** 或 **空白** 分隔：
+
+| 類型 | 格式範例 |
+|------|----------|
+| 區段標題 | `A. Labor Rights 勞動權益` |
+| 小標題 | `A.1. Labor Management\n勞動管理` |
+| 題目文字 | `Does the Company...\n公司是否...` |
+
+### 8.2 API 語系參數
+
+```
+GET /api/v1/templates/{id}/structure?lang=en  # 英文
+GET /api/v1/templates/{id}/structure?lang=zh  # 中文
+GET /api/v1/templates/{id}/structure          # 預設（原始內容）
+```
+
+### 8.3 資料儲存
+
+翻譯資料儲存於 `template_translations` 資料表。
+

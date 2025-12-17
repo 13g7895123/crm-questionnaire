@@ -74,16 +74,45 @@ class BaseApiController extends ResourceController
     }
 
     /**
+     * Get request locale from query parameter or Accept-Language header
+     * 
+     * @return string|null Locale code (en, zh) or null for default
+     */
+    protected function getRequestLocale(): ?string
+    {
+        // Priority 1: Query parameter ?lang=
+        $lang = $this->request->getGet('lang');
+        if ($lang && in_array($lang, ['en', 'zh', 'zh-TW', 'zh-CN'])) {
+            // Normalize zh-TW and zh-CN to zh
+            return str_starts_with($lang, 'zh') ? 'zh' : $lang;
+        }
+
+        // Priority 2: Accept-Language header
+        $acceptLang = $this->request->getHeaderLine('Accept-Language');
+        if ($acceptLang) {
+            if (str_contains($acceptLang, 'zh')) {
+                return 'zh';
+            }
+            if (str_contains($acceptLang, 'en')) {
+                return 'en';
+            }
+        }
+
+        // Default: null (use original content)
+        return null;
+    }
+
+    /**
      * Success response
      */
     protected function successResponse($data, int $statusCode = 200, ?string $message = null): ResponseInterface
     {
         $response = ['success' => true];
-        
+
         if ($message) {
             $response['message'] = $message;
         }
-        
+
         if ($data !== null) {
             $response['data'] = $data;
         }
@@ -174,7 +203,7 @@ class BaseApiController extends ResourceController
     {
         $page = max(1, (int) ($this->request->getGet('page') ?? 1));
         $limitParam = $this->request->getGet('limit');
-        
+
         // If limit is not specified, use a very large number to get all records
         // If limit is specified, cap it at 100
         if ($limitParam === null || $limitParam === '') {

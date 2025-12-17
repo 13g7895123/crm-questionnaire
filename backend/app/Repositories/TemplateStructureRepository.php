@@ -5,24 +5,30 @@ namespace App\Repositories;
 use App\Models\TemplateSectionModel;
 use App\Models\TemplateSubsectionModel;
 use App\Models\TemplateQuestionModel;
+use App\Models\TemplateTranslationModel;
 
 class TemplateStructureRepository
 {
     protected TemplateSectionModel $sectionModel;
     protected TemplateSubsectionModel $subsectionModel;
     protected TemplateQuestionModel $questionModel;
+    protected TemplateTranslationModel $translationModel;
 
     public function __construct()
     {
         $this->sectionModel = new TemplateSectionModel();
         $this->subsectionModel = new TemplateSubsectionModel();
         $this->questionModel = new TemplateQuestionModel();
+        $this->translationModel = new TemplateTranslationModel();
     }
 
     /**
      * Get complete template structure with sections, subsections, and questions
+     * 
+     * @param int $templateId
+     * @param string|null $locale Language locale (en, zh). If null, returns default titles.
      */
-    public function getTemplateStructure(int $templateId): array
+    public function getTemplateStructure(int $templateId, ?string $locale = null): array
     {
         $sections = $this->sectionModel->where('template_id', $templateId)
             ->orderBy('order', 'ASC')
@@ -42,20 +48,47 @@ class TemplateStructureRepository
                     ->orderBy('order', 'ASC')
                     ->findAll();
 
-                $questionsData = array_map(function ($question) {
-                    return $question->toApiResponse();
-                }, $questions);
+                $questionsData = [];
+                foreach ($questions as $question) {
+                    $questionData = $question->toApiResponse();
 
-                $subsectionsData[] = array_merge(
-                    $subsection->toApiResponse(),
-                    ['questions' => $questionsData]
-                );
+                    // Apply translation if locale specified
+                    if ($locale) {
+                        $translatedText = $this->translationModel->getTranslation('question', $question->id, $locale, 'text');
+                        if ($translatedText) {
+                            $questionData['text'] = $translatedText;
+                        }
+                    }
+
+                    $questionsData[] = $questionData;
+                }
+
+                $subsectionData = $subsection->toApiResponse();
+
+                // Apply translation if locale specified
+                if ($locale) {
+                    $translatedTitle = $this->translationModel->getTranslation('subsection', $subsection->id, $locale, 'title');
+                    if ($translatedTitle) {
+                        $subsectionData['title'] = $translatedTitle;
+                    }
+                }
+
+                $subsectionData['questions'] = $questionsData;
+                $subsectionsData[] = $subsectionData;
             }
 
-            $structure[] = array_merge(
-                $section->toApiResponse(),
-                ['subsections' => $subsectionsData]
-            );
+            $sectionData = $section->toApiResponse();
+
+            // Apply translation if locale specified
+            if ($locale) {
+                $translatedTitle = $this->translationModel->getTranslation('section', $section->id, $locale, 'title');
+                if ($translatedTitle) {
+                    $sectionData['title'] = $translatedTitle;
+                }
+            }
+
+            $sectionData['subsections'] = $subsectionsData;
+            $structure[] = $sectionData;
         }
 
         return $structure;
@@ -74,8 +107,8 @@ class TemplateStructureRepository
         $db->transStart();
 
         try {
-            // Delete existing structure
-            $this->sectionModel->deleteSectionsByTemplateId($templateId);
+            // Delete existing structure and translations
+            $this->deleteTemplateStructureWithTranslations($templateId);
 
             // Insert new structure
             foreach ($sections as $sectionIndex => $sectionData) {
@@ -95,6 +128,12 @@ class TemplateStructureRepository
                     throw new \RuntimeException('Failed to insert section: ' . json_encode($errors));
                 }
 
+                // Save section translations
+                $this->saveTranslations('section', $sectionId, [
+                    'en' => ['title' => $sectionData['title_en'] ?? $sectionData['title']],
+                    'zh' => ['title' => $sectionData['title_zh'] ?? $sectionData['title']],
+                ]);
+
                 foreach ($sectionData['subsections'] ?? [] as $subsectionIndex => $subsectionData) {
                     $subsectionInsertData = [
                         'section_id' => $sectionId,
@@ -112,6 +151,12 @@ class TemplateStructureRepository
                         throw new \RuntimeException('Failed to insert subsection: ' . json_encode($errors));
                     }
 
+                    // Save subsection translations
+                    $this->saveTranslations('subsection', $subsectionId, [
+                        'en' => ['title' => $subsectionData['title_en'] ?? $subsectionData['title']],
+                        'zh' => ['title' => $subsectionData['title_zh'] ?? $subsectionData['title']],
+                    ]);
+
                     foreach ($subsectionData['questions'] ?? [] as $questionIndex => $questionData) {
                         $questionInsertData = [
                             'subsection_id' => $subsectionId,
@@ -125,13 +170,19 @@ class TemplateStructureRepository
                             'table_config' => !empty($questionData['tableConfig']) ? json_encode($questionData['tableConfig']) : null,
                         ];
 
-                        $inserted = $this->questionModel->insert($questionInsertData);
+                        $questionId = $this->questionModel->insert($questionInsertData);
 
-                        if (!$inserted) {
+                        if (!$questionId) {
                             $errors = $this->questionModel->errors();
                             log_message('error', 'Failed to insert question: ' . json_encode($errors) . ' Data: ' . json_encode($questionInsertData));
                             throw new \RuntimeException('Failed to insert question: ' . json_encode($errors));
                         }
+
+                        // Save question translations
+                        $this->saveTranslations('question', $questionId, [
+                            'en' => ['text' => $questionData['text_en'] ?? $questionData['text']],
+                            'zh' => ['text' => $questionData['text_zh'] ?? $questionData['text']],
+                        ]);
                     }
                 }
             }
@@ -143,6 +194,57 @@ class TemplateStructureRepository
             log_message('error', 'Failed to save template structure: ' . $e->getMessage());
             return false;
         }
+    }
+
+    /**
+     * Save translations for an entity
+     */
+    protected function saveTranslations(string $type, int $id, array $translations): void
+    {
+        foreach ($translations as $locale => $fields) {
+            foreach ($fields as $field => $value) {
+                if (!empty($value)) {
+                    $this->translationModel->saveTranslation($type, $id, $locale, $field, $value);
+                }
+            }
+        }
+    }
+
+    /**
+     * Delete template structure with translations
+     */
+    protected function deleteTemplateStructureWithTranslations(int $templateId): void
+    {
+        // Get all section IDs for this template
+        $sections = $this->sectionModel->where('template_id', $templateId)->findAll();
+        $sectionIds = array_map(fn($s) => $s->id, $sections);
+
+        if (!empty($sectionIds)) {
+            // Get all subsection IDs
+            $subsections = $this->subsectionModel->whereIn('section_id', $sectionIds)->findAll();
+            $subsectionIds = array_map(fn($s) => $s->id, $subsections);
+
+            if (!empty($subsectionIds)) {
+                // Get all question IDs and delete translations
+                $questions = $this->questionModel->whereIn('subsection_id', $subsectionIds)->findAll();
+                $questionIds = array_map(fn($q) => $q->id, $questions);
+
+                if (!empty($questionIds)) {
+                    $this->translationModel->deleteTranslationsForEntities('question', $questionIds);
+                }
+            }
+
+            // Delete subsection translations
+            if (!empty($subsectionIds)) {
+                $this->translationModel->deleteTranslationsForEntities('subsection', $subsectionIds);
+            }
+
+            // Delete section translations
+            $this->translationModel->deleteTranslationsForEntities('section', $sectionIds);
+        }
+
+        // Delete main records (cascade will handle subsections and questions)
+        $this->sectionModel->deleteSectionsByTemplateId($templateId);
     }
 
     /**

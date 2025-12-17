@@ -180,7 +180,7 @@ definePageMeta({ middleware: 'auth' })
 const route = useRoute()
 const router = useRouter()
 const config = useRuntimeConfig()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const { setBreadcrumbs } = useBreadcrumbs()
 
 const templateId = computed(() => route.params.id as string)
@@ -203,11 +203,18 @@ const visibleQuestions = ref<Set<string>>(new Set())
 const loadTemplateStructure = async () => {
   try {
     loading.value = true
+    
+    // Get current locale for i18n
+    const currentLocale = locale.value.startsWith('zh') ? 'zh' : 'en'
+    
     const { data: templateData, error: apiError } = await useFetch(
       `${config.public.apiBase}/api/v1/templates/${templateId.value}/structure`,
       {
         headers: {
           'Content-Type': 'application/json',
+        },
+        query: {
+          lang: currentLocale,
         },
       }
     )
