@@ -133,7 +133,7 @@ class TemplateController extends BaseApiController
 
         // Create initial version record (structure will be imported via Excel)
         $this->versionModel->insert([
-            'template_id' => $templateId,
+            'template_id' => (string)$templateId,
             'version' => '1.0.0',
         ]);
 

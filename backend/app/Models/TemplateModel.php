@@ -11,7 +11,7 @@ class TemplateModel extends Model
     protected $primaryKey = 'id';
     protected $useAutoIncrement = true;
     protected $returnType = Template::class;
-    protected $useSoftDeletes = true;
+    protected $useSoftDeletes = false;
     protected $allowedFields = [
         'name',
         'type',
@@ -34,7 +34,6 @@ class TemplateModel extends Model
     public function getTemplatesWithVersions(array $filters = [], int $page = 1, int $limit = 20): array
     {
         $builder = $this->builder();
-        $builder->where('templates.deleted_at IS NULL');
 
         if (!empty($filters['type'])) {
             $builder->where('templates.type', $filters['type']);
@@ -51,8 +50,8 @@ class TemplateModel extends Model
         $versionModel = model('TemplateVersionModel');
         foreach ($templates as &$template) {
             $template->versions = $versionModel->where('template_id', $template->id)
-                                               ->orderBy('version', 'DESC')
-                                               ->findAll();
+                ->orderBy('version', 'DESC')
+                ->findAll();
         }
 
         return [

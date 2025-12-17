@@ -34,7 +34,7 @@ class ProjectController extends BaseApiController
     public function index(): ResponseInterface
     {
         $pagination = $this->getPaginationParams();
-        
+
         $filters = [
             'type' => $this->request->getGet('type'),
             'status' => $this->request->getGet('status'),
@@ -375,15 +375,54 @@ class ProjectController extends BaseApiController
             $data['year'] = $this->request->getJsonVar('year');
         }
 
+        // Handle templateId and templateVersion update
+        $templateId = $this->request->getJsonVar('templateId');
+        $templateVersion = $this->request->getJsonVar('templateVersion');
+
+        if ($templateId || $templateVersion) {
+            // Check if any supplier has started filling (not just DRAFT/IN_PROGRESS without answers)
+            // For simplicity, we check if any supplier is beyond IN_PROGRESS status
+            $hasStartedFilling = $stats['byStatus']['SUBMITTED'] > 0 ||
+                $stats['byStatus']['REVIEWING'] > 0 ||
+                $stats['byStatus']['APPROVED'] > 0;
+
+            if ($hasStartedFilling) {
+                return $this->conflictResponse(
+                    'TEMPLATE_CHANGE_NOT_ALLOWED',
+                    '範本無法修改，已有供應商開始填寫問卷'
+                );
+            }
+
+            // Validate template exists
+            if ($templateId) {
+                $template = $this->templateModel->find($templateId);
+                if (!$template) {
+                    return $this->notFoundResponse('找不到指定的範本');
+                }
+                $data['template_id'] = $templateId;
+            }
+
+            // Validate version exists
+            if ($templateVersion) {
+                $versionModel = new TemplateVersionModel();
+                $targetTemplateId = $templateId ?? $project->template_id;
+                $version = $versionModel->getVersion($targetTemplateId, $templateVersion);
+                if (!$version) {
+                    return $this->notFoundResponse('找不到指定的範本版本');
+                }
+                $data['template_version'] = $templateVersion;
+            }
+        }
+
         // Review config can only be updated if no supplier has submitted
         $reviewConfig = $this->request->getJsonVar('reviewConfig');
         if ($reviewConfig) {
             $reviewConfig = json_decode(json_encode($reviewConfig), true);
 
             // Check if any supplier has submitted
-            $hasSubmitted = $stats['byStatus']['SUBMITTED'] > 0 || 
-                           $stats['byStatus']['REVIEWING'] > 0 || 
-                           $stats['byStatus']['APPROVED'] > 0;
+            $hasSubmitted = $stats['byStatus']['SUBMITTED'] > 0 ||
+                $stats['byStatus']['REVIEWING'] > 0 ||
+                $stats['byStatus']['APPROVED'] > 0;
 
             if ($hasSubmitted) {
                 return $this->conflictResponse(
@@ -399,17 +438,17 @@ class ProjectController extends BaseApiController
         $supplierIds = $this->request->getJsonVar('supplierIds');
         if ($supplierIds) {
             $supplierIds = json_decode(json_encode($supplierIds), true);
-            
+
             // Get current suppliers
             $currentSuppliers = $this->projectSupplierModel->getSuppliersForProject($projectId);
             $currentSupplierIds = array_map(fn($s) => $s->supplier_id, $currentSuppliers);
-            
+
             // Add new suppliers
             $newSupplierIds = array_diff($supplierIds, $currentSupplierIds);
             if (!empty($newSupplierIds)) {
                 $this->projectSupplierModel->addSuppliersToProject($projectId, $newSupplierIds);
             }
-            
+
             // Note: Removing suppliers is not implemented to prevent data loss
             // Consider soft-delete if needed
         }
@@ -469,9 +508,9 @@ class ProjectController extends BaseApiController
 
         // Check if any supplier has submitted
         $stats = $this->projectSupplierModel->getStatsByProject($projectId);
-        $hasActivity = $stats['byStatus']['SUBMITTED'] > 0 || 
-                      $stats['byStatus']['REVIEWING'] > 0 || 
-                      $stats['byStatus']['APPROVED'] > 0;
+        $hasActivity = $stats['byStatus']['SUBMITTED'] > 0 ||
+            $stats['byStatus']['REVIEWING'] > 0 ||
+            $stats['byStatus']['APPROVED'] > 0;
 
         if ($hasActivity) {
             return $this->conflictResponse(
@@ -482,7 +521,7 @@ class ProjectController extends BaseApiController
 
         // Delete related data
         $this->reviewConfigModel->where('project_id', $projectId)->delete();
-        
+
         // Delete project_suppliers and related answers/review_logs
         $projectSuppliers = $this->projectSupplierModel->where('project_id', $projectId)->findAll();
         foreach ($projectSuppliers as $ps) {
@@ -515,11 +554,11 @@ class ProjectController extends BaseApiController
         // Get by type
         $byType = [
             'SAQ' => $this->projectModel->where('type', 'SAQ')
-                                       ->where('deleted_at IS NULL')
-                                       ->countAllResults(),
+                ->where('deleted_at IS NULL')
+                ->countAllResults(),
             'CONFLICT' => $this->projectModel->where('type', 'CONFLICT')
-                                            ->where('deleted_at IS NULL')
-                                            ->countAllResults(),
+                ->where('deleted_at IS NULL')
+                ->countAllResults(),
         ];
 
         // Get by year

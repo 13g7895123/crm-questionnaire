@@ -19,7 +19,7 @@ class TemplateVersionModel extends Model
 
     protected $useTimestamps = true;
     protected $createdField = 'created_at';
-    protected $updatedField = false;
+    protected $updatedField = '';
 
     protected $validationRules = [
         'template_id' => 'required',
