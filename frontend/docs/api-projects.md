@@ -374,6 +374,8 @@ Authorization: Bearer <accessToken>
 {
   "name": "2025 SAQ 供應商評估 (更新)",
   "year": 2025,
+  "templateId": "tmpl_def456",
+  "templateVersion": "1.3.0",
   "supplierIds": [2, 3, 5],
   "reviewConfig": [
     {
@@ -384,21 +386,47 @@ Authorization: Bearer <accessToken>
 }
 ```
 
-**可更新欄位:**
-- name
-- year
-- supplierIds (可新增供應商，已存在的供應商不受影響)
-- reviewConfig (僅在所有供應商皆未提交時可修改)
+**欄位說明:**
+
+| 欄位 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| name | string | ✗ | 專案名稱 (最長 200 字元) |
+| year | integer | ✗ | 年份 (1900-2100) |
+| templateId | string | ✗ | 範本 ID (僅在所有供應商皆未填寫時可修改) |
+| templateVersion | string | ✗ | 範本版本 (僅在所有供應商皆未填寫時可修改) |
+| supplierIds | array | ✗ | 供應商組織 ID 列表 (可新增供應商) |
+| reviewConfig | array | ✗ | 審核流程設定 (1-5 個階段，僅在所有供應商皆未提交時可修改) |
+| reviewConfig[].stageOrder | integer | ✓ | 審核階段順序 (從 1 開始) |
+| reviewConfig[].departmentId | string | ✓ | 負責部門 ID |
+| reviewConfig[].approverId | string | ✗ | 特定審核者 ID (可選) |
+
+**可更新欄位與條件:**
+
+| 欄位 | 條件 |
+|------|------|
+| name | 僅在所有供應商皆未核准 (APPROVED) 時可修改 |
+| year | 僅在所有供應商皆未核准 (APPROVED) 時可修改 |
+| templateId | 僅在所有供應商皆處於 DRAFT 或 IN_PROGRESS (未開始填寫) 狀態時可修改 |
+| templateVersion | 僅在所有供應商皆處於 DRAFT 或 IN_PROGRESS (未開始填寫) 狀態時可修改 |
+| supplierIds | 可新增供應商，已存在的供應商不受影響 |
+| reviewConfig | 僅在所有供應商皆未提交 (SUBMITTED, REVIEWING, APPROVED) 時可修改 |
 
 **不可更新欄位:**
 - type
-- templateId
-- templateVersion
 
 **注意事項:**
+- 修改 `templateId` 或 `templateVersion` 時，若有供應商已開始填寫答案，則無法修改
 - 若有任何供應商已提交 (SUBMITTED, REVIEWING, APPROVED)，則無法修改審核流程
 - 若有任何供應商已核准 (APPROVED)，則無法修改專案基本資訊
 - `supplierIds` 僅支援新增，移除供應商需使用其他方式 (目前未開放)
+- 更換範本時，建議先確認現有供應商的填寫狀態
+
+**驗證規則:**
+- `reviewConfig` 必須包含 1-5 個審核階段
+- `stageOrder` 必須連續且從 1 開始
+- 同一專案的 `departmentId` 不可重複
+- `templateVersion` 必須存在於指定的範本中
+- `supplierIds` 中的 ID 必須為 SUPPLIER 類型的組織 ID
 
 ### Response (200 OK)
 
@@ -411,7 +439,7 @@ Authorization: Bearer <accessToken>
     "year": 2025,
     "type": "SAQ",
     "templateId": 1,
-    "templateVersion": "1.2.0",
+    "templateVersion": "1.3.0",
     "suppliers": [...],
     "reviewConfig": [...],
     "updatedAt": "2025-12-02T06:08:38.435Z"
@@ -428,6 +456,60 @@ Authorization: Bearer <accessToken>
   "error": {
     "code": "PROJECT_ALREADY_SUBMITTED",
     "message": "專案已提交，無法修改審核流程"
+  },
+  "timestamp": "2025-12-02T06:08:38.435Z"
+}
+```
+
+**409 Conflict - 範本無法修改 (供應商已填寫)**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "TEMPLATE_CHANGE_NOT_ALLOWED",
+    "message": "範本無法修改，已有供應商開始填寫問卷",
+    "details": {
+      "suppliersWithAnswers": 2
+    }
+  },
+  "timestamp": "2025-12-02T06:08:38.435Z"
+}
+```
+
+**404 Not Found - 範本版本不存在**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "TEMPLATE_VERSION_NOT_FOUND",
+    "message": "找不到指定的範本版本"
+  },
+  "timestamp": "2025-12-02T06:08:38.435Z"
+}
+```
+
+**404 Not Found - 專案或供應商不存在**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "RESOURCE_NOT_FOUND",
+    "message": "找不到指定的專案或供應商"
+  },
+  "timestamp": "2025-12-02T06:08:38.435Z"
+}
+```
+
+**422 Unprocessable Entity - 審核流程設定錯誤**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "REVIEW_STAGE_INVALID",
+    "message": "審核流程設定錯誤",
+    "details": {
+      "reviewConfig": "審核階段必須為 1-5 個，且順序必須連續"
+    }
   },
   "timestamp": "2025-12-02T06:08:38.435Z"
 }

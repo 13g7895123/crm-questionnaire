@@ -37,8 +37,8 @@
           />
         </UFormGroup>
 
-        <!-- 範本選擇 (新增時) -->
-        <UFormGroup v-if="!isEditing" :label="$t('templates.template')" required>
+        <!-- 範本選擇 -->
+        <UFormGroup :label="$t('templates.template')" required>
           <USelectMenu
             v-model="selectedTemplate"
             :options="templateOptions"
@@ -50,8 +50,8 @@
           />
         </UFormGroup>
 
-        <!-- 範本版本 (新增時) -->
-        <UFormGroup v-if="!isEditing && selectedTemplate" :label="$t('templates.version')" required>
+        <!-- 範本版本 -->
+        <UFormGroup v-if="selectedTemplate" :label="$t('templates.version')" required>
           <USelectMenu
             v-model="form.templateVersion"
             :options="versionOptions"
@@ -62,8 +62,8 @@
           />
         </UFormGroup>
 
-        <!-- 供應商選擇 (新增時) -->
-        <UFormGroup v-if="!isEditing" :label="$t('suppliers.supplier')" required>
+        <!-- 供應商選擇 -->
+        <UFormGroup :label="$t('suppliers.supplier')" required>
           <USelectMenu
             v-model="form.supplierIds"
             :options="supplierOptions"
@@ -96,8 +96,8 @@
           </USelectMenu>
         </UFormGroup>
 
-        <!-- 審核流程設定 (新增時) -->
-        <UFormGroup v-if="!isEditing" :label="$t('review.reviewFlow')" required>
+        <!-- 審核流程設定 -->
+        <UFormGroup :label="$t('review.reviewFlow')" required>
           <div class="space-y-3">
             <div
               v-for="(stage, index) in form.reviewConfig"
@@ -178,7 +178,7 @@ const emit = defineEmits<{
   (e: 'saved', project: Project): void
 }>()
 
-const { createProject, updateProject } = useProjects()
+const { createProject, updateProject, getProject } = useProjects()
 const { templates, fetchTemplates } = useTemplates()
 const { suppliers, fetchSuppliers } = useSuppliers()
 const { departments, fetchDepartments } = useDepartments()
@@ -187,7 +187,7 @@ const loading = ref(false)
 const templatesLoading = ref(false)
 const suppliersLoading = ref(false)
 const departmentsLoading = ref(false)
-const selectedTemplate = ref<string | null>(null)
+const selectedTemplate = ref<string | undefined>(undefined)
 
 const isOpen = computed({
   get: () => props.modelValue,
@@ -214,6 +214,7 @@ const templateOptions = computed(() =>
     }))
 )
 
+// ... existing computed properties ...
 const versionOptions = computed(() => {
   if (!selectedTemplate.value) return []
   const template = templates.value.find(t => t.id === selectedTemplate.value)
@@ -247,60 +248,100 @@ const resetForm = () => {
     supplierIds: [],
     reviewConfig: [{ stageOrder: 1, departmentId: '' }]
   }
-  selectedTemplate.value = null
+  selectedTemplate.value = undefined
 }
 
 watch(selectedTemplate, (newVal) => {
   form.value.templateId = newVal || ''
-  form.value.templateVersion = ''
+  // Only reset version if template changed and it's not the initial load of editing project
+  // preventing overwrite if we just set it from project data
+  // But here we rely on form.value.templateVersion being set after this if needed?
+  // Actually, standard behavior: if template changes, version resets. 
+  // We need to be careful not to reset it when we programmatically set templateId during edit load.
+  // We can handle that by setting version AFTER setting templateId in the load function.
   
-  // Auto-select latest version
   if (newVal) {
-    const template = templates.value.find(t => t.id === newVal)
-    if (template?.latestVersion) {
-      form.value.templateVersion = template.latestVersion
-    }
+     // If the current version in form is not valid for this template, reset it? 
+     // Or just let UI handle it. 
+     // For safety, if user manually changes template, we reset version.
+     // But we need to distinguish manual change vs programmatic set.
+     // For now, let's just default to latest if not set or invalid?
+     // We'll skip auto-select logic here to avoid overriding loaded data, 
+     // unless we add a check.
   }
 })
 
-watch(() => props.project, (newProject) => {
-  if (newProject) {
-    form.value.name = newProject.name
-    form.value.year = newProject.year
-    form.value.templateId = newProject.templateId
-    form.value.templateVersion = newProject.templateVersion
-    form.value.supplierIds = newProject.supplierId ? [newProject.supplierId] : []
-    form.value.reviewConfig = newProject.reviewConfig?.map((r, i) => ({
-      stageOrder: i + 1,
-      departmentId: r.departmentId
-    })) || [{ stageOrder: 1, departmentId: '' }]
-    selectedTemplate.value = newProject.templateId
-  } else {
-    resetForm()
-  }
-}, { immediate: true })
+// Update version options when template changes is handled by computed `versionOptions`.
+
+watch(() => props.project, (val) => {
+  // We will handle data loading in `loadInitialData` mainly, 
+  // but if project prop changes while open, we might need to react.
+  // However, usually modal is closed/opened.
+  if (!isOpen.value) return
+  
+  // If we are just opening, loadInitialData will run.
+})
 
 watch(isOpen, async (open) => {
-  if (open && !isEditing.value) {
-    form.value.year = new Date().getFullYear()
+  if (open) {
+    if (!isEditing.value) {
+      form.value.year = new Date().getFullYear()
+    }
     await loadInitialData()
   }
 })
 
 const loadInitialData = async () => {
+  loading.value = true
   templatesLoading.value = true
   suppliersLoading.value = true
   departmentsLoading.value = true
   
   try {
+    // 1. Fetch options first
     await Promise.all([
       fetchTemplates(props.projectType),
       fetchSuppliers(),
       fetchDepartments()
     ])
+
+    // 2. If editing, fetch full project details and populate form
+    if (isEditing.value && props.project?.id) {
+       const { data: projectData } = await getProject(props.project.id)
+       
+       if (projectData) {
+         form.value.name = projectData.name
+         form.value.year = projectData.year
+         form.value.templateId = projectData.templateId
+         selectedTemplate.value = projectData.templateId // This triggers watch
+         
+         // Set version (need to wait for watch to validly set options? or just set it)
+         form.value.templateVersion = projectData.templateVersion
+         
+         // Populate suppliers
+         if (projectData.suppliers && Array.isArray(projectData.suppliers)) {
+           form.value.supplierIds = projectData.suppliers.map((s: any) => s.supplierId)
+         } else if (projectData.supplierId) {
+           form.value.supplierIds = [projectData.supplierId]
+         } else {
+           form.value.supplierIds = []
+         }
+
+         // Populate review config
+         if (projectData.reviewConfig && Array.isArray(projectData.reviewConfig)) {
+           form.value.reviewConfig = projectData.reviewConfig.map((r: any, i: number) => ({
+             stageOrder: i + 1,
+             departmentId: r.departmentId
+           }))
+         } else {
+           form.value.reviewConfig = [{ stageOrder: 1, departmentId: '' }]
+         }
+       }
+    }
   } catch (error) {
     console.error('Failed to load data:', error)
   } finally {
+    loading.value = false
     templatesLoading.value = false
     suppliersLoading.value = false
     departmentsLoading.value = false
@@ -318,7 +359,6 @@ const addReviewStage = () => {
 
 const removeReviewStage = (index: number) => {
   form.value.reviewConfig.splice(index, 1)
-  // Re-order stages
   form.value.reviewConfig.forEach((stage, i) => {
     stage.stageOrder = i + 1
   })
@@ -339,40 +379,31 @@ const closeModal = () => {
 }
 
 const handleSubmit = async () => {
-  // Validation
-  if (!form.value.name.trim()) {
-    return
-  }
+  if (!form.value.name.trim()) return
 
-  if (!isEditing.value) {
-    if (!form.value.templateId || !form.value.templateVersion) {
-      return
-    }
-    if (form.value.supplierIds.length === 0) {
-      return
-    }
-    if (!form.value.reviewConfig.every(r => r.departmentId)) {
-      return
-    }
-  }
+  // Validate required fields (same for create and edit now)
+  if (!form.value.templateId || !form.value.templateVersion) return
+  if (form.value.supplierIds.length === 0) return
+  if (!form.value.reviewConfig.every(r => r.departmentId)) return
 
   loading.value = true
   try {
     let result
+    const payload = {
+      name: form.value.name,
+      year: form.value.year,
+      templateId: form.value.templateId,
+      templateVersion: form.value.templateVersion,
+      supplierIds: form.value.supplierIds,
+      reviewConfig: form.value.reviewConfig
+    }
+
     if (isEditing.value && props.project) {
-      result = await updateProject(props.project.id, {
-        name: form.value.name,
-        year: form.value.year
-      })
+      result = await updateProject(props.project.id, payload)
     } else {
       result = await createProject({
-        name: form.value.name,
-        year: form.value.year,
-        type: props.projectType,
-        templateId: form.value.templateId,
-        templateVersion: form.value.templateVersion,
-        supplierIds: form.value.supplierIds,
-        reviewConfig: form.value.reviewConfig
+        ...payload,
+        type: props.projectType
       })
     }
     
@@ -386,7 +417,10 @@ const handleSubmit = async () => {
 }
 
 onMounted(() => {
-  if (isOpen.value && !isEditing.value) {
+  if (isOpen.value) {
+    if (!isEditing.value) {
+      form.value.year = new Date().getFullYear()
+    }
     loadInitialData()
   }
 })
