@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-8">
     <div class="mb-6">
-      <h2 class="text-2xl font-bold text-gray-800">{{ section.title }}</h2>
+      <h2 class="text-2xl font-bold text-gray-800">{{ section.id }}. {{ section.title }}</h2>
       <p v-if="section.description" class="text-gray-600 mt-2">
         {{ section.description }}
       </p>
@@ -15,7 +15,7 @@
     >
       <div class="mb-6">
         <h3 class="text-xl font-semibold text-blue-700">
-          {{ subsection.title }}
+          {{ subsection.id }}. {{ subsection.title }}
         </h3>
         <p v-if="subsection.description" class="text-gray-600 text-sm mt-1">
           {{ subsection.description }}

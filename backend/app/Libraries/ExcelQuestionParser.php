@@ -179,12 +179,14 @@ class ExcelQuestionParser
             'required' => true,
         ];
 
-        // 檢查是否為表格題型（B、C 欄有合併儲存格）
+        // 檢查是否為表格題型（B 欄有合併儲存格，且 F~H 欄有表頭資料）
         $mergeRange = $this->getMergeRange($sheet, 'B', $startRow);
-        $isTableQuestion = $mergeRange !== null;
+        $hasTableHeaders = $this->hasTableHeaders($sheet, $startRow);
+        $isTableQuestion = $mergeRange !== null && $hasTableHeaders;
+        $isMultiFollowUp = $mergeRange !== null && !$hasTableHeaders;
 
         if ($isTableQuestion) {
-            // 表格題型：解析多列追問
+            // 表格題型：解析多列追問（轉置表格）
             $tableData = $this->parseTableQuestion($sheet, $startRow, $mergeRange);
             $question['conditionalLogic'] = [
                 'followUpQuestions' => [
@@ -205,20 +207,45 @@ class ExcelQuestionParser
                 'question' => $question,
                 'nextRow' => $tableData['endRow'] + 1,
             ];
+        } elseif ($isMultiFollowUp) {
+            // 多題進階題目：B 欄有 merge 但 F~H 欄沒有資料
+            $followUpQuestions = $this->parseMultiFollowUpQuestions($sheet, $startRow, $mergeRange);
+            if (!empty($followUpQuestions)) {
+                $question['conditionalLogic'] = [
+                    'followUpQuestions' => [
+                        [
+                            'condition' => ['operator' => 'equals', 'value' => true],
+                            'questions' => $followUpQuestions,
+                        ],
+                    ],
+                ];
+            }
+            return [
+                'question' => $question,
+                'nextRow' => $mergeRange['endRow'] + 1,
+            ];
         } else {
             // 一般題型：檢查 E 欄是否有條件式追問
-            $remark = $this->getCellValue($sheet, 'E', $startRow);
-            if ($remark && $this->isConditionalField($remark)) {
-                $followUpText = $this->extractFollowUpText($remark);
+            // 需要直接取原始值來判斷是否為 IF 公式（getCellValue 會處理公式回傳文字）
+            $eCell = $sheet->getCell('E' . $startRow);
+            $rawValue = $eCell->getValue();
+
+            if ($rawValue && is_string($rawValue) && $this->isConditionalField($rawValue)) {
+                // 取得解析後的進階題目文字
+                $followUpText = $this->getCellValue($sheet, 'E', $startRow);
                 if ($followUpText) {
+                    // 解析 i18n
+                    $i18n = $this->parseI18nText($followUpText);
                     $question['conditionalLogic'] = [
                         'followUpQuestions' => [
                             [
                                 'condition' => ['operator' => 'equals', 'value' => true],
                                 'questions' => [
                                     [
-                                        'id' => $no . '.remark',
-                                        'text' => $followUpText,
+                                        'id' => $no . '.1',
+                                        'text' => $i18n['zh'] ?: $i18n['en'],
+                                        'text_en' => $i18n['en'],
+                                        'text_zh' => $i18n['zh'],
                                         'type' => 'TEXT',
                                         'required' => false,
                                     ],
@@ -236,46 +263,60 @@ class ExcelQuestionParser
     }
 
     /**
-     * 解析表格題型
+     * 解析表格題型 (轉置：Excel 的 Columns 變成 Rows，Rows 變成 Columns)
+     * 並支援 i18n 欄位標籤
      */
     protected function parseTableQuestion(Worksheet $sheet, int $startRow, array $mergeRange): array
     {
         $endRow = $mergeRange['endRow'];
-        $rowLabels = [];
-        $columns = [];
 
-        // 取得 F~H 欄的表頭（從第一列取得年度等資訊）
+        // 1. 取得 Excel 的 Column Headers (F~H 欄) -> 變成 UI 的 Year Rows
+        // 年份直接從 Excel 讀取，不做額外計算
+        $years = [];
         for ($col = 'F'; $col <= 'H'; $col++) {
-            $headerValue = $this->getCellValue($sheet, $col, $startRow);
-            if ($headerValue !== null && $headerValue !== '') {
-                $columns[] = (string) $headerValue;
+            $yearValue = $this->getCellValue($sheet, $col, $startRow);
+            if ($yearValue !== null && $yearValue !== '') {
+                $years[] = (string)$yearValue;
             }
         }
 
-        // 取得 E 欄的列標題
+        // 2. 取得 Excel 的 Row Labels (E 欄) -> 變成 UI 的 Columns
+        // 並解析 i18n (例如 "Violation Count 違犯件數")
+        $attributes = [];
         for ($row = $startRow; $row <= $endRow; $row++) {
             $label = $this->getCellValue($sheet, 'E', $row);
             if ($label && $this->isConditionalField($label)) {
                 $label = $this->extractFollowUpText($label);
             }
             if ($label) {
-                $rowLabels[] = $label;
+                // 移除可能的冒號結尾
+                $label = rtrim($label, ':');
+                // 解析 i18n
+                $i18n = $this->parseI18nText($label);
+                $attributes[] = $i18n;
             }
         }
 
-        // 將表頭轉換為 v2.0 TableColumn 格式
+        // 3. 建構 v2.0 TableColumn 格式 (含 i18n)
         $tableColumns = [];
-        // 第一欄是列標籤欄位
+
+        // 第一欄：固定為「年度」(i18n)
         $tableColumns[] = [
-            'id' => 'row_label',
-            'label' => '項目',
+            'id' => 'year',
+            'label' => '年度',
+            'label_en' => 'Year',
+            'label_zh' => '年度',
             'type' => 'text',
             'required' => true,
         ];
-        foreach ($columns as $idx => $colLabel) {
+
+        // 後續欄位：來自 E 欄的屬性 (含 i18n)
+        foreach ($attributes as $idx => $attr) {
             $tableColumns[] = [
                 'id' => 'col_' . ($idx + 1),
-                'label' => (string) $colLabel,
+                'label' => $attr['zh'] ?: $attr['en'],  // 預設顯示中文
+                'label_en' => $attr['en'],
+                'label_zh' => $attr['zh'],
                 'type' => 'text',
                 'required' => false,
             ];
@@ -285,10 +326,65 @@ class ExcelQuestionParser
             'endRow' => $endRow,
             'tableConfig' => [
                 'columns' => $tableColumns,
-                'minRows' => count($rowLabels),
-                'maxRows' => count($rowLabels),
+                'minRows' => count($years),
+                'maxRows' => count($years),
+                'prefilledRows' => $years, // 從 Excel 讀取的實際年份
             ],
         ];
+    }
+
+    /**
+     * 檢查 F~H 欄是否有表頭資料
+     * 用於區分表格題和多題進階題目
+     */
+    protected function hasTableHeaders(Worksheet $sheet, int $row): bool
+    {
+        for ($col = 'F'; $col <= 'H'; $col++) {
+            $value = $sheet->getCell($col . $row)->getValue();
+            if ($value !== null && $value !== '') {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 解析多題進階題目（B 欄 merge 但 F~H 欄無資料）
+     * 每一行 E 欄是一個 TEXT 類型的進階問題
+     */
+    protected function parseMultiFollowUpQuestions(Worksheet $sheet, int $startRow, array $mergeRange): array
+    {
+        $endRow = $mergeRange['endRow'];
+        $questions = [];
+        $questionNo = $sheet->getCell('B' . $startRow)->getValue();
+
+        for ($row = $startRow; $row <= $endRow; $row++) {
+            $eCell = $sheet->getCell('E' . $row);
+            $rawValue = $eCell->getValue();
+
+            // 只處理 IF 公式的進階題目
+            if ($rawValue && is_string($rawValue) && $this->isConditionalField($rawValue)) {
+                $followUpText = $this->getCellValue($sheet, 'E', $row);
+                if ($followUpText) {
+                    // 移除結尾冒號和空白
+                    $followUpText = rtrim($followUpText, ': ：');
+                    // 解析 i18n
+                    $i18n = $this->parseI18nText($followUpText);
+
+                    $subIndex = $row - $startRow + 1;
+                    $questions[] = [
+                        'id' => $questionNo . '.' . $subIndex,
+                        'text' => $i18n['zh'] ?: $i18n['en'],
+                        'text_en' => $i18n['en'],
+                        'text_zh' => $i18n['zh'],
+                        'type' => 'TEXT',
+                        'required' => false,
+                    ];
+                }
+            }
+        }
+
+        return $questions;
     }
 
     /**
@@ -303,10 +399,54 @@ class ExcelQuestionParser
             return null;
         }
 
-        // 如果是公式，嘗試取得計算值
+        // 如果是公式
         if (is_string($value) && str_starts_with($value, '=')) {
-            // 對於 IF 公式，我們只需要提取顯示文字
-            return $value;
+            try {
+                // 1. 嘗試計算
+                $calculated = $cell->getCalculatedValue();
+
+                // 檢查 YEAR 公式結果是否合理 (>2000)
+                $isYearFormula = preg_match('/YEAR/i', $value);
+                if ($isYearFormula) {
+                    if (is_numeric($calculated) && (int)$calculated < 2000) {
+                        throw new \Exception("Invalid calculated year");
+                    }
+                    return (string)$calculated;
+                }
+
+                // 對於 IF 公式，如果計算結果為空（條件不滿足），拋出異常以觸發手動解析
+                if ($calculated === '' || $calculated === null || $calculated === false) {
+                    throw new \Exception("Empty calculated value");
+                }
+
+                return (string)$calculated;
+            } catch (\Exception $e) {
+                // 2. 計算失敗或結果無效，嘗試手動解析
+
+                // 處理年份公式 =YEAR(...)
+                if (preg_match('/YEAR/i', $value)) {
+                    $offset = 0;
+                    if (preg_match('/-(\d+)/', $value, $matches)) {
+                        $offset = (int)$matches[1];
+                    }
+                    return (string)(date('Y') - $offset);
+                }
+
+                // 處理 IF 公式 (提取最長引號字串)
+                if (preg_match_all('/"([^"]+)"/', $value, $matches)) {
+                    $candidates = $matches[1];
+                    // 排序取最長的
+                    usort($candidates, function ($a, $b) {
+                        return strlen($b) - strlen($a);
+                    });
+                    if (!empty($candidates)) {
+                        return $candidates[0];
+                    }
+                }
+
+                // 回退到原始值
+                return $value;
+            }
         }
 
         return trim((string) $value);
@@ -376,9 +516,25 @@ class ExcelQuestionParser
     /**
      * 從 IF 公式中提取追問文字
      */
+    /**
+     * 從 IF 公式中提取追問文字
+     */
     protected function extractFollowUpText(string $formula): ?string
     {
-        // 匹配 =IF(D7=1, "Content of...", "")
+        // 嘗試提取所有雙引號中的內容
+        // 啟發式：通常顯示文字是公式中最長的字串，且非空
+        if (preg_match_all('/"([^"]+)"/', $formula, $matches)) {
+            $candidates = $matches[1];
+            // 排序取最長的
+            usort($candidates, function ($a, $b) {
+                return strlen($b) - strlen($a);
+            });
+            if (!empty($candidates)) {
+                return trim($candidates[0]);
+            }
+        }
+
+        // Regfallback: 匹配 =IF(D7=1, "Content of...", "")
         if (preg_match('/=IF\([^,]+,\s*"([^"]+)"/', $formula, $matches)) {
             return trim($matches[1]);
         }

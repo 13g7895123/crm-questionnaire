@@ -62,6 +62,8 @@ export interface QuestionConfig {
 export interface TableColumn {
   id: string;
   label: string;
+  label_en?: string;  // 英文標籤
+  label_zh?: string;  // 中文標籤
   type: 'text' | 'number' | 'date' | 'email';
   required?: boolean;
 }
@@ -70,6 +72,7 @@ export interface TableConfig {
   columns: TableColumn[];
   minRows?: number;
   maxRows?: number;
+  prefilledRows?: string[]; // 用於預填第一欄 (例如年份: ['2024', '2023', '2022'])
 }
 
 export interface Question {

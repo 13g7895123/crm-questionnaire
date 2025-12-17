@@ -9,7 +9,7 @@
               :key="column.id"
               class="px-4 py-2 text-left text-sm font-semibold text-gray-700 border-b"
             >
-              {{ column.label }}
+              {{ getColumnLabel(column) }}
               <span v-if="column.required" class="text-red-500">*</span>
             </th>
             <th class="px-4 py-2 text-center text-sm font-semibold text-gray-700 border-b w-24">
@@ -32,32 +32,36 @@
                 v-if="column.type === 'text' || !column.type"
                 v-model="row[column.id]"
                 type="text"
-                class="w-full px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                class="w-full px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-100 disabled:text-gray-500"
                 :required="column.required"
+                :disabled="isReadOnly(column.id, rowIndex)"
                 @input="emitUpdate"
               />
               <input
                 v-else-if="column.type === 'number'"
                 v-model.number="row[column.id]"
                 type="number"
-                class="w-full px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                class="w-full px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-100 disabled:text-gray-500"
                 :required="column.required"
+                :disabled="isReadOnly(column.id, rowIndex)"
                 @input="emitUpdate"
               />
               <input
                 v-else-if="column.type === 'date'"
                 v-model="row[column.id]"
                 type="date"
-                class="w-full px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                class="w-full px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-100 disabled:text-gray-500"
                 :required="column.required"
+                :disabled="isReadOnly(column.id, rowIndex)"
                 @input="emitUpdate"
               />
               <input
                 v-else-if="column.type === 'email'"
                 v-model="row[column.id]"
                 type="email"
-                class="w-full px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                class="w-full px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-100 disabled:text-gray-500"
                 :required="column.required"
+                :disabled="isReadOnly(column.id, rowIndex)"
                 @input="emitUpdate"
               />
             </td>
@@ -101,7 +105,10 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import type { TableConfig, TableAnswer } from '~/types/template-v2'
+import { useI18n } from 'vue-i18n'
+import type { TableConfig, TableAnswer, TableColumn } from '~/types/template-v2'
+
+const { locale } = useI18n()
 
 const props = defineProps<{
   modelValue?: TableAnswer[]
@@ -114,6 +121,18 @@ const emit = defineEmits<{
 
 const rows = ref<TableAnswer[]>(props.modelValue || [])
 const validationError = ref<string>('')
+
+// 根據語系取得欄位標籤
+const getColumnLabel = (column: TableColumn): string => {
+  if (locale.value === 'en' && column.label_en) {
+    return column.label_en
+  }
+  if (locale.value === 'zh-TW' && column.label_zh) {
+    return column.label_zh
+  }
+  // fallback
+  return column.label_zh || column.label_en || column.label
+}
 
 
 const canAddRow = computed(() => {
@@ -156,10 +175,26 @@ const emitUpdate = () => {
   emit('update:modelValue', rows.value)
 }
 
-// 初始化至少一行
-if (rows.value.length === 0 && props.config?.minRows) {
-  for (let i = 0; i < Math.min(props.config!.minRows, 1); i++) {
-    addRow()
+// 初始化
+if (rows.value.length === 0) {
+  // 優先使用 prefilledRows 初始化
+  if (props.config?.prefilledRows && props.config.prefilledRows.length > 0) {
+    const firstColId = props.config.columns[0]?.id
+    
+    props.config.prefilledRows.forEach(value => {
+      const newRow: TableAnswer = {}
+      props.config?.columns.forEach((col) => {
+        newRow[col.id] = col.id === firstColId ? value : ''
+      })
+      rows.value.push(newRow)
+    })
+    emitUpdate()
+  } 
+  // 否則使用 minRows 初始化
+  else if (props.config?.minRows) {
+    for (let i = 0; i < Math.min(props.config.minRows, 1); i++) {
+      addRow()
+    }
   }
 }
 
@@ -172,4 +207,11 @@ watch(
   },
   { deep: true }
 )
+
+// Helper to check if a column should be read-only
+const isReadOnly = (columnId: string, rowIndex: number) => {
+  if (!props.config?.prefilledRows) return false
+  // 如果有預填列，第一欄通常是標題，設為唯讀
+  return columnId === props.config.columns[0]?.id
+}
 </script>

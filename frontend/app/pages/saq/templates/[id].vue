@@ -276,7 +276,7 @@ const steps = computed(() => {
     for (const section of templateStructure.value.sections) {
       stepList.push({
         number: stepNumber++,
-        title: section.title,
+        title: `${section.id}. ${section.title}`,
       })
     }
   }
