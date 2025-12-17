@@ -210,14 +210,14 @@ const templateOptions = computed(() =>
     .filter(t => t.type === props.projectType)
     .map(t => ({
       label: t.name,
-      value: t.id
+      value: String(t.id)
     }))
 )
 
 // ... existing computed properties ...
 const versionOptions = computed(() => {
   if (!selectedTemplate.value) return []
-  const template = templates.value.find(t => t.id === selectedTemplate.value)
+  const template = templates.value.find(t => String(t.id) === String(selectedTemplate.value))
   if (!template?.versions) return []
   return template.versions.map(v => ({
     label: v.version,
@@ -228,14 +228,14 @@ const versionOptions = computed(() => {
 const supplierOptions = computed(() =>
   suppliers.value.map((s: any) => ({
     label: s.name,
-    value: s.id
+    value: String(s.id)
   }))
 )
 
 const departmentOptions = computed(() =>
   departments.value.map(d => ({
     label: d.name,
-    value: d.id
+    value: String(d.id)
   }))
 )
 
@@ -312,17 +312,19 @@ const loadInitialData = async () => {
        if (projectData) {
          form.value.name = projectData.name
          form.value.year = projectData.year
-         form.value.templateId = projectData.templateId
-         selectedTemplate.value = projectData.templateId // This triggers watch
+         // Convert to string to ensure matching with options
+         const tmplId = String(projectData.templateId)
+         form.value.templateId = tmplId
+         selectedTemplate.value = tmplId // This triggers watch
          
          // Set version (need to wait for watch to validly set options? or just set it)
-         form.value.templateVersion = projectData.templateVersion
+         form.value.templateVersion = String(projectData.templateVersion)
          
          // Populate suppliers
          if (projectData.suppliers && Array.isArray(projectData.suppliers)) {
-           form.value.supplierIds = projectData.suppliers.map((s: any) => s.supplierId)
+           form.value.supplierIds = projectData.suppliers.map((s: any) => String(s.supplierId))
          } else if (projectData.supplierId) {
-           form.value.supplierIds = [projectData.supplierId]
+           form.value.supplierIds = [String(projectData.supplierId)]
          } else {
            form.value.supplierIds = []
          }
@@ -331,7 +333,7 @@ const loadInitialData = async () => {
          if (projectData.reviewConfig && Array.isArray(projectData.reviewConfig)) {
            form.value.reviewConfig = projectData.reviewConfig.map((r: any, i: number) => ({
              stageOrder: i + 1,
-             departmentId: r.departmentId
+             departmentId: String(r.departmentId)
            }))
          } else {
            form.value.reviewConfig = [{ stageOrder: 1, departmentId: '' }]
