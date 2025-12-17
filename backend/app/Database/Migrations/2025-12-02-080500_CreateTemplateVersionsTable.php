@@ -10,19 +10,19 @@ class CreateTemplateVersionsTable extends Migration
     {
         $this->forge->addField([
             'id' => [
-                'type' => 'VARCHAR',
-                'constraint' => 50,
+                'type' => 'INT',
+                'constraint' => 11,
+                'unsigned' => true,
+                'auto_increment' => true,
             ],
             'template_id' => [
-                'type' => 'VARCHAR',
-                'constraint' => 50,
+                'type' => 'INT',
+                'constraint' => 11,
+                'unsigned' => true,
             ],
             'version' => [
                 'type' => 'VARCHAR',
                 'constraint' => 20,
-            ],
-            'questions' => [
-                'type' => 'JSON',
             ],
             'created_at' => [
                 'type' => 'DATETIME',
