@@ -23,7 +23,11 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
+# Copy startup script
+COPY start.sh /usr/local/bin/start.sh
+RUN chmod +x /usr/local/bin/start.sh
+
 # Expose port 8080 for spark serve
 EXPOSE 8080
 
-CMD ["php", "spark", "serve", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["/usr/local/bin/start.sh"]

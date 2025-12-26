@@ -1,0 +1,17 @@
+#!/bin/bash
+set -e
+
+cd /var/www/html
+
+# Install Composer dependencies if vendor directory doesn't exist
+if [ ! -d "vendor" ]; then
+    echo "Installing Composer dependencies..."
+    composer install --no-interaction --prefer-dist
+fi
+
+# Ensure writable directory exists and has correct permissions
+mkdir -p writable/logs writable/cache writable/session writable/uploads writable/debugbar
+chmod -R 777 writable
+
+echo "Starting PHP development server..."
+php spark serve --host 0.0.0.0 --port 8080
