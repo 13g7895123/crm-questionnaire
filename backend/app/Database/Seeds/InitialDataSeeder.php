@@ -154,77 +154,15 @@ class InitialDataSeeder extends Seeder
 
         $this->db->table('templates')->insertBatch($templates);
 
-        // Create Template Versions
-        $saqQuestions = [
-            [
-                'id' => 'q_saq001',
-                'text' => '貴公司是否具有 ISO 9001 認證？',
-                'type' => 'BOOLEAN',
-                'required' => true,
-            ],
-            [
-                'id' => 'q_saq002',
-                'text' => '請選擇貴公司的主要產業類別',
-                'type' => 'SINGLE_CHOICE',
-                'required' => true,
-                'options' => ['電子製造', '化工製造', '機械製造', '其他'],
-            ],
-            [
-                'id' => 'q_saq003',
-                'text' => '貴公司員工人數',
-                'type' => 'NUMBER',
-                'required' => true,
-                'config' => ['numberMin' => 1, 'numberMax' => 100000],
-            ],
-            [
-                'id' => 'q_saq004',
-                'text' => '請簡述貴公司的品質管理流程',
-                'type' => 'TEXT',
-                'required' => true,
-                'config' => ['maxLength' => 1000],
-            ],
-            [
-                'id' => 'q_saq005',
-                'text' => '請上傳貴公司的營業執照',
-                'type' => 'FILE',
-                'required' => true,
-                'config' => ['maxFileSize' => 5242880, 'allowedFileTypes' => ['pdf', 'jpg', 'png']],
-            ],
-        ];
-
-        $conflictQuestions = [
-            [
-                'id' => 'q_conf001',
-                'text' => '貴公司是否使用錫、鉭、鎢或金等衝突礦物？',
-                'type' => 'BOOLEAN',
-                'required' => true,
-            ],
-            [
-                'id' => 'q_conf002',
-                'text' => '請列出貴公司的衝突礦物供應來源',
-                'type' => 'TEXT',
-                'required' => false,
-                'config' => ['maxLength' => 2000],
-            ],
-            [
-                'id' => 'q_conf003',
-                'text' => '貴公司是否有衝突礦物政策？',
-                'type' => 'BOOLEAN',
-                'required' => true,
-            ],
-        ];
-
         $templateVersions = [
             [
                 'template_id' => 1, // SAQ 標準範本
                 'version' => '1.0.0',
-                'questions' => json_encode($saqQuestions),
                 'created_at' => date('Y-m-d H:i:s'),
             ],
             [
                 'template_id' => 2, // 衝突資產調查範本
                 'version' => '1.0.0',
-                'questions' => json_encode($conflictQuestions),
                 'created_at' => date('Y-m-d H:i:s'),
             ],
         ];
