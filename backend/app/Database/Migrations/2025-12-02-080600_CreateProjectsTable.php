@@ -10,8 +10,10 @@ class CreateProjectsTable extends Migration
     {
         $this->forge->addField([
             'id' => [
-                'type' => 'VARCHAR',
-                'constraint' => 50,
+                'type' => 'INT',
+                'constraint' => 11,
+                'unsigned' => true,
+                'auto_increment' => true,
             ],
             'name' => [
                 'type' => 'VARCHAR',
@@ -26,16 +28,18 @@ class CreateProjectsTable extends Migration
                 'constraint' => ['SAQ', 'CONFLICT'],
             ],
             'template_id' => [
-                'type' => 'VARCHAR',
-                'constraint' => 50,
+                'type' => 'INT',
+                'constraint' => 11,
+                'unsigned' => true,
             ],
             'template_version' => [
                 'type' => 'VARCHAR',
                 'constraint' => 20,
             ],
             'supplier_id' => [
-                'type' => 'VARCHAR',
-                'constraint' => 50,
+                'type' => 'INT',
+                'constraint' => 11,
+                'unsigned' => true,
             ],
             'status' => [
                 'type' => 'ENUM',

@@ -10,24 +10,29 @@ class CreateReviewStageConfigsTable extends Migration
     {
         $this->forge->addField([
             'id' => [
-                'type' => 'VARCHAR',
-                'constraint' => 50,
+                'type' => 'INT',
+                'constraint' => 11,
+                'unsigned' => true,
+                'auto_increment' => true,
             ],
             'project_id' => [
-                'type' => 'VARCHAR',
-                'constraint' => 50,
+                'type' => 'INT',
+                'constraint' => 11,
+                'unsigned' => true,
             ],
             'stage_order' => [
                 'type' => 'INT',
                 'constraint' => 2,
             ],
             'department_id' => [
-                'type' => 'VARCHAR',
-                'constraint' => 50,
+                'type' => 'INT',
+                'constraint' => 11,
+                'unsigned' => true,
             ],
             'approver_id' => [
-                'type' => 'VARCHAR',
-                'constraint' => 50,
+                'type' => 'INT',
+                'constraint' => 11,
+                'unsigned' => true,
                 'null' => true,
             ],
         ]);

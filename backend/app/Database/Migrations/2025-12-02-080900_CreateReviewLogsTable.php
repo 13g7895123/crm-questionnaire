@@ -10,16 +10,20 @@ class CreateReviewLogsTable extends Migration
     {
         $this->forge->addField([
             'id' => [
-                'type' => 'VARCHAR',
-                'constraint' => 50,
+                'type' => 'INT',
+                'constraint' => 11,
+                'unsigned' => true,
+                'auto_increment' => true,
             ],
             'project_id' => [
-                'type' => 'VARCHAR',
-                'constraint' => 50,
+                'type' => 'INT',
+                'constraint' => 11,
+                'unsigned' => true,
             ],
             'reviewer_id' => [
-                'type' => 'VARCHAR',
-                'constraint' => 50,
+                'type' => 'INT',
+                'constraint' => 11,
+                'unsigned' => true,
             ],
             'stage' => [
                 'type' => 'INT',

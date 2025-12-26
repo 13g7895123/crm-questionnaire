@@ -66,6 +66,8 @@ class CreateProjectSuppliersTable extends Migration
         $this->forge->addKey('project_id');
         $this->forge->addKey('supplier_id');
         $this->forge->addKey('status');
+        $this->forge->addForeignKey('project_id', 'projects', 'id', 'CASCADE', 'CASCADE');
+        $this->forge->addForeignKey('supplier_id', 'organizations', 'id', 'CASCADE', 'CASCADE');
         $this->forge->createTable('project_suppliers');
     }
 

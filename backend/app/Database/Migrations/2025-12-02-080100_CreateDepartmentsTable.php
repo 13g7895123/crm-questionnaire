@@ -10,16 +10,19 @@ class CreateDepartmentsTable extends Migration
     {
         $this->forge->addField([
             'id' => [
-                'type' => 'VARCHAR',
-                'constraint' => 50,
+                'type' => 'INT',
+                'constraint' => 11,
+                'unsigned' => true,
+                'auto_increment' => true,
             ],
             'name' => [
                 'type' => 'VARCHAR',
                 'constraint' => 100,
             ],
             'organization_id' => [
-                'type' => 'VARCHAR',
-                'constraint' => 50,
+                'type' => 'INT',
+                'constraint' => 11,
+                'unsigned' => true,
             ],
             'created_at' => [
                 'type' => 'DATETIME',

@@ -10,8 +10,10 @@ class CreateOrganizationsTable extends Migration
     {
         $this->forge->addField([
             'id' => [
-                'type' => 'VARCHAR',
-                'constraint' => 50,
+                'type' => 'INT',
+                'constraint' => 11,
+                'unsigned' => true,
+                'auto_increment' => true,
             ],
             'name' => [
                 'type' => 'VARCHAR',

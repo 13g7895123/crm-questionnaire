@@ -10,8 +10,10 @@ class CreateUsersTable extends Migration
     {
         $this->forge->addField([
             'id' => [
-                'type' => 'VARCHAR',
-                'constraint' => 50,
+                'type' => 'INT',
+                'constraint' => 11,
+                'unsigned' => true,
+                'auto_increment' => true,
             ],
             'username' => [
                 'type' => 'VARCHAR',
@@ -35,12 +37,14 @@ class CreateUsersTable extends Migration
                 'constraint' => ['HOST', 'SUPPLIER', 'ADMIN'],
             ],
             'organization_id' => [
-                'type' => 'VARCHAR',
-                'constraint' => 50,
+                'type' => 'INT',
+                'constraint' => 11,
+                'unsigned' => true,
             ],
             'department_id' => [
-                'type' => 'VARCHAR',
-                'constraint' => 50,
+                'type' => 'INT',
+                'constraint' => 11,
+                'unsigned' => true,
                 'null' => true,
             ],
             'is_active' => [

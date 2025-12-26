@@ -16,6 +16,7 @@ class CreateTemplateSectionsTable extends Migration
             ],
             'template_id' => [
                 'type' => 'INT',
+                'constraint' => 11,
                 'unsigned' => true,
             ],
             'section_id' => [
