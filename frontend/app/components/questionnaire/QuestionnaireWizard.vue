@@ -113,11 +113,10 @@
         
         <BasicInfoFormV2
           v-if="isBasicInfoStep"
-          v-model="formData.basicInfo"
+          :model-value="formData.basicInfo"
+          @update:model-value="val => Object.assign(formData.basicInfo, val)"
           :disabled="mode === 'review'"
-        />
-
-        <SectionFormV2
+        /><SectionFormV2
           v-else-if="currentSection"
           :section="currentSection"
           :answers="formData.answers"
@@ -126,11 +125,7 @@
           :reviews="reviews"
           @update:answer="handleAnswerUpdate"
           @update:review="handleReviewUpdate"
-          :disabled="mode === 'review'" 
-        />
-
-        <!-- Final Step: Review Summary or Submission -->
-        <div v-else-if="isFinalStep" class="space-y-6">
+        /><div v-else-if="isFinalStep" class="space-y-6">
           <div class="text-center py-8">
             <UIcon name="i-heroicons-check-circle" class="w-16 h-16 text-green-500 mx-auto mb-4" />
             <h2 class="text-2xl font-bold text-gray-900">
@@ -143,7 +138,6 @@
               }}
             </p>
           </div>
-          
           <UCard :ui="{ background: 'bg-primary-50 dark:bg-primary-900/10', ring: 'ring-1 ring-primary-200 dark:ring-primary-800' }">
             <h3 class="text-lg font-semibold text-primary-900 dark:text-primary-100 mb-4">
               {{ $t('templates.templateInfo') }}
@@ -163,13 +157,14 @@
               </div>
             </dl>
           </UCard>
-        </div>
-
-        <div v-else class="flex items-center justify-center py-20 text-center">
-          <div>
+        </div><div v-else class="flex flex-col items-center justify-center py-20 text-center">
             <UIcon name="i-heroicons-exclamation-circle" class="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <p class="text-gray-500 italic">No section data found (Step: {{ currentStep }})</p>
-          </div>
+            <p class="text-gray-500 italic">{{ t('common.noData') }} (Step: {{ currentStep }})</p>
+            <div class="text-xs text-gray-400 mt-4 space-y-1">
+              <p>includeBasicInfo: {{ templateStructure?.includeBasicInfo }}</p>
+              <p>sections: {{ templateStructure?.sections?.length || 0 }}</p>
+              <p>currentSection: {{ !!currentSection }}</p>
+            </div>
         </div>
       </UCard>
 
@@ -269,6 +264,7 @@ import { useProjects } from '~/composables/useProjects'
 import { useTemplates } from '~/composables/useTemplates'
 import { useAnswers } from '~/composables/useAnswers'
 import { useReview } from '~/composables/useReview'
+import { useSweetAlert } from '~/composables/useSweetAlert'
 
 const props = defineProps<{
   mode: 'preview' | 'fill' | 'review'
@@ -292,8 +288,9 @@ const { t, locale } = useI18n()
 const config = useRuntimeConfig()
 const { getProject } = useProjects()
 const { getTemplateStructure } = useTemplates()
-const { getAnswers, saveAnswers, submitAnswers, getBasicInfo, getVisibleQuestions } = useAnswers()
+const { getAnswers, saveAnswers, submitAnswers, getBasicInfo, saveBasicInfo, getVisibleQuestions } = useAnswers()
 const { getReviewLogs, approveProject, returnProject } = useReview()
+const { showConfirm, showSuccess, showError, showLoading, closeAlert } = useSweetAlert()
 
 // State
 const loading = ref(true)
@@ -312,10 +309,18 @@ const status = ref<string>('')
 
 // Form Data
 const formData = reactive<{
-  basicInfo: Partial<BasicInfo>
+  basicInfo: BasicInfo
   answers: Answers
 }>({
-  basicInfo: {},
+  basicInfo: {
+    companyName: '',
+    companyAddress: '',
+    employees: { total: 0, male: 0, female: 0, foreign: 0 },
+    facilities: [{ location: '', address: '', area: '', type: '' }],
+    certifications: [],
+    rbaOnlineMember: null,
+    contacts: [{ name: '', title: '', department: '', email: '', phone: '' }]
+  },
   answers: {},
 })
 const visibleQuestions = ref<Set<string>>(new Set())
@@ -445,11 +450,20 @@ const autoFillOptions = computed(() => [
     click: () => autoFillAnswers('allNo')
   }],
   [{
-    label: '隨機填寫',
+    label: '隨機填寫全部',
     icon: 'i-heroicons-sparkles',
     click: () => autoFillAnswers('random')
+  }],
+  [{
+    label: '僅填寫自動公司資料',
+    icon: 'i-heroicons-building-office',
+    click: handleAutoFillBasic
   }]
 ])
+
+const handleAutoFillBasic = () => {
+  fillBasicInfo()
+}
 
 // Auto-fill all answers
 const autoFillAnswers = (strategy: 'allYes' | 'allNo' | 'random') => {
@@ -669,7 +683,17 @@ const handleSave = async (silent = false) => {
   
   if (!silent) saving.value = true
   try {
-    await saveAnswers(props.projectSupplierId, formData.answers)
+    const promises = [
+      saveAnswers(props.projectSupplierId, formData.answers)
+    ]
+    
+    // Also save basic info if visible or template includes it
+    if (templateStructure.value?.includeBasicInfo) {
+      promises.push(saveBasicInfo(props.projectSupplierId, formData.basicInfo))
+    }
+    
+    await Promise.all(promises)
+    
     if (!silent) {
        // Optional: Toast notification
     }
@@ -684,15 +708,32 @@ const handleSave = async (silent = false) => {
 
 const handleSubmit = async () => {
    if (!props.projectSupplierId) return
-   if (!confirm(t('questionnaire.confirmSubmit'))) return
+   
+   const confirmed = await showConfirm({
+     text: t('questionnaire.confirmSubmit'),
+     icon: 'question',
+     confirmButtonText: t('common.submit')
+   })
+   if (!confirmed) return
 
    submitting.value = true
    try {
-     await submitAnswers(props.projectSupplierId, formData.answers)
+     // Save everything first
+     const savePromises = [
+       saveAnswers(props.projectSupplierId, formData.answers)
+     ]
+     if (templateStructure.value?.includeBasicInfo) {
+       savePromises.push(saveBasicInfo(props.projectSupplierId, formData.basicInfo))
+     }
+     await Promise.all(savePromises)
+
+     // Then submit
+     await submitAnswers(props.projectSupplierId)
+     await showSuccess(t('questionnaire.submitSuccess'))
      emit('submitted')
-     // Let parent component handle the redirect
    } catch (e: any) {
      console.error('Submit failed:', e)
+     showError(e?.message || t('questionnaire.submitFailed'))
      error.value = e?.message || t('questionnaire.submitFailed')
    } finally {
      submitting.value = false
@@ -707,14 +748,22 @@ const finishPreview = () => {
 // Review Actions
 const handleApprove = async () => {
     if (!props.projectSupplierId) return
-    if (!confirm(t('review.confirmApprove'))) return
+    
+    const confirmed = await showConfirm({
+      text: t('review.confirmApprove'),
+      icon: 'question',
+      confirmButtonText: t('common.confirm')
+    })
+    if (!confirmed) return
     
     submitting.value = true
     try {
         await approveProject(props.projectSupplierId, reviewComment.value || 'Approved', reviews.value)
+        await showSuccess(t('review.approveSuccess'))
         router.push('/review')
     } catch (e) {
         console.error(e)
+        showError(t('common.error'))
         error.value = t('common.error')
     } finally {
         submitting.value = false
@@ -723,14 +772,23 @@ const handleApprove = async () => {
 
 const handleReturn = async () => {
     if (!props.projectSupplierId) return
-    if (!confirm(t('review.confirmReturn'))) return
+    
+    const confirmed = await showConfirm({
+      text: t('review.confirmReturn'),
+      icon: 'warning',
+      confirmButtonText: t('review.return'),
+      confirmButtonColor: '#d33'
+    })
+    if (!confirmed) return
     
     submitting.value = true
     try {
         await returnProject(props.projectSupplierId, reviewComment.value, reviews.value)
+        await showSuccess(t('review.returnSuccess'))
         router.push('/review')
     } catch (e) {
         console.error(e)
+        showError(t('common.error'))
         error.value = t('common.error')
     } finally {
         submitting.value = false
@@ -755,6 +813,7 @@ const init = async () => {
     }
     
     if (visibleQuestions.value.size === 0) {
+      console.log('visibleQuestions is empty, initializing default visible questions...')
       initializeVisibleQuestions()
     }
     
@@ -762,7 +821,8 @@ const init = async () => {
       currentStep: currentStep.value,
       totalSteps: totalSteps.value,
       visibleQuestionsCount: visibleQuestions.value.size,
-      sectionsCount: templateStructure.value?.sections?.length
+      sectionsCount: templateStructure.value?.sections?.length,
+      includeBasicInfo: templateStructure.value?.includeBasicInfo
     })
     
   } catch (e: any) {
@@ -825,9 +885,32 @@ const loadProjectData = async (psId: string) => {
         projectInfo.value = project
         
         // Load basic info
+        console.log('API Basic Info:', basicInfoRes.data?.basicInfo)
         if (basicInfoRes.data?.basicInfo) {
-           formData.basicInfo = basicInfoRes.data.basicInfo
+           // Merge API data with default structure to ensure no missing fields
+           Object.assign(formData.basicInfo, {
+             companyName: '',
+             companyAddress: '',
+             employees: { total: 0, male: 0, female: 0, foreign: 0 },
+             facilities: [],
+             certifications: [],
+             rbaOnlineMember: null,
+             contacts: [],
+             ...basicInfoRes.data.basicInfo
+           })
+        } else {
+           console.log('No basic info found, using defaults')
+           Object.assign(formData.basicInfo, {
+             companyName: '',
+             companyAddress: '',
+             employees: { total: 0, male: 0, female: 0, foreign: 0 },
+             facilities: [{ location: '', address: '', area: '', type: '' }],
+             certifications: [],
+             rbaOnlineMember: null,
+             contacts: [{ name: '', title: '', department: '', email: '', phone: '' }]
+           })
         }
+        console.log('Final formData.basicInfo:', JSON.stringify(formData.basicInfo))
         
         // Load answers
         if (answersRes.data?.answers) {
@@ -843,10 +926,14 @@ const loadProjectData = async (psId: string) => {
         }
         
         // Then: Load template structure (needs templateId from project)
-        console.log('Project templateId:', project.templateId)
+        console.log('Project templateId for structure loading:', project.templateId)
         if (project.templateId) {
            await loadTemplate(project.templateId)
-           console.log('Template loaded. Structure:', templateStructure.value)
+           console.log('Template loaded. Sections:', templateStructure.value?.sections?.length)
+           
+           if (!templateStructure.value?.sections || templateStructure.value.sections.length === 0) {
+             console.warn('Warning: Template structure has no sections! Questions will not render.')
+           }
         } else {
            console.error('No templateId found in project!')
         }

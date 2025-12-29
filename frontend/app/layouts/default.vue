@@ -2,8 +2,8 @@
   <div class="min-h-screen bg-gray-50">
     <ClientOnly>
       <Navbar v-if="isAuthenticated" />
+      <Breadcrumb v-if="isAuthenticated" />
     </ClientOnly>
-    <Breadcrumb v-if="isAuthenticated" />
     <main>
       <slot />
     </main>
@@ -16,9 +16,7 @@ import { useAuthStore } from '~/stores/auth'
 import Navbar from '~/components/common/Navbar.vue'
 import Breadcrumb from '~/components/common/Breadcrumb.vue'
 
-definePageMeta({
-  middleware: 'auth'
-})
+
 
 const authStore = useAuthStore()
 

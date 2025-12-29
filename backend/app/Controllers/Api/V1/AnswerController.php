@@ -313,7 +313,9 @@ class AnswerController extends BaseApiController
             );
         }
 
-        $data = $this->request->getJsonVar('basicInfo');
+        $json = $this->request->getJSON(true);
+        $data = $json['basicInfo'] ?? null;
+
         if (!is_array($data)) {
             return $this->validationErrorResponse(['basicInfo' => '資料格式錯誤']);
         }

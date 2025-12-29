@@ -18,6 +18,7 @@
     "create": "建立",
     "search": "搜尋",
     "refresh": "重新整理",
+    "action": "操作",
     "back": "返回",
     "confirm": "確認",
     "close": "關閉",
@@ -39,7 +40,8 @@
     "preview": "預覽",
     "import": "匯入",
     "importQuestions": "匯入題目",
-    "test": "測試"
+    "test": "測試",
+    "noData": "暫無資料"
   },
   "auth": {
     "login": "登入",

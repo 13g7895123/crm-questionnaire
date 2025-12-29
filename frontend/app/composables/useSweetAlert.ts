@@ -17,22 +17,45 @@ export const useSweetAlert = () => {
     return Promise.resolve()
   }
 
-  const showConfirmDialog = async (text: string) => {
+  const showConfirm = async (options: {
+    title?: string;
+    text: string;
+    icon?: SweetAlertIcon;
+    confirmButtonText?: string;
+    cancelButtonText?: string;
+    confirmButtonColor?: string;
+    cancelButtonColor?: string;
+  }) => {
     if (process.client) {
       const result = await Swal.fire({
-        title: '系統提示',
-        text,
-        icon: 'warning',
+        title: options.title || '系統提示',
+        text: options.text,
+        icon: options.icon || 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
-        confirmButtonText: '確定刪除',
-        cancelButtonText: '取消'
+        confirmButtonColor: options.confirmButtonColor || '#3085d6',
+        cancelButtonColor: options.cancelButtonColor || '#aaa',
+        confirmButtonText: options.confirmButtonText || '確定',
+        cancelButtonText: options.cancelButtonText || '取消'
       })
       return result.isConfirmed
     }
     return false
   }
+
+  const showAlert = (title: string, text: string, icon: SweetAlertIcon = 'info') => {
+    if (process.client) {
+      return Swal.fire({
+        title,
+        text,
+        icon,
+        confirmButtonText: '確定'
+      })
+    }
+    return Promise.resolve()
+  }
+
+  const showSuccess = (text: string) => showSystemAlert(text, 'success')
+  const showError = (text: string) => showSystemAlert(text, 'error')
 
   const showLoading = (title: string = '處理中...') => {
     if (process.client) {
@@ -54,7 +77,10 @@ export const useSweetAlert = () => {
 
   return {
     showSystemAlert,
-    showConfirmDialog,
+    showConfirm,
+    showAlert,
+    showSuccess,
+    showError,
     showLoading,
     closeAlert
   }

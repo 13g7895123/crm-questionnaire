@@ -13,7 +13,8 @@
           <input
             v-model="formData.companyName"
             type="text"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            :disabled="disabled"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
             placeholder="請輸入公司名稱"
           />
         </div>
@@ -25,7 +26,8 @@
           <textarea
             v-model="formData.companyAddress"
             rows="3"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            :disabled="disabled"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
             placeholder="請輸入完整地址"
           />
         </div>
@@ -44,7 +46,8 @@
             v-model.number="formData.employees.total"
             type="number"
             min="0"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            :disabled="disabled"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
             placeholder="0"
           />
         </div>
@@ -56,7 +59,8 @@
             v-model.number="formData.employees.male"
             type="number"
             min="0"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            :disabled="disabled"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
             placeholder="0"
           />
         </div>
@@ -68,7 +72,8 @@
             v-model.number="formData.employees.female"
             type="number"
             min="0"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            :disabled="disabled"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
             placeholder="0"
           />
         </div>
@@ -80,7 +85,8 @@
             v-model.number="formData.employees.foreign"
             type="number"
             min="0"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            :disabled="disabled"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
             placeholder="0"
           />
         </div>
@@ -94,6 +100,7 @@
           設施資訊 <span class="text-red-500">*</span>
         </h3>
         <button
+          v-if="!disabled"
           type="button"
           class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
           @click="addFacility"
@@ -127,7 +134,8 @@
               <input
                 v-model="facility.location"
                 type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                :disabled="disabled"
+                class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
                 placeholder="例：台北工廠"
               />
             </div>
@@ -138,7 +146,8 @@
               <input
                 v-model="facility.address"
                 type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                :disabled="disabled"
+                class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
                 placeholder="完整地址"
               />
             </div>
@@ -149,7 +158,8 @@
               <input
                 v-model="facility.area"
                 type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                :disabled="disabled"
+                class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
                 placeholder="例：5000"
               />
             </div>
@@ -160,7 +170,8 @@
               <input
                 v-model="facility.type"
                 type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                :disabled="disabled"
+                class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
                 placeholder="例：製造、研發、倉儲"
               />
             </div>
@@ -177,7 +188,8 @@
           <input
             v-model="newCertification"
             type="text"
-            class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            :disabled="disabled"
+            class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
             placeholder="例：ISO 9001, ISO 14001"
             @keypress.enter="addCertification"
           />
@@ -217,6 +229,7 @@
             v-model="formData.rbaOnlineMember"
             type="radio"
             :value="true"
+            :disabled="disabled"
             class="w-4 h-4 text-blue-600"
           />
           <span class="text-sm font-medium text-gray-700">是</span>
@@ -226,6 +239,7 @@
             v-model="formData.rbaOnlineMember"
             type="radio"
             :value="false"
+            :disabled="disabled"
             class="w-4 h-4 text-blue-600"
           />
           <span class="text-sm font-medium text-gray-700">否</span>
@@ -240,6 +254,7 @@
           聯絡人資訊 <span class="text-red-500">*</span>
         </h3>
         <button
+          v-if="!disabled"
           type="button"
           class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
           @click="addContact"
@@ -273,7 +288,8 @@
               <input
                 v-model="contact.name"
                 type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                :disabled="disabled"
+                class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
                 placeholder="聯絡人姓名"
               />
             </div>
@@ -284,7 +300,8 @@
               <input
                 v-model="contact.title"
                 type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                :disabled="disabled"
+                class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
                 placeholder="例：品保經理"
               />
             </div>
@@ -295,7 +312,8 @@
               <input
                 v-model="contact.department"
                 type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                :disabled="disabled"
+                class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
                 placeholder="例：品質保證部"
               />
             </div>
@@ -306,7 +324,8 @@
               <input
                 v-model="contact.email"
                 type="email"
-                class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                :disabled="disabled"
+                class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
                 placeholder="email@example.com"
               />
             </div>
@@ -317,7 +336,8 @@
               <input
                 v-model="contact.phone"
                 type="tel"
-                class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                :disabled="disabled"
+                class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
                 placeholder="02-1234-5678"
               />
             </div>
@@ -333,7 +353,8 @@ import { ref, watch } from 'vue'
 import type { BasicInfo } from '~/types/template-v2'
 
 const props = defineProps<{
-  modelValue?: Partial<BasicInfo>
+  modelValue?: Partial<BasicInfo>;
+  disabled?: boolean;
 }>()
 
 const emit = defineEmits<{
@@ -374,6 +395,7 @@ const formData = ref<Partial<BasicInfo>>({
 const newCertification = ref('')
 
 const addFacility = () => {
+  if (props.disabled) return
   formData.value.facilities?.push({
     location: '',
     address: '',
@@ -383,10 +405,12 @@ const addFacility = () => {
 }
 
 const removeFacility = (index: number) => {
+  if (props.disabled) return
   formData.value.facilities?.splice(index, 1)
 }
 
 const addCertification = () => {
+  if (props.disabled) return
   if (newCertification.value.trim()) {
     formData.value.certifications?.push(newCertification.value.trim())
     newCertification.value = ''
@@ -394,10 +418,12 @@ const addCertification = () => {
 }
 
 const removeCertification = (index: number) => {
+  if (props.disabled) return
   formData.value.certifications?.splice(index, 1)
 }
 
 const addContact = () => {
+  if (props.disabled) return
   formData.value.contacts?.push({
     name: '',
     title: '',
@@ -408,12 +434,14 @@ const addContact = () => {
 }
 
 const removeContact = (index: number) => {
+  if (props.disabled) return
   formData.value.contacts?.splice(index, 1)
 }
 
 watch(
   formData,
   (newValue) => {
+    if (props.disabled) return
     emit('update:modelValue', newValue)
   },
   { deep: true }
@@ -422,10 +450,28 @@ watch(
 watch(
   () => props.modelValue,
   (newValue) => {
+    console.log('BasicInfoFormV2: modelValue changed', newValue)
     if (newValue) {
-      formData.value = { ...formData.value, ...newValue }
+      // Use Object.assign to keep the reference if possible, or just replace
+      formData.value = { 
+        ...formData.value,
+        ...newValue,
+        // Deep merge employees to be safe
+        employees: {
+          ...(formData.value.employees || { total: 0, male: 0, female: 0, foreign: 0 }),
+          ...(newValue.employees || {})
+        }
+      }
     }
   },
-  { deep: true }
+  { deep: true, immediate: true }
 )
 </script>
+
+<style scoped>
+input:disabled,
+textarea:disabled {
+  background-color: #f3f4f6;
+  cursor: not-allowed;
+}
+</style>

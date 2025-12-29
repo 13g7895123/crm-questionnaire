@@ -30,11 +30,16 @@ export const useAnswers = () => {
     return await api.get(`/project-suppliers/${projectSupplierId}/visible-questions`)
   }
 
+  const saveBasicInfo = async (projectSupplierId: string, basicInfo: any) => {
+    return await api.put(`/project-suppliers/${projectSupplierId}/basic-info`, { basicInfo })
+  }
+
   return {
     getAnswers,
     saveAnswers,
     submitAnswers,
     getBasicInfo,
+    saveBasicInfo,
     getVisibleQuestions
   }
 }

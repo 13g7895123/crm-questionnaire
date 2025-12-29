@@ -13,6 +13,7 @@
     "cancel": "Cancel",
     "delete": "Delete",
     "edit": "Edit",
+    "action": "Action",
     "add": "Add",
     "back": "Back",
     "confirm": "Confirm",
@@ -33,7 +34,9 @@
     "previewComplete": "Preview Complete",
     "preview": "Preview",
     "import": "Import",
-    "importQuestions": "Import Questions"
+    "importQuestions": "Import Questions",
+    "test": "Test",
+    "noData": "No data available"
   },
   "auth": {
     "login": "Log In",
