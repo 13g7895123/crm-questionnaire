@@ -1,19 +1,10 @@
 <template>
   <div class="py-8 px-4 sm:px-6 lg:px-8">
-    <UButton
-      icon="i-heroicons-arrow-left"
-      color="gray"
-      variant="ghost"
-      class="mb-4"
-      @click="router.back()"
-    >
-      {{ $t('common.back') }}
-    </UButton>
-    
     <ClientOnly>
       <QuestionnaireWizard
         mode="fill"
         :project-supplier-id="id"
+        show-back-button
         @saved="handleSaved"
         @submitted="handleSubmitted"
       />

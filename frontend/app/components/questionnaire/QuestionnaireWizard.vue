@@ -3,10 +3,14 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-4">
-        <!-- Optional Back Button -->
-        <slot name="header-left">
-           <!-- Default back behavior could be handled by parent -->
-        </slot>
+        <!-- Back Button -->
+        <UButton
+          v-if="showBackButton"
+          icon="i-heroicons-arrow-left"
+          color="gray"
+          variant="ghost"
+          @click="handleBack"
+        />
         <div>
           <h1 class="text-2xl font-bold text-gray-900">{{ title }}</h1>
           <p class="text-sm text-gray-500 mt-1">
@@ -264,9 +268,15 @@ const props = defineProps<{
   templateId?: string // For preview
   projectSupplierId?: string // For fill/review
   titlePrefix?: string
+  showBackButton?: boolean
 }>()
 
-const emit = defineEmits(['finish', 'saved', 'submitted'])
+const emit = defineEmits(['finish', 'saved', 'submitted', 'back'])
+
+const handleBack = () => {
+  emit('back')
+  router.back()
+}
 
 // Composables
 const router = useRouter()

@@ -1,21 +1,11 @@
 <template>
   <div class="py-8 px-4 sm:px-6 lg:px-8">
     <div class="w-full">
-      <!-- Back Button -->
-      <UButton
-        icon="i-heroicons-arrow-left"
-        color="gray"
-        variant="ghost"
-        class="mb-4"
-        to="/saq/templates"
-      >
-        {{ $t('common.back') }}
-      </UButton>
-
       <ClientOnly>
         <QuestionnaireWizard
           mode="preview"
           :template-id="templateId"
+          show-back-button
         />
       </ClientOnly>
     </div>

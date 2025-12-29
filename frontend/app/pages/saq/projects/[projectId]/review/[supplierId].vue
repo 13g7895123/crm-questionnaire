@@ -1,19 +1,11 @@
 <template>
   <div class="py-8 px-4 sm:px-6 lg:px-8">
-    <UButton
-      icon="i-heroicons-arrow-left"
-      color="gray"
-      variant="ghost"
-      class="mb-4"
-      @click="goBack"
-    >
-      {{ $t('common.back') }}
-    </UButton>
-
     <ClientOnly>
       <QuestionnaireWizard
         mode="review"
         :project-supplier-id="supplierId"
+        show-back-button
+        @back="goBack"
         @finish="goBack"
       />
     </ClientOnly>
