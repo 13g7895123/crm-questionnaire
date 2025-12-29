@@ -20,9 +20,26 @@
         </div>
       </div>
       
-      <!-- Review Status Badge -->
-      <div v-if="mode === 'review' && status" class="flex items-center gap-2">
-         <UBadge :color="statusColor">{{ status }}</UBadge>
+      <div class="flex items-center gap-2">
+        <!-- Auto Fill Menu (Fill mode only) -->
+        <UDropdown
+          v-if="mode === 'fill' && showAutoFill"
+          :items="autoFillOptions"
+          :popper="{ placement: 'bottom-end' }"
+        >
+          <UButton
+            color="orange"
+            variant="soft"
+            icon="i-heroicons-sparkles"
+            trailing-icon="i-heroicons-chevron-down-20-solid"
+            label="自動填寫"
+          />
+        </UDropdown>
+
+        <!-- Review Status Badge -->
+        <div v-if="mode === 'review' && status">
+           <UBadge :color="statusColor">{{ status }}</UBadge>
+        </div>
       </div>
     </div>
 
