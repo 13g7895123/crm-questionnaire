@@ -10,14 +10,21 @@
       {{ $t('common.back') }}
     </UButton>
     
-    <QuestionnaireForm :id="id" mode="fill" />
+    <ClientOnly>
+      <QuestionnaireWizard
+        mode="fill"
+        :project-supplier-id="id"
+        @saved="handleSaved"
+        @submitted="handleSubmitted"
+      />
+    </ClientOnly>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import QuestionnaireForm from '~/components/questionnaire/QuestionnaireForm.vue'
+import QuestionnaireWizard from '~/components/questionnaire/QuestionnaireWizard.vue'
 
 definePageMeta({ middleware: 'auth' })
 
@@ -25,4 +32,11 @@ const route = useRoute()
 const router = useRouter()
 const id = computed(() => route.params.id as string)
 
+const handleSaved = () => {
+  // Optional: Add specific logic after save if needed
+}
+
+const handleSubmitted = () => {
+  // Redirect handled in component, but can be overridden here if needed
+}
 </script>

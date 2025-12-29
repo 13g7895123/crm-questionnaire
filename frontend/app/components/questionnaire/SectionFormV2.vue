@@ -30,7 +30,10 @@
           :question="question"
           :answers="answers"
           :visible-questions="visibleQuestions"
+          :mode="mode"
+          :review="reviews?.[question.id]"
           @update:answer="handleAnswerUpdate"
+          @update:review="handleReviewUpdate"
         />
       </div>
     </div>
@@ -38,17 +41,20 @@
 </template>
 
 <script setup lang="ts">
-import type { Section, Question, Answers, AnswerValue } from '~/types/template-v2'
+import type { Section, Question, Answers, AnswerValue, Reviews, QuestionReview } from '~/types/template-v2'
 import QuestionRendererV2 from './QuestionRendererV2.vue'
 
 const props = defineProps<{
   section: Section
   answers: Answers
   visibleQuestions?: Set<string>
+  mode?: 'preview' | 'fill' | 'review'
+  reviews?: Reviews
 }>()
 
 const emit = defineEmits<{
   'update:answer': [payload: { questionId: string; value: AnswerValue }]
+  'update:review': [payload: QuestionReview]
 }>()
 
 // 過濾可見問題
@@ -67,5 +73,9 @@ const getVisibleQuestions = (questions: Question[]): Question[] => {
 
 const handleAnswerUpdate = (payload: { questionId: string; value: AnswerValue }) => {
   emit('update:answer', payload)
+}
+
+const handleReviewUpdate = (payload: QuestionReview) => {
+  emit('update:review', payload)
 }
 </script>

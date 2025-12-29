@@ -82,6 +82,40 @@
           @update:model-value="updateAnswer(question.id, $event)"
         />
       </div>
+      <div v-if="mode === 'review'" class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+        <div class="flex flex-col gap-3">
+          <label class="text-sm font-semibold text-gray-700">審核 (Audit)</label>
+          <div class="flex gap-4">
+             <UButton
+               :color="review?.approved === true ? 'green' : 'white'"
+               variant="solid"
+               icon="i-heroicons-check"
+               label="Yes"
+               size="sm"
+               @click="updateReview(true)"
+               class="flex-1 justify-center"
+               :ui="{ color: { white: { solid: 'ring-1 ring-inset ring-gray-300 text-gray-900 bg-white hover:bg-gray-50' } } }"
+             />
+             <UButton
+               :color="review?.approved === false ? 'red' : 'white'"
+               variant="solid"
+               icon="i-heroicons-x-mark"
+               label="No"
+               size="sm"
+               @click="updateReview(false)"
+               class="flex-1 justify-center"
+               :ui="{ color: { white: { solid: 'ring-1 ring-inset ring-gray-300 text-gray-900 bg-white hover:bg-gray-50' } } }"
+             />
+          </div>
+          <UTextarea
+             :model-value="review?.comment"
+             placeholder="請輸入審核意見..."
+             :rows="2"
+             class="w-full"
+             @update:model-value="updateReviewComment"
+          />
+        </div>
+      </div>
     </div>
 
     <!-- 條件邏輯追問 -->
@@ -95,7 +129,10 @@
         :question="followUpQuestion"
         :answers="answers"
         :visible-questions="visibleQuestions"
+        :mode="mode"
+        :review="review"
         @update:answer="$emit('update:answer', $event)"
+        @update:review="$emit('update:review', $event)"
       />
     </div>
   </div>
@@ -106,7 +143,7 @@ defineOptions({
   name: 'QuestionRendererV2'
 })
 
-import type { Question, Answers, AnswerValue } from '~/types/template-v2'
+import type { Question, Answers, AnswerValue, QuestionReview } from '~/types/template-v2'
 import BooleanQuestion from './types/BooleanQuestion.vue'
 import TextQuestion from './types/TextQuestion.vue'
 import NumberQuestion from './types/NumberQuestion.vue'
@@ -122,10 +159,13 @@ const props = defineProps<{
   question: Question
   answers: Answers
   visibleQuestions?: Set<string>
+  mode?: 'preview' | 'fill' | 'review'
+  review?: QuestionReview
 }>()
 
 const emit = defineEmits<{
   'update:answer': [payload: { questionId: string; value: AnswerValue }]
+  'update:review': [payload: QuestionReview]
 }>()
 
 const getAnswerValue = (questionId: string): AnswerValue => {
@@ -134,6 +174,22 @@ const getAnswerValue = (questionId: string): AnswerValue => {
 
 const updateAnswer = (questionId: string, value: AnswerValue) => {
   emit('update:answer', { questionId, value })
+}
+
+const updateReview = (approved: boolean) => {
+  emit('update:review', {
+    questionId: props.question.id,
+    approved,
+    comment: props.review?.comment
+  })
+}
+
+const updateReviewComment = (comment: string) => {
+  emit('update:review', {
+    questionId: props.question.id,
+    approved: props.review?.approved ?? true, // Default to true if not set
+    comment
+  })
 }
 
 // 檢查是否應該顯示追問

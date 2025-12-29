@@ -21,17 +21,19 @@ export const useReview = () => {
     }
   }
 
-  const approveProject = async (projectSupplierId: string, comment: string) => {
+  const approveProject = async (projectSupplierId: string, comment: string, details?: any) => {
     return await api.post(`/project-suppliers/${projectSupplierId}/review`, {
       action: 'APPROVE',
-      comment
+      comment,
+      details
     })
   }
 
-  const returnProject = async (projectSupplierId: string, comment: string) => {
+  const returnProject = async (projectSupplierId: string, comment: string, details?: any) => {
     return await api.post(`/project-suppliers/${projectSupplierId}/review`, {
       action: 'RETURN',
-      comment
+      comment,
+      details
     })
   }
 

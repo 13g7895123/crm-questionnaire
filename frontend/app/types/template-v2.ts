@@ -183,6 +183,20 @@ export interface Answers {
 }
 
 // ============================================================================
+// Review Types
+// ============================================================================
+
+export interface QuestionReview {
+  questionId: string;
+  approved: boolean; // true = Yes, false = No
+  comment?: string;
+}
+
+export interface Reviews {
+  [questionId: string]: QuestionReview;
+}
+
+// ============================================================================
 // Scoring Types
 // ============================================================================
 
