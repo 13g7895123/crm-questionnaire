@@ -18,7 +18,7 @@ export default defineNuxtRouteMiddleware((to, from) => {
 
   // Server-side check: if we have the access_token cookie, consider authenticated
   if (process.server && isProtectedRoute && !authStore.isAuthenticated) {
-    const token = useCookie('access_token')
+    const token = useCookie('auth_token')
     if (token.value) {
       console.log('Server-side auth: cookie found')
       return
@@ -30,7 +30,7 @@ export default defineNuxtRouteMiddleware((to, from) => {
     // Try to restore auth first (handle page refresh)
     authStore.restoreAuth()
     console.log('Restored auth. Auth:', authStore.isAuthenticated)
-    
+
     // Check again after restore
     if (!authStore.isAuthenticated) {
       console.log('Redirecting to login')

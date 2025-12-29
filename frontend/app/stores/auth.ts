@@ -4,9 +4,13 @@ import type { User, AuthState } from '~/types/index'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
-  const token = ref<string | null>(null)
+  const tokenCookie = useCookie('auth_token', {
+    maxAge: 60 * 60 * 24 * 7, // 7 days
+    path: '/'
+  })
+  const token = ref<string | null>(tokenCookie.value || null)
 
-  const isAuthenticated = computed(() => !!token.value && !!user.value)
+  const isAuthenticated = computed(() => !!token.value)
   const currentOrganizationId = computed(() => user.value?.organizationId)
 
   const isClient = () => typeof window !== 'undefined'
@@ -30,11 +34,7 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const setToken = (newToken: string | null) => {
     token.value = newToken
-    if (newToken && isClient()) {
-      localStorage.setItem('auth_token', newToken)
-    } else if (!newToken && isClient()) {
-      localStorage.removeItem('auth_token')
-    }
+    tokenCookie.value = newToken
   }
 
   /**
@@ -57,13 +57,12 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const restoreAuth = () => {
     if (isClient()) {
-      const savedToken = localStorage.getItem('auth_token')
       const savedUser = localStorage.getItem('auth_user')
-      
-      if (savedToken) {
-        token.value = savedToken
+
+      if (tokenCookie.value) {
+        token.value = tokenCookie.value
       }
-      
+
       if (savedUser) {
         try {
           user.value = JSON.parse(savedUser)

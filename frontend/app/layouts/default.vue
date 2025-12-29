@@ -1,10 +1,9 @@
 <template>
   <div class="min-h-screen bg-gray-50">
-    <ClientOnly>
-      <Navbar v-if="isAuthenticated" />
-      <Breadcrumb v-if="isAuthenticated" />
-    </ClientOnly>
-    <main>
+    <div v-if="isAuthenticated">
+      <Navbar />
+      <Breadcrumb />
+    </div><main>
       <slot />
     </main>
   </div>
@@ -23,7 +22,7 @@ const authStore = useAuthStore()
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 
 onMounted(() => {
-  // Restore auth state on mount
+  // Restore auth state on mount (for user object)
   authStore.restoreAuth()
 })
 </script>
