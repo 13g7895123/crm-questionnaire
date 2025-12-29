@@ -60,6 +60,9 @@ class AnswerController extends BaseApiController
         $answers = $this->answerModel->getAnswersForProjectSupplier($projectSupplierId);
         $lastSavedAt = $this->answerModel->getLastSavedAt($projectSupplierId);
 
+        // Debug: Log first few answers to verify format
+        log_message('info', 'Answers sample: ' . json_encode(array_slice($answers, 0, 3)));
+
         return $this->successResponse([
             'projectSupplierId' => (int) $projectSupplierId,
             'answers' => $answers,

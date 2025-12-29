@@ -33,7 +33,7 @@ class AnswerModel extends Model
         foreach ($answers as $answer) {
             $result[$answer->question_id] = [
                 'questionId' => $answer->question_id,
-                'value' => $answer->value,
+                'value' => $answer->getValue(),
             ];
         }
 
