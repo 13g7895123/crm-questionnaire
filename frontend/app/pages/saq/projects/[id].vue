@@ -194,7 +194,8 @@ const handleFill = (row: any) => {
 }
 
 const handleAudit = (row: any) => {
-  router.push(`/review/${row.id}`)
+  const projectId = route.params.id as string
+  router.push(`/saq/projects/${projectId}/review/${row.id}`)
 }
 
 const loadProject = async () => {
