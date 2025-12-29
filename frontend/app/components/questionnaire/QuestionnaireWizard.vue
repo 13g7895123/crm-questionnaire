@@ -286,6 +286,7 @@ const props = defineProps<{
   projectSupplierId?: string // For fill/review
   titlePrefix?: string
   showBackButton?: boolean
+  showAutoFill?: boolean
 }>()
 
 const emit = defineEmits(['finish', 'saved', 'submitted', 'back'])
@@ -441,6 +442,210 @@ const handleReviewUpdate = (review: QuestionReview) => {
   reviews.value[review.questionId] = review
 }
 
+// Auto-fill options for dropdown
+const autoFillOptions = computed(() => [
+  [{
+    label: '全部選「是」',
+    icon: 'i-heroicons-check-circle',
+    click: () => autoFillAnswers('allYes')
+  }],
+  [{
+    label: '全部選「否」',
+    icon: 'i-heroicons-x-circle',
+    click: () => autoFillAnswers('allNo')
+  }],
+  [{
+    label: '隨機填寫',
+    icon: 'i-heroicons-sparkles',
+    click: () => autoFillAnswers('random')
+  }]
+])
+
+// Auto-fill all answers
+const autoFillAnswers = (strategy: 'allYes' | 'allNo' | 'random') => {
+  if (!templateStructure.value?.sections) return
+  
+  const fillQuestion = (question: any, parentAnswer?: boolean) => {
+    let answer: AnswerValue = null
+    
+    switch (question.type) {
+      case 'BOOLEAN':
+        if (strategy === 'allYes') answer = true
+        else if (strategy === 'allNo') answer = false
+        else answer = Math.random() > 0.5
+        break
+        
+      case 'TEXT':
+        if (strategy === 'allNo') {
+          answer = ''
+        } else if (strategy === 'allYes' || parentAnswer === true || (strategy === 'random' && Math.random() > 0.3)) {
+          answer = generateRandomText(question)
+        }
+        break
+        
+      case 'NUMBER':
+        if (strategy === 'allNo') {
+          answer = 0
+        } else {
+          const min = question.config?.minValue ?? 0
+          const max = question.config?.maxValue ?? 1000
+          answer = Math.floor(Math.random() * (max - min + 1)) + min
+        }
+        break
+        
+      case 'RADIO':
+      case 'SELECT':
+        if (question.config?.options?.length) {
+          if (strategy === 'allYes') {
+            answer = question.config.options[0].value
+          } else if (strategy === 'allNo') {
+            answer = question.config.options[question.config.options.length - 1].value
+          } else {
+            const idx = Math.floor(Math.random() * question.config.options.length)
+            answer = question.config.options[idx].value
+          }
+        }
+        break
+        
+      case 'CHECKBOX':
+        if (question.config?.options?.length) {
+          if (strategy === 'allYes') {
+            answer = question.config.options.map((o: any) => o.value)
+          } else if (strategy === 'allNo') {
+            answer = []
+          } else {
+            answer = question.config.options
+              .filter(() => Math.random() > 0.5)
+              .map((o: any) => o.value)
+          }
+        }
+        break
+        
+      case 'DATE':
+        if (strategy !== 'allNo') {
+          const randomDays = Math.floor(Math.random() * 365)
+          const date = new Date()
+          date.setDate(date.getDate() - randomDays)
+          answer = date.toISOString().split('T')[0]
+        }
+        break
+        
+      case 'TABLE':
+        if (question.tableConfig?.columns) {
+          const rows = []
+          const numRows = question.tableConfig?.prefilledRows?.length || 
+                         Math.floor(Math.random() * 3) + 1
+          for (let i = 0; i < numRows; i++) {
+            const row: Record<string, any> = {}
+            for (const col of question.tableConfig.columns) {
+              if (question.tableConfig.prefilledRows?.[i] && col === question.tableConfig.columns[0]) {
+                row[col.id] = question.tableConfig.prefilledRows[i]
+              } else if (col.type === 'number') {
+                row[col.id] = Math.floor(Math.random() * 100)
+              } else if (col.type === 'date') {
+                const d = new Date()
+                d.setDate(d.getDate() - Math.floor(Math.random() * 365))
+                row[col.id] = d.toISOString().split('T')[0]
+              } else {
+                row[col.id] = `Sample ${i + 1}`
+              }
+            }
+            rows.push(row)
+          }
+          answer = rows
+        }
+        break
+    }
+    
+    if (answer !== null && answer !== undefined) {
+      formData.answers[question.id] = {
+        questionId: question.id,
+        value: answer,
+      }
+    }
+    
+    // Handle follow-up questions
+    if (question.conditionalLogic?.followUpQuestions && (answer === true || strategy === 'allYes')) {
+      for (const followUp of question.conditionalLogic.followUpQuestions) {
+        if (followUp.condition?.operator === 'equals' && followUp.condition?.value === answer) {
+          for (const fq of followUp.questions) {
+            fillQuestion(fq, true)
+          }
+        }
+      }
+    }
+  }
+  
+  // Fill basic info first (if template includes it)
+  if (templateStructure.value.includeBasicInfo) {
+    fillBasicInfo()
+  }
+  
+  // Fill all questions
+  for (const section of templateStructure.value.sections) {
+    for (const subsection of section.subsections) {
+      for (const question of subsection.questions) {
+        fillQuestion(question)
+      }
+    }
+  }
+  
+  // Trigger reactivity
+  formData.basicInfo = { ...formData.basicInfo }
+  formData.answers = { ...formData.answers }
+  updateVisibleQuestions()
+}
+
+// Auto-fill basic info
+const fillBasicInfo = () => {
+  const companyNames = ['台灣電子科技股份有限公司', '環球製造有限公司', '先進材料工業股份有限公司']
+  const locations = ['台北市', '新北市', '桃園市', '新竹市', '台中市', '高雄市']
+  const departments = ['品管部', '生產部', '人資部', '財務部', '研發部']
+  const titles = ['經理', '主任', '專員', '副理', '課長']
+  const certifications = ['ISO 9001', 'ISO 14001', 'ISO 45001', 'IATF 16949', 'SA 8000']
+  
+  formData.basicInfo = {
+    companyName: companyNames[Math.floor(Math.random() * companyNames.length)],
+    companyAddress: `${locations[Math.floor(Math.random() * locations.length)]}中正路${Math.floor(Math.random() * 500) + 1}號`,
+    employees: {
+      total: Math.floor(Math.random() * 5000) + 100,
+      male: Math.floor(Math.random() * 2500) + 50,
+      female: Math.floor(Math.random() * 2500) + 50,
+      foreign: Math.floor(Math.random() * 500)
+    },
+    facilities: [
+      {
+        location: locations[Math.floor(Math.random() * locations.length)],
+        address: `工業區第${Math.floor(Math.random() * 50) + 1}號`,
+        area: `${Math.floor(Math.random() * 10000) + 1000} 平方米`,
+        type: '製造廠'
+      }
+    ],
+    certifications: certifications.slice(0, Math.floor(Math.random() * 3) + 1),
+    rbaOnlineMember: Math.random() > 0.5,
+    contacts: [
+      {
+        name: `王${['大明', '小華', '志強', '美玲', '建宏'][Math.floor(Math.random() * 5)]}`,
+        title: titles[Math.floor(Math.random() * titles.length)],
+        department: departments[Math.floor(Math.random() * departments.length)],
+        email: `contact${Math.floor(Math.random() * 1000)}@example.com`,
+        phone: `02-${Math.floor(Math.random() * 9000) + 1000}-${Math.floor(Math.random() * 9000) + 1000}`
+      }
+    ]
+  }
+}
+
+const generateRandomText = (question: any): string => {
+  const sampleTexts = [
+    '符合公司政策規定',
+    '已依照標準作業程序執行',
+    '定期進行內部稽核確認',
+    '每季檢討並更新相關文件',
+    '已取得相關認證並持續維護'
+  ]
+  return sampleTexts[Math.floor(Math.random() * sampleTexts.length)]
+}
+
 const updateVisibleQuestions = () => {
   // Simple local logic for preview/fill for now
   // Real implementation might need API call or complex client-side logic
@@ -572,57 +777,52 @@ const init = async () => {
 
 const loadTemplate = async (id: string) => {
     const currentLocale = locale.value.startsWith('zh') ? 'zh' : 'en'
-    const { data: templateData, error: apiError } = await useFetch(
-      `${config.public.apiBase}/api/v1/templates/${id}/structure`,
-      {
-        query: { lang: currentLocale }
+    
+    try {
+      const response = await $fetch<any>(
+        `${config.public.apiBase}/api/v1/templates/${id}/structure`,
+        {
+          query: { lang: currentLocale }
+        }
+      )
+      
+      if (response?.data) {
+         templateStructure.value = response.data.structure
+         templateName.value = `Template Preview (ID: ${id})`
+         templateId.value = id
       }
-    )
-    
-    if (apiError.value) throw new Error('Failed to load template')
-    
-    if (templateData.value?.data) {
-       const data = templateData.value.data as any
-       templateStructure.value = data.structure
-       templateName.value = `Template Preview (ID: ${id})`
-       templateId.value = id
+    } catch (e) {
+      console.error('Failed to load template:', e)
+      throw new Error('Failed to load template')
     }
 }
 
 const loadProjectData = async (psId: string) => {
-    // 1. Get Project/Supplier Info (Need to know TemplateID)
-    // We might need a specific API that gives us everything for the filling view
-    // or chain calls.
-    // Assuming we have to chain:
-    
-    // Get Review/Status info (contains projectId)
-    // Use getReviewLogs as it returns projectSupplier context
     try {
+        // First: Get project info from review logs (need projectId)
         const reviewRes = await getReviewLogs(psId) as any
         status.value = reviewRes.currentStatus
         const projectId = reviewRes.projectId
         
         if (!projectId) throw new Error('Project ID not linked')
         
-        // Get Project Info
-        const projectRes = await getProject(projectId) as any
+        // Parallel: Load project info and answers simultaneously
+        const [projectRes, answersRes] = await Promise.all([
+          getProject(projectId),
+          getAnswers(psId)
+        ]) as [any, any]
+        
         const project = projectRes.data
         projectInfo.value = project
         
-        // Get Template Structure
-        if (project.templateId) {
-           await loadTemplate(project.templateId)
-        }
-        
-        // Get Existing Answers
-        const answersRes = await getAnswers(psId) as any
         if (answersRes.data?.answers) {
            formData.answers = answersRes.data.answers
         }
         
-        // Get Basic Info if it exists (assuming API exists or part of answers?)
-        // For now, Basic Info might be part of the answers payload or separate
-        // If separate, we need calls. If not, use what we have.
+        // Then: Load template structure (needs templateId from project)
+        if (project.templateId) {
+           await loadTemplate(project.templateId)
+        }
         
     } catch (e) {
        console.error(e)

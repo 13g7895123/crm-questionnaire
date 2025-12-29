@@ -190,7 +190,8 @@ const formatDate = (dateStr: string) => {
 }
 
 const handleFill = (row: any) => {
-  router.push(`/supplier/projects/${row.id}/answer`)
+  const projectId = route.params.id as string
+  router.push(`/saq/projects/${projectId}/fill/${row.id}`)
 }
 
 const handleAudit = (row: any) => {
