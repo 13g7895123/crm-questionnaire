@@ -10,19 +10,23 @@
       {{ $t('common.back') }}
     </UButton>
 
-    <QuestionnaireForm :id="id" mode="review" />
+    <ClientOnly>
+      <QuestionnaireWizard
+        mode="review"
+        :project-supplier-id="id"
+      />
+    </ClientOnly>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import QuestionnaireForm from '~/components/questionnaire/QuestionnaireForm.vue'
+import QuestionnaireWizard from '~/components/questionnaire/QuestionnaireWizard.vue'
 
 definePageMeta({ middleware: 'auth' })
 
 const route = useRoute()
 const router = useRouter()
 const id = computed(() => route.params.id as string)
-
 </script>

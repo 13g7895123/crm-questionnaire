@@ -222,41 +222,28 @@
         </div>
       </div>
     </div>
-    
-    <!-- Review Actions (Sticky Bottom) -->
-    <div v-if="mode === 'review'" class="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 shadow-lg z-10">
-      <div class="container mx-auto max-w-7xl flex flex-col gap-4">
-        <div class="flex items-center gap-4">
-            <UTextarea
-              v-model="reviewComment"
-              :placeholder="$t('review.comment')"
-              :rows="1"
-              autoresize
-              class="flex-1"
-            />
-            <div class="flex gap-2">
-              <UButton
-                color="red"
-                variant="solid"
-                :loading="submitting"
-                :disabled="!reviewComment"
-                @click="handleReturn"
-              >
-                {{ $t('review.return') }}
-              </UButton>
-              <UButton
-                color="green"
-                variant="solid"
-                :loading="submitting"
-                @click="handleApprove"
-              >
-                {{ $t('review.approve') }}
-              </UButton>
-            </div>
-        </div>
-      </div>
-    </div>
 
+    <!-- Floating Navigation for Review Mode -->
+    <div v-if="mode === 'review'" class="fixed bottom-6 right-6 flex flex-col gap-2 z-20">
+      <UButton
+        v-if="currentStep > 1"
+        color="white"
+        variant="solid"
+        icon="i-heroicons-chevron-up"
+        size="lg"
+        class="shadow-lg"
+        @click="previousStep"
+      />
+      <UButton
+        v-if="currentStep < totalSteps"
+        color="primary"
+        variant="solid"
+        icon="i-heroicons-chevron-down"
+        size="lg"
+        class="shadow-lg"
+        @click="nextStep"
+      />
+    </div>
   </div>
 </template>
 
@@ -616,8 +603,61 @@ const loadProjectData = async (psId: string) => {
     }
 }
 
+// Store target question ID from hash
+const targetQuestionId = ref<string | null>(null)
+
 onMounted(() => {
   init()
+  
+  // Read step and question from URL hash on mount
+  if (typeof window !== 'undefined') {
+    const hash = window.location.hash.slice(1) // Remove #
+    const params = new URLSearchParams(hash)
+    
+    const stepParam = params.get('step')
+    if (stepParam) {
+      const stepFromHash = parseInt(stepParam, 10)
+      if (stepFromHash >= 1) {
+        currentStep.value = stepFromHash
+      }
+    }
+    
+    const questionParam = params.get('q')
+    if (questionParam) {
+      targetQuestionId.value = questionParam
+    }
+  }
+})
+
+// Scroll to target question after loading completes
+watch(loading, (isLoading) => {
+  if (!isLoading && targetQuestionId.value && typeof window !== 'undefined') {
+    // Wait for DOM to update
+    setTimeout(() => {
+      const el = document.getElementById(`question-${targetQuestionId.value}`)
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        // Highlight the question briefly
+        el.classList.add('ring-2', 'ring-primary-500', 'ring-offset-2')
+        setTimeout(() => {
+          el.classList.remove('ring-2', 'ring-primary-500', 'ring-offset-2')
+        }, 2000)
+      }
+      targetQuestionId.value = null
+    }, 300)
+  }
+})
+
+// Sync step to URL hash (preserve question if exists)
+watch(currentStep, (newStep) => {
+  if (typeof window !== 'undefined') {
+    const currentHash = window.location.hash.slice(1)
+    const params = new URLSearchParams(currentHash)
+    params.set('step', String(newStep))
+    // Only keep step, remove question on navigation
+    params.delete('q')
+    window.location.hash = params.toString()
+  }
 })
 
 watch(() => props.mode, () => init())

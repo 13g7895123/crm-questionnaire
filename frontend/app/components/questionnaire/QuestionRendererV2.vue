@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-4">
+  <div class="space-y-4" :id="`question-${question.id}`">
     <!-- 主問題 -->
     <div class="bg-white p-5 rounded-lg border border-gray-200">
       <div class="mb-3">
@@ -14,7 +14,7 @@
       </div>
 
       <!-- 根據類型渲染不同的輸入元件 -->
-      <div class="mt-3">
+      <fieldset :disabled="mode === 'review'" class="mt-3">
         <BooleanQuestion
           v-if="question.type === 'BOOLEAN'"
           :model-value="getAnswerValue(question.id) as boolean | null"
@@ -81,7 +81,7 @@
           :config="question.config"
           @update:model-value="updateAnswer(question.id, $event)"
         />
-      </div>
+      </fieldset>
       <div v-if="mode === 'review'" class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
         <div class="flex flex-col gap-3">
           <label class="text-sm font-semibold text-gray-700">審核 (Audit)</label>
