@@ -184,7 +184,7 @@ Authorization: Bearer <accessToken>
 | 欄位 | 類型 | 說明 |
 |------|------|------|
 | suppliers | array | 關聯的供應商列表 |
-| suppliers[].id | integer | ProjectSupplier ID |
+| suppliers[].id | integer | ProjectSupplier ID (用於填寫問卷 `GET /api/v1/project-suppliers/{id}/answers` 與審核 `POST /api/v1/project-suppliers/{id}/review` 的參數) |
 | suppliers[].status | string | 該供應商的填寫/審核狀態 |
 
 ### Error Responses

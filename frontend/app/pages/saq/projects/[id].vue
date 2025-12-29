@@ -114,6 +114,24 @@
             <template #submittedAt-data="{ row }">
               {{ formatDate(row.submittedAt) }}
             </template>
+            <template #actions-data="{ row }">
+              <div class="flex items-center gap-2">
+                <UButton
+                  size="2xs"
+                  color="primary"
+                  variant="soft"
+                  :label="$t('projects.fillQuestionnaire')"
+                  @click="handleFill(row)"
+                />
+                <UButton
+                  size="2xs"
+                  color="orange"
+                  variant="soft"
+                  :label="$t('review.review')"
+                  @click="handleAudit(row)"
+                />
+              </div>
+            </template>
           </UTable>
         </UCard>
       </div>
@@ -156,7 +174,8 @@ const supplierColumns = computed(() => [
   { key: 'supplierName', label: t('suppliers.supplier') },
   { key: 'status', label: t('projects.status') },
   { key: 'currentStage', label: t('review.stage') },
-  { key: 'submittedAt', label: t('projects.submittedAt') }
+  { key: 'submittedAt', label: t('projects.submittedAt') },
+  { key: 'actions', label: t('common.action') }
 ])
 
 const formatDate = (dateStr: string) => {
@@ -168,6 +187,14 @@ const formatDate = (dateStr: string) => {
     hour: '2-digit',
     minute: '2-digit'
   })
+}
+
+const handleFill = (row: any) => {
+  router.push(`/supplier/projects/${row.id}/answer`)
+}
+
+const handleAudit = (row: any) => {
+  router.push(`/review/${row.id}`)
 }
 
 const loadProject = async () => {

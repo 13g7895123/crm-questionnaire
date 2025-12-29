@@ -1,35 +1,28 @@
 <template>
-  <div class="py-8">
-    <h1 class="text-3xl font-bold mb-8">{{ $t('review.review') }}</h1>
+  <div class="py-8 px-4 sm:px-6 lg:px-8">
+    <UButton
+      icon="i-heroicons-arrow-left"
+      color="gray"
+      variant="ghost"
+      class="mb-4"
+      @click="router.back()"
+    >
+      {{ $t('common.back') }}
+    </UButton>
+
+    <QuestionnaireForm :id="id" mode="review" />
   </div>
 </template>
+
 <script setup lang="ts">
-import { onMounted } from 'vue'
-import { useRoute } from 'vue-router'
-import { useI18n } from 'vue-i18n'
-import { useBreadcrumbs } from '~/composables/useBreadcrumbs'
-import { useProjects } from '~/composables/useProjects'
+import { computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import QuestionnaireForm from '~/components/questionnaire/QuestionnaireForm.vue'
 
 definePageMeta({ middleware: 'auth' })
 
-const { t } = useI18n()
 const route = useRoute()
-const { setBreadcrumbs } = useBreadcrumbs()
-const { getProject } = useProjects()
+const router = useRouter()
+const id = computed(() => route.params.id as string)
 
-onMounted(async () => {
-  const id = route.params.id as string
-  try {
-    const response = await getProject(id)
-    const project = response.data
-    
-    setBreadcrumbs([
-      { label: t('common.home'), to: '/' },
-      { label: t('review.review'), to: '/review' },
-      { label: project.name }
-    ])
-  } catch (e) {
-    console.error(e)
-  }
-})
 </script>

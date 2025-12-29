@@ -10,25 +10,26 @@ export const useReview = () => {
     return await api.get('/reviews/pending')
   }
 
-  const getReviewLogs = async (projectId: string) => {
+  const getReviewLogs = async (projectSupplierId: string) => {
     try {
-      const response = await api.get(`/projects/${projectId}/reviews`)
-      reviewLogs.value = response.data || []
-      return reviewLogs.value
+      const response = await api.get(`/project-suppliers/${projectSupplierId}/reviews`)
+      reviewLogs.value = response.data?.reviews || []
+      // Return the full data object so we can access projectId/meta info
+      return response.data
     } catch (error) {
       throw error
     }
   }
 
-  const approveProject = async (projectId: string, comment: string) => {
-    return await api.post(`/projects/${projectId}/review`, {
+  const approveProject = async (projectSupplierId: string, comment: string) => {
+    return await api.post(`/project-suppliers/${projectSupplierId}/review`, {
       action: 'APPROVE',
       comment
     })
   }
 
-  const returnProject = async (projectId: string, comment: string) => {
-    return await api.post(`/projects/${projectId}/review`, {
+  const returnProject = async (projectSupplierId: string, comment: string) => {
+    return await api.post(`/project-suppliers/${projectSupplierId}/review`, {
       action: 'RETURN',
       comment
     })
