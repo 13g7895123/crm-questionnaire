@@ -140,7 +140,10 @@
     "submitSuccess": "問卷已提交",
     "saveDraftSuccess": "草稿已保存",
     "progress": "進度",
-    "of": "的"
+    "of": "的",
+    "confirmSubmit": "確定要提交問卷嗎？提交後將無法修改。",
+    "submitFailed": "問卷提交失敗，請稍後再試。",
+    "saveFailed": "保存失敗，請稍後再試。"
   },
   "review": {
     "review": "審核",

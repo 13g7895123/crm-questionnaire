@@ -96,9 +96,21 @@ class AnswerController extends BaseApiController
             );
         }
 
-        $answers = $this->request->getJsonVar('answers');
+        // Get JSON body
+        $json = $this->request->getJSON(true);
+        $answers = $json['answers'] ?? null;
+
         if (!is_array($answers)) {
-            return $this->validationErrorResponse(['answers' => '答案格式錯誤']);
+            return $this->validationErrorResponse(['answers' => '答案格式錯誤，請確認 answers 欄位為物件格式']);
+        }
+
+        // Allow empty answers (just save nothing)
+        if (empty($answers)) {
+            return $this->successResponse([
+                'projectSupplierId' => (int) $projectSupplierId,
+                'savedCount' => 0,
+                'lastSavedAt' => date('c'),
+            ]);
         }
 
         // Basic validation of answers
@@ -154,7 +166,7 @@ class AnswerController extends BaseApiController
         // Validate all required questions are answered
         $versionModel = new TemplateVersionModel();
         $version = $versionModel->getVersion($project->template_id, $project->template_version);
-        
+
         if (!$version) {
             return $this->errorResponse(
                 'VALIDATION_ERROR',
@@ -163,18 +175,22 @@ class AnswerController extends BaseApiController
             );
         }
 
-        $questions = $version->questions;
+        $questions = $version->questions ?? [];
         $answers = $this->answerModel->getAnswersForProjectSupplier($projectSupplierId);
 
         $missingQuestions = [];
-        foreach ($questions as $question) {
-            if ($question['required'] ?? false) {
-                $questionId = $question['id'];
-                if (!isset($answers[$questionId]) || $this->isAnswerEmpty($answers[$questionId]['value'])) {
-                    $missingQuestions[] = [
-                        'questionId' => $questionId,
-                        'questionText' => $question['text'],
-                    ];
+
+        // Only validate if questions exist
+        if (is_array($questions) || is_object($questions)) {
+            foreach ($questions as $question) {
+                if ($question['required'] ?? false) {
+                    $questionId = $question['id'];
+                    if (!isset($answers[$questionId]) || $this->isAnswerEmpty($answers[$questionId]['value'])) {
+                        $missingQuestions[] = [
+                            'questionId' => $questionId,
+                            'questionText' => $question['text'],
+                        ];
+                    }
                 }
             }
         }
@@ -379,7 +395,7 @@ class AnswerController extends BaseApiController
 
         // Get template structure
         $structure = $this->structureRepo->getTemplateStructure($project->template_id);
-        
+
         // Get current answers
         $answers = $this->answerModel->getAnswersForProjectSupplier($projectSupplierId);
 
@@ -421,10 +437,10 @@ class AnswerController extends BaseApiController
 
         // Get template structure
         $structure = $this->structureRepo->getTemplateStructure($project->template_id);
-        
+
         // Get current answers
         $answers = $this->answerModel->getAnswersForProjectSupplier($projectSupplierId);
-        
+
         // Get basic info if SAQ template
         $basicInfo = null;
         $templateModel = model('TemplateModel');

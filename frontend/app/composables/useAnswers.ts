@@ -13,8 +13,13 @@ export const useAnswers = () => {
     return await api.put(`/project-suppliers/${projectSupplierId}/answers`, { answers })
   }
 
-  const submitAnswers = async (projectSupplierId: string, answers: any) => {
-    return await api.post(`/project-suppliers/${projectSupplierId}/submit`, { answers })
+  const submitAnswers = async (projectSupplierId: string, answers?: any) => {
+    // First save answers if provided
+    if (answers && Object.keys(answers).length > 0) {
+      await api.put(`/project-suppliers/${projectSupplierId}/answers`, { answers })
+    }
+    // Then submit (no body needed per API doc)
+    return await api.post(`/project-suppliers/${projectSupplierId}/submit`, {})
   }
 
   return {

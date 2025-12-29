@@ -28,6 +28,6 @@ const handleSaved = () => {
 }
 
 const handleSubmitted = () => {
-  // Redirect handled in component, but can be overridden here if needed
+  router.push('/supplier/projects')
 }
 </script>

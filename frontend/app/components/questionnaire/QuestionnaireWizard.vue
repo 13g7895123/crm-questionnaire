@@ -700,11 +700,10 @@ const handleSubmit = async () => {
    try {
      await submitAnswers(props.projectSupplierId, formData.answers)
      emit('submitted')
-     // Redirect will be handled by parent or router logic
-     router.push('/supplier/projects')
-   } catch (e) {
+     // Let parent component handle the redirect
+   } catch (e: any) {
      console.error('Submit failed:', e)
-     error.value = t('common.submitFailed')
+     error.value = e?.message || t('questionnaire.submitFailed')
    } finally {
      submitting.value = false
    }

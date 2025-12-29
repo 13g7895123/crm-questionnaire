@@ -28,7 +28,7 @@ class AnswerModel extends Model
     public function getAnswersForProjectSupplier(int $projectSupplierId): array
     {
         $answers = $this->where('project_supplier_id', $projectSupplierId)->findAll();
-        
+
         $result = [];
         foreach ($answers as $answer) {
             $result[$answer->question_id] = [
@@ -48,12 +48,15 @@ class AnswerModel extends Model
         $count = 0;
         foreach ($answers as $questionId => $answerData) {
             $existing = $this->where('project_supplier_id', $projectSupplierId)
-                            ->where('question_id', $questionId)
-                            ->first();
+                ->where('question_id', $questionId)
+                ->first();
 
-            $value = is_array($answerData['value']) || is_object($answerData['value']) 
-                ? json_encode($answerData['value']) 
-                : $answerData['value'];
+            // Get the raw value
+            $rawValue = $answerData['value'] ?? null;
+
+            // Always JSON encode for MySQL JSON column type
+            // This handles all types: null, bool, string, number, array, object
+            $value = json_encode($rawValue, JSON_UNESCAPED_UNICODE);
 
             if ($existing) {
                 $this->update($existing->id, ['value' => $value]);
@@ -76,10 +79,15 @@ class AnswerModel extends Model
     public function getLastSavedAt(int $projectSupplierId): ?string
     {
         $answer = $this->where('project_supplier_id', $projectSupplierId)
-                       ->orderBy('updated_at', 'DESC')
-                       ->first();
+            ->orderBy('updated_at', 'DESC')
+            ->first();
 
-        return $answer?->updated_at?->toIso8601String();
+        if (!$answer || !$answer->updated_at) {
+            return null;
+        }
+
+        // Use format('c') for ISO 8601 format
+        return $answer->updated_at->format('c');
     }
 
     /**
