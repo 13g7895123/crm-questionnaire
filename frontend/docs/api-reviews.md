@@ -5,6 +5,8 @@
 - [7.2 審核專案](#72-審核專案)
 - [7.3 取得審核歷程](#73-取得審核歷程)
 - [7.4 取得審核統計](#74-取得審核統計)
+- [7.5 取得題目審核列表](#75-取得題目審核列表)
+- [7.6 批次儲存題目審核](#76-批次儲存題目審核)
 
 ---
 
@@ -556,3 +558,248 @@ currentStage: 0 → 1
 ### 製造商通知
 - 專案審核完成 (APPROVED): Email + 系統通知
 - 專案被退回: 系統通知 (可選)
+
+---
+
+## 7.5 取得題目審核列表
+
+**Endpoint**: `GET /api/v1/project-suppliers/{projectSupplierId}/question-reviews`  
+**權限**: 需要認證 (HOST/ADMIN，或被指派的 SUPPLIER 唯讀)  
+**用途**: 取得專案供應商的所有題目審核紀錄
+
+### Request Headers
+
+```
+Authorization: Bearer <accessToken>
+```
+
+### Path Parameters
+
+| 參數 | 類型 | 說明 |
+|------|------|------|
+| projectSupplierId | integer | 專案供應商 ID |
+
+### Response (200 OK)
+
+```json
+{
+  "success": true,
+  "data": {
+    "projectSupplierId": 4,
+    "reviews": {
+      "A.1.1": {
+        "questionId": "A.1.1",
+        "approved": true,
+        "comment": "符合規範",
+        "reviewerId": 1,
+        "reviewerName": "admin",
+        "updatedAt": "2025-12-29T10:30:00+08:00"
+      },
+      "A.1.2": {
+        "questionId": "A.1.2",
+        "approved": false,
+        "comment": "需補充說明文件",
+        "reviewerId": 1,
+        "reviewerName": "admin",
+        "updatedAt": "2025-12-29T10:32:00+08:00"
+      }
+    }
+  },
+  "timestamp": "2025-12-29T10:35:00+08:00"
+}
+```
+
+**欄位說明:**
+
+| 欄位 | 類型 | 說明 |
+|------|------|------|
+| projectSupplierId | integer | 專案供應商 ID |
+| reviews | object | 以 questionId 為 key 的審核物件 |
+| reviews[].questionId | string | 主問題 ID（例如 A.1.2.1） |
+| reviews[].approved | boolean | 審核結果：true=Yes，false=No |
+| reviews[].comment | string | 審核備註 |
+| reviews[].reviewerId | integer | 審核者 ID |
+| reviews[].reviewerName | string | 審核者名稱 |
+| reviews[].updatedAt | string | 最後更新時間 |
+
+**權限控制:**
+- **HOST/ADMIN**: 可查看所有
+- **SUPPLIER**: 可查看自己被分配專案的審核（唯讀）
+
+### Error Responses
+
+**404 Not Found - 找不到專案供應商**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "RESOURCE_NOT_FOUND",
+    "message": "找不到指定的專案供應商記錄"
+  }
+}
+```
+
+**403 Forbidden - 無權限**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "AUTH_INSUFFICIENT_PERMISSION",
+    "message": "您無權存取此資源"
+  }
+}
+```
+
+---
+
+## 7.6 批次儲存題目審核
+
+**Endpoint**: `PUT /api/v1/project-suppliers/{projectSupplierId}/question-reviews`  
+**權限**: 需要認證 (HOST/ADMIN)  
+**用途**: 批次新增或更新題目審核紀錄。採用 Upsert 邏輯：若該 question_id 已存在則更新，否則新增。
+
+### Request Headers
+
+```
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+```
+
+### Path Parameters
+
+| 參數 | 類型 | 說明 |
+|------|------|------|
+| projectSupplierId | integer | 專案供應商 ID |
+
+### Request Body
+
+```json
+{
+  "reviews": {
+    "A.1.1": {
+      "approved": true,
+      "comment": "符合規範"
+    },
+    "A.1.2": {
+      "approved": false,
+      "comment": "需補充說明文件"
+    },
+    "A.2.1": {
+      "approved": true,
+      "comment": ""
+    }
+  }
+}
+```
+
+**Request Body 欄位說明:**
+
+| 欄位 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| reviews | object | ✓ | 以 questionId 為 key 的審核物件 |
+| reviews[questionId].approved | boolean | ✓ | 審核結果 |
+| reviews[questionId].comment | string | ✗ | 審核備註 |
+
+### Response (200 OK)
+
+```json
+{
+  "success": true,
+  "data": {
+    "projectSupplierId": 4,
+    "savedCount": 3,
+    "message": "已儲存 3 筆題目審核"
+  },
+  "timestamp": "2025-12-29T10:40:00+08:00"
+}
+```
+
+**權限控制:**
+- **HOST/ADMIN**: 可儲存審核
+- **SUPPLIER**: 無權限（403）
+
+### Error Responses
+
+**403 Forbidden - 無權限**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "AUTH_INSUFFICIENT_PERMISSION",
+    "message": "您無權存取此資源"
+  }
+}
+```
+
+**409 Conflict - 狀態不允許**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "RESOURCE_CONFLICT",
+    "message": "專案目前不在審核狀態"
+  }
+}
+```
+
+**422 Validation Error - 驗證失敗**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "驗證失敗",
+    "details": {
+      "reviews": "reviews 必須為物件格式"
+    }
+  }
+}
+```
+
+---
+
+## 題目審核資料模型
+
+### question_reviews 資料表
+
+| 欄位 | 類型 | 說明 |
+|------|------|------|
+| id | INT UNSIGNED AUTO_INCREMENT | 主鍵 |
+| project_supplier_id | INT UNSIGNED | 專案供應商 ID (FK) |
+| question_id | VARCHAR(50) | 主問題 ID（例如 A.1.2.1） |
+| approved | TINYINT(1) | 審核結果：1=Yes, 0=No |
+| comment | TEXT | 審核備註（選填） |
+| reviewer_id | INT UNSIGNED | 審核者 ID (FK) |
+| created_at | DATETIME | 建立時間 |
+| updated_at | DATETIME | 更新時間 |
+
+**約束條件:**
+- `(project_supplier_id, question_id)` 為 UNIQUE，確保每個主問題只有一筆審核紀錄
+
+---
+
+## 題目審核使用情境
+
+### 情境 1: 審核者逐題審核
+
+1. 審核者進入專案審核頁面
+2. 系統呼叫 `GET /question-reviews` 取得現有審核紀錄
+3. 審核者瀏覽每道題目及其細項回答
+4. 對每道主問題進行 Yes/No 判斷並填寫備註
+5. 點擊「儲存審核」按鈕
+6. 系統呼叫 `PUT /question-reviews` 批次儲存
+7. 所有題目審核完成後，點擊「核准」或「退回」完成整體審核
+
+### 情境 2: 供應商查看審核細節
+
+1. 供應商登入並進入專案頁面
+2. 系統呼叫 `GET /question-reviews` 取得審核紀錄（唯讀）
+3. 供應商可看到每道題目的審核結果與備註
+4. 根據備註了解需要改進的項目
+
+### 審核 UI 顯示規則
+
+- 審核區塊位於主問題及所有細項的**下方**
+- 每道主問題（含其追問/細項）共用一個審核
+- 追問（細項）本身不顯示獨立的審核區塊
+

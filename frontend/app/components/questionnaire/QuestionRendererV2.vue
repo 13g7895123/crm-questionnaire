@@ -82,40 +82,6 @@
           @update:model-value="updateAnswer(question.id, $event)"
         />
       </fieldset>
-      <div v-if="mode === 'review'" class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-        <div class="flex flex-col gap-3">
-          <label class="text-sm font-semibold text-gray-700">審核 (Audit)</label>
-          <div class="flex gap-4">
-             <UButton
-               :color="review?.approved === true ? 'green' : 'white'"
-               variant="solid"
-               icon="i-heroicons-check"
-               label="Yes"
-               size="sm"
-               @click="updateReview(true)"
-               class="flex-1 justify-center"
-               :ui="{ color: { white: { solid: 'ring-1 ring-inset ring-gray-300 text-gray-900 bg-white hover:bg-gray-50' } } }"
-             />
-             <UButton
-               :color="review?.approved === false ? 'red' : 'white'"
-               variant="solid"
-               icon="i-heroicons-x-mark"
-               label="No"
-               size="sm"
-               @click="updateReview(false)"
-               class="flex-1 justify-center"
-               :ui="{ color: { white: { solid: 'ring-1 ring-inset ring-gray-300 text-gray-900 bg-white hover:bg-gray-50' } } }"
-             />
-          </div>
-          <UTextarea
-             :model-value="review?.comment"
-             placeholder="請輸入審核意見..."
-             :rows="2"
-             class="w-full"
-             @update:model-value="updateReviewComment"
-          />
-        </div>
-      </div>
     </div>
 
     <!-- 條件邏輯追問 -->
@@ -130,10 +96,45 @@
         :answers="answers"
         :visible-questions="visibleQuestions"
         :mode="mode"
-        :review="review"
+        :is-main-question="false"
         @update:answer="$emit('update:answer', $event)"
-        @update:review="$emit('update:review', $event)"
       />
+    </div>
+
+    <!-- 審核區塊 (僅主問題，且位於細項後面) -->
+    <div v-if="mode === 'review' && isMainQuestion" class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+      <div class="flex flex-col gap-3">
+        <label class="text-sm font-semibold text-gray-700">審核 (Audit)</label>
+        <div class="flex gap-4">
+           <UButton
+             :color="review?.approved === true ? 'green' : 'white'"
+             variant="solid"
+             icon="i-heroicons-check"
+             label="Yes"
+             size="sm"
+             @click="updateReview(true)"
+             class="flex-1 justify-center"
+             :ui="{ color: { white: { solid: 'ring-1 ring-inset ring-gray-300 text-gray-900 bg-white hover:bg-gray-50' } } }"
+           />
+           <UButton
+             :color="review?.approved === false ? 'red' : 'white'"
+             variant="solid"
+             icon="i-heroicons-x-mark"
+             label="No"
+             size="sm"
+             @click="updateReview(false)"
+             class="flex-1 justify-center"
+             :ui="{ color: { white: { solid: 'ring-1 ring-inset ring-gray-300 text-gray-900 bg-white hover:bg-gray-50' } } }"
+           />
+        </div>
+        <UTextarea
+           :model-value="review?.comment"
+           placeholder="請輸入審核意見..."
+           :rows="2"
+           class="w-full"
+           @update:model-value="updateReviewComment"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -161,7 +162,10 @@ const props = defineProps<{
   visibleQuestions?: Set<string>
   mode?: 'preview' | 'fill' | 'review'
   review?: QuestionReview
+  isMainQuestion?: boolean
 }>()
+
+const isMainQuestion = computed(() => props.isMainQuestion !== false)
 
 const emit = defineEmits<{
   'update:answer': [payload: { questionId: string; value: AnswerValue }]

@@ -6,6 +6,7 @@ use App\Models\ProjectModel;
 use App\Models\ProjectSupplierModel;
 use App\Models\ReviewLogModel;
 use App\Models\ReviewStageConfigModel;
+use App\Models\QuestionReviewModel;
 use CodeIgniter\HTTP\ResponseInterface;
 
 class ReviewController extends BaseApiController
@@ -14,6 +15,7 @@ class ReviewController extends BaseApiController
     protected ProjectSupplierModel $projectSupplierModel;
     protected ReviewLogModel $reviewLogModel;
     protected ReviewStageConfigModel $reviewConfigModel;
+    protected QuestionReviewModel $questionReviewModel;
 
     public function __construct()
     {
@@ -21,6 +23,7 @@ class ReviewController extends BaseApiController
         $this->projectSupplierModel = new ProjectSupplierModel();
         $this->reviewLogModel = new ReviewLogModel();
         $this->reviewConfigModel = new ReviewStageConfigModel();
+        $this->questionReviewModel = new QuestionReviewModel();
     }
 
     /**
@@ -43,7 +46,7 @@ class ReviewController extends BaseApiController
         }
 
         $pagination = $this->getPaginationParams();
-        
+
         $filters = [
             'type' => $this->request->getGet('type'),
             'sortBy' => $this->request->getGet('sortBy'),
@@ -337,6 +340,87 @@ class ReviewController extends BaseApiController
             'returnedThisMonth' => $monthStats['RETURN'],
             'averageReviewTime' => $avgReviewTime,
             'byType' => $byType,
+        ]);
+    }
+
+    /**
+     * GET /api/v1/project-suppliers/{projectSupplierId}/question-reviews
+     * Get question reviews for a project supplier
+     */
+    public function getQuestionReviews($projectSupplierId = null): ResponseInterface
+    {
+        $projectSupplier = $this->projectSupplierModel->find($projectSupplierId);
+        if (!$projectSupplier) {
+            return $this->notFoundResponse('找不到指定的專案供應商記錄');
+        }
+
+        // Supplier can only see their own project's reviews
+        if ($this->isSupplier() && $projectSupplier->supplier_id != $this->getCurrentOrganizationId()) {
+            return $this->errorResponse(
+                'AUTH_INSUFFICIENT_PERMISSION',
+                '您無權存取此資源',
+                403
+            );
+        }
+
+        $reviews = $this->questionReviewModel->getReviewsForProjectSupplier($projectSupplierId);
+
+        return $this->successResponse([
+            'projectSupplierId' => (int) $projectSupplierId,
+            'reviews' => $reviews,
+        ]);
+    }
+
+    /**
+     * PUT /api/v1/project-suppliers/{projectSupplierId}/question-reviews
+     * Save/update question reviews (batch upsert)
+     */
+    public function saveQuestionReviews($projectSupplierId = null): ResponseInterface
+    {
+        // Only HOST/ADMIN can save reviews
+        if (!$this->isHost() && !$this->isAdmin()) {
+            return $this->forbiddenResponse();
+        }
+
+        $projectSupplier = $this->projectSupplierModel->find($projectSupplierId);
+        if (!$projectSupplier) {
+            return $this->notFoundResponse('找不到指定的專案供應商記錄');
+        }
+
+        // Check project supplier status
+        if ($projectSupplier->status !== 'REVIEWING') {
+            return $this->conflictResponse(
+                'RESOURCE_CONFLICT',
+                '專案目前不在審核狀態'
+            );
+        }
+
+        // Get JSON body
+        $json = $this->request->getJSON(true);
+        $reviews = $json['reviews'] ?? null;
+
+        if (!$reviews || !is_array($reviews)) {
+            return $this->validationErrorResponse([
+                'reviews' => 'reviews 必須為物件格式',
+            ]);
+        }
+
+        // Validate each review
+        foreach ($reviews as $questionId => $reviewData) {
+            if (!isset($reviewData['approved'])) {
+                return $this->validationErrorResponse([
+                    "reviews.{$questionId}.approved" => 'approved 欄位為必填',
+                ]);
+            }
+        }
+
+        $reviewerId = $this->getCurrentUserId();
+        $savedCount = $this->questionReviewModel->saveReviews($projectSupplierId, $reviews, $reviewerId);
+
+        return $this->successResponse([
+            'projectSupplierId' => (int) $projectSupplierId,
+            'savedCount' => $savedCount,
+            'message' => "已儲存 {$savedCount} 筆題目審核",
         ]);
     }
 }

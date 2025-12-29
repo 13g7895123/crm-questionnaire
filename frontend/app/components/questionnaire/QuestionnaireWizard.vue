@@ -249,6 +249,16 @@
         class="shadow-lg"
         @click="nextStep"
       />
+      <!-- Save Question Reviews Button -->
+      <UButton
+        color="blue"
+        variant="solid"
+        icon="i-heroicons-bookmark"
+        size="lg"
+        class="shadow-lg"
+        :loading="savingReviews"
+        @click="handleSaveQuestionReviews"
+      />
     </div>
   </div>
 </template>
@@ -264,6 +274,7 @@ import { useProjects } from '~/composables/useProjects'
 import { useTemplates } from '~/composables/useTemplates'
 import { useAnswers } from '~/composables/useAnswers'
 import { useReview } from '~/composables/useReview'
+import { useQuestionReviews } from '~/composables/useQuestionReviews'
 import { useSweetAlert } from '~/composables/useSweetAlert'
 
 const props = defineProps<{
@@ -290,12 +301,14 @@ const { getProject } = useProjects()
 const { getTemplateStructure } = useTemplates()
 const { getAnswers, saveAnswers, submitAnswers, getBasicInfo, saveBasicInfo, getVisibleQuestions } = useAnswers()
 const { getReviewLogs, approveProject, returnProject } = useReview()
+const { getQuestionReviews, saveQuestionReviews } = useQuestionReviews()
 const { showConfirm, showSuccess, showError, showLoading, closeAlert } = useSweetAlert()
 
 // State
 const loading = ref(true)
 const saving = ref(false)
 const submitting = ref(false)
+const savingReviews = ref(false)
 const error = ref<string | null>(null)
 const currentStep = ref(1)
 
@@ -435,6 +448,21 @@ const handleAnswerUpdate = ({ questionId, value }: { questionId: string; value: 
 
 const handleReviewUpdate = (review: QuestionReview) => {
   reviews.value[review.questionId] = review
+}
+
+const handleSaveQuestionReviews = async () => {
+  if (!props.projectSupplierId) return
+  
+  savingReviews.value = true
+  try {
+    await saveQuestionReviews(props.projectSupplierId, reviews.value)
+    showSuccess('題目審核已儲存')
+  } catch (err: any) {
+    console.error('Failed to save question reviews:', err)
+    showError(err.message || '儲存審核失敗')
+  } finally {
+    savingReviews.value = false
+  }
 }
 
 // Auto-fill options for dropdown
@@ -936,6 +964,19 @@ const loadProjectData = async (psId: string) => {
            }
         } else {
            console.error('No templateId found in project!')
+        }
+        
+        // Load question reviews (review mode only)
+        if (props.mode === 'review') {
+          try {
+            const qrRes = await getQuestionReviews(psId) as any
+            if (qrRes.data?.reviews) {
+              reviews.value = qrRes.data.reviews
+              console.log('Loaded question reviews:', reviews.value)
+            }
+          } catch (qrErr) {
+            console.warn('Could not load question reviews:', qrErr)
+          }
         }
         
     } catch (e) {

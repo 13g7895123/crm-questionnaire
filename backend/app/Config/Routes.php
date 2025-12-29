@@ -81,6 +81,10 @@ $routes->group('api/v1', ['namespace' => 'App\Controllers\Api\V1'], function ($r
         // Reviews
         $routes->post('(:segment)/review', 'ReviewController::review/$1');
         $routes->get('(:segment)/reviews', 'ReviewController::history/$1');
+
+        // Question Reviews
+        $routes->get('(:segment)/question-reviews', 'ReviewController::getQuestionReviews/$1');
+        $routes->put('(:segment)/question-reviews', 'ReviewController::saveQuestionReviews/$1');
     });
 
     // Template routes

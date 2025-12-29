@@ -32,6 +32,7 @@
           :visible-questions="visibleQuestions"
           :mode="mode"
           :review="reviews?.[question.id]"
+          :is-main-question="true"
           @update:answer="handleAnswerUpdate"
           @update:review="handleReviewUpdate"
         />
