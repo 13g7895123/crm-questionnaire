@@ -8,7 +8,7 @@ export const useAuthStore = defineStore('auth', () => {
     maxAge: 60 * 60 * 24 * 7, // 7 days
     path: '/'
   })
-  const token = ref<string | null>(tokenCookie.value || null)
+  const token = computed(() => tokenCookie.value || null)
 
   const isAuthenticated = computed(() => !!token.value)
   const currentOrganizationId = computed(() => user.value?.organizationId)
@@ -33,7 +33,6 @@ export const useAuthStore = defineStore('auth', () => {
    * Set authentication token
    */
   const setToken = (newToken: string | null) => {
-    token.value = newToken
     tokenCookie.value = newToken
   }
 
@@ -59,10 +58,7 @@ export const useAuthStore = defineStore('auth', () => {
     if (isClient()) {
       const savedUser = localStorage.getItem('auth_user')
 
-      if (tokenCookie.value) {
-        token.value = tokenCookie.value
-      }
-
+      // User info is in localStorage, token is in cookie automatically
       if (savedUser) {
         try {
           user.value = JSON.parse(savedUser)

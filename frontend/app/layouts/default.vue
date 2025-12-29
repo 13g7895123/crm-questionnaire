@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-gray-50">
-    <div v-if="isAuthenticated">
+    <div v-if="isMounted && isAuthenticated">
       <Navbar />
       <Breadcrumb />
     </div><main>
@@ -18,10 +18,12 @@ import Breadcrumb from '~/components/common/Breadcrumb.vue'
 
 
 const authStore = useAuthStore()
+const isMounted = ref(false)
 
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 
 onMounted(() => {
+  isMounted.value = true
   // Restore auth state on mount (for user object)
   authStore.restoreAuth()
 })

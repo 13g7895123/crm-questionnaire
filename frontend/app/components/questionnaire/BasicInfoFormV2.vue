@@ -438,11 +438,19 @@ const removeContact = (index: number) => {
   formData.value.contacts?.splice(index, 1)
 }
 
+const isComparing = ref(false)
+
 watch(
   formData,
   (newValue) => {
-    if (props.disabled) return
-    emit('update:modelValue', newValue)
+    if (props.disabled || isComparing.value) return
+    
+    // Check if truly different from prop before emitting
+    const currentProp = JSON.stringify(props.modelValue || {})
+    const nextValue = JSON.stringify(newValue)
+    if (currentProp !== nextValue) {
+      emit('update:modelValue', JSON.parse(nextValue))
+    }
   },
   { deep: true }
 )
@@ -450,22 +458,38 @@ watch(
 watch(
   () => props.modelValue,
   (newValue) => {
-    console.log('BasicInfoFormV2: modelValue changed', newValue)
-    if (newValue) {
-      // Use Object.assign to keep the reference if possible, or just replace
-      formData.value = { 
-        ...formData.value,
-        ...newValue,
-        // Deep merge employees to be safe
-        employees: {
-          ...(formData.value.employees || { total: 0, male: 0, female: 0, foreign: 0 }),
-          ...(newValue.employees || {})
+    if (!newValue) return
+    
+    isComparing.value = true
+    try {
+      const currentLocal = JSON.stringify(formData.value)
+      const incoming = JSON.stringify({ ...formData.value, ...newValue })
+      
+      if (currentLocal !== incoming) {
+        console.log('BasicInfoFormV2: Applying external update')
+        formData.value = { 
+          ...formData.value,
+          ...newValue,
+          employees: {
+            ...(formData.value.employees || { total: 0, male: 0, female: 0, foreign: 0 }),
+            ...(newValue.employees || {})
+          }
         }
       }
+    } finally {
+      // Small delay to ensure the formData watcher skip is effective
+      setTimeout(() => {
+        isMounted.value && (isComparing.value = false)
+      }, 0)
     }
   },
   { deep: true, immediate: true }
 )
+
+const isMounted = ref(false)
+onMounted(() => {
+  isMounted.value = true
+})
 </script>
 
 <style scoped>

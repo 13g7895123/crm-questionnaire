@@ -190,6 +190,16 @@ class ProjectController extends BaseApiController
                     ],
                 ];
             }, $reviewConfig);
+        } elseif ($this->isSupplier()) {
+            // Find the specific record for this supplier
+            $currentOrgId = $this->getCurrentOrganizationId();
+            foreach ($suppliers as $s) {
+                if ($s->supplier_id == $currentOrgId) {
+                    $response['projectSupplierId'] = (int) $s->id;
+                    $response['status'] = $s->status;
+                    break;
+                }
+            }
         }
 
         return $this->successResponse($response);

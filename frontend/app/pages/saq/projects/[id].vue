@@ -96,8 +96,8 @@
           </UCard>
         </div>
 
-        <!-- Suppliers List -->
-        <UCard>
+        <!-- Suppliers List (for Host/Admin) -->
+        <UCard v-if="project.suppliers">
           <template #header>
             <h3 class="font-semibold text-gray-900">{{ $t('suppliers.supplierList') }}</h3>
           </template>
@@ -133,6 +133,26 @@
               </div>
             </template>
           </UTable>
+        </UCard>
+
+        <!-- Questionnaire Access (for Supplier) -->
+        <UCard v-else-if="project.projectSupplierId">
+          <template #header>
+            <h3 class="font-semibold text-gray-900">{{ $t('questionnaire.questionnaire') }}</h3>
+          </template>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+              <ProjectStatusBadge :status="(project as any).status" />
+              <span class="text-sm text-gray-500" v-if="(project as any).status === 'SUBMITTED' || (project as any).status === 'REVIEWING'">
+                {{ $t('projects.submittedAt') }}: {{ formatDate((project as any).submittedAt) }}
+              </span>
+            </div>
+            <UButton
+              color="primary"
+              :label="$t('projects.fillQuestionnaire')"
+              @click="router.push(`/saq/projects/${project.id}/fill/${(project as any).projectSupplierId}`)"
+            />
+          </div>
         </UCard>
       </div>
     </div>
