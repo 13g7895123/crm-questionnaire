@@ -22,9 +22,19 @@ export const useAnswers = () => {
     return await api.post(`/project-suppliers/${projectSupplierId}/submit`, {})
   }
 
+  const getBasicInfo = async (projectSupplierId: string) => {
+    return await api.get(`/project-suppliers/${projectSupplierId}/basic-info`)
+  }
+
+  const getVisibleQuestions = async (projectSupplierId: string) => {
+    return await api.get(`/project-suppliers/${projectSupplierId}/visible-questions`)
+  }
+
   return {
     getAnswers,
     saveAnswers,
-    submitAnswers
+    submitAnswers,
+    getBasicInfo,
+    getVisibleQuestions
   }
 }

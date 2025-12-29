@@ -169,10 +169,20 @@ const emit = defineEmits<{
 }>()
 
 const getAnswerValue = (questionId: string): AnswerValue => {
-  return props.answers[questionId]?.value
+  const answer = props.answers[questionId]
+  if (!answer) return null
+  
+  const val = answer.value
+  // 如果是物件但為空，且不是表格類型，則視為 null
+  if (val !== null && typeof val === 'object' && Object.keys(val as object).length === 0 && props.question.type !== 'TABLE') {
+    return null
+  }
+  
+  return val
 }
 
 const updateAnswer = (questionId: string, value: AnswerValue) => {
+  if (value === undefined) value = null
   emit('update:answer', { questionId, value })
 }
 

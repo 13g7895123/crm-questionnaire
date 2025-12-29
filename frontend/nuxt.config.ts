@@ -18,6 +18,11 @@ export default defineNuxtConfig({
     '@pinia/nuxt',
     '@nuxtjs/i18n'
   ],
+  icon: {
+    provider: 'iconify',
+    serverBundle: 'local',
+    collections: ['heroicons']
+  },
   runtimeConfig: {
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE || ''
@@ -58,9 +63,9 @@ export default defineNuxtConfig({
   },
   nitro: {
     devProxy: {
-      '/api': {
+      '/api/v1': {
         target: 'http://localhost:9104',
-        changeOrigin: false
+        changeOrigin: true
       }
     }
   }

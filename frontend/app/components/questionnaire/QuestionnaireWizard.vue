@@ -111,14 +111,12 @@
       <!-- Form Content -->
       <UCard class="min-h-[400px]">
         
-        <!-- Step 1: Basic Info -->
         <BasicInfoFormV2
           v-if="isBasicInfoStep"
           v-model="formData.basicInfo"
           :disabled="mode === 'review'"
         />
 
-        <!-- Step 2-N: Section Questions -->
         <SectionFormV2
           v-else-if="currentSection"
           :section="currentSection"
@@ -128,25 +126,10 @@
           :reviews="reviews"
           @update:answer="handleAnswerUpdate"
           @update:review="handleReviewUpdate"
-          :disabled="mode === 'review' && mode !== 'review'" 
+          :disabled="mode === 'review'" 
         />
-        <!-- Note: disabled prop on SectionFormV2 usually disables inputs.
-             In review mode, we want inputs disabled but review controls enabled.
-             SectionFormV2 doesn't seem to use 'disabled' prop directly for inputs 
-             but QuestionnaireWizard passed it. Checking SectionFormV2 implementation...
-             It doesn't define 'disabled' prop! It seems I added it in previous step 32 but 
-             SectionFormV2 didn't actually accept it in step 26/91? 
-             Wait, step 26 view showed it didn't have disabled prop.
-             Step 32 write_to_file passed :disabled="mode === 'review'".
-             So it was probably falling through to attributes but not handled?
-             Actually, QuestionRendererV2 handles inputs. If I pass disabled to passing it down?
-             Inputs in Renderer are what matters.
-             If I want inputs disabled in review mode, QuestionRendererV2 needs to handle it.
-             The 'mode' prop I added to Renderer can handle disabling edits.
-             For now, let's just make sure we pass mode and reviews. 
-        -->
 
-        <!-- Final Step: Completion/Submission -->
+        <!-- Final Step: Review Summary or Submission -->
         <div v-else-if="isFinalStep" class="space-y-6">
           <div class="text-center py-8">
             <UIcon name="i-heroicons-check-circle" class="w-16 h-16 text-green-500 mx-auto mb-4" />
@@ -181,6 +164,13 @@
             </dl>
           </UCard>
         </div>
+
+        <div v-else class="flex items-center justify-center py-20 text-center">
+          <div>
+            <UIcon name="i-heroicons-exclamation-circle" class="w-12 h-12 text-gray-300 mx-auto mb-4" />
+            <p class="text-gray-500 italic">No section data found (Step: {{ currentStep }})</p>
+          </div>
+        </div>
       </UCard>
 
       <!-- Actions -->
@@ -202,7 +192,7 @@
              v-if="mode === 'fill' && !isFinalStep"
              color="white"
              variant="solid"
-             icon="i-heroicons-device-floppy"
+             icon="i-heroicons-check-circle"
              :label="$t('common.save')"
              :loading="saving"
              @click="handleSave"
@@ -302,7 +292,7 @@ const { t, locale } = useI18n()
 const config = useRuntimeConfig()
 const { getProject } = useProjects()
 const { getTemplateStructure } = useTemplates()
-const { getAnswers, saveAnswers, submitAnswers } = useAnswers()
+const { getAnswers, saveAnswers, submitAnswers, getBasicInfo, getVisibleQuestions } = useAnswers()
 const { getReviewLogs, approveProject, returnProject } = useReview()
 
 // State
@@ -764,7 +754,16 @@ const init = async () => {
        throw new Error('Invalid props for QuestionnaireWizard')
     }
     
-    initializeVisibleQuestions()
+    if (visibleQuestions.value.size === 0) {
+      initializeVisibleQuestions()
+    }
+    
+    console.log('Init final state:', {
+      currentStep: currentStep.value,
+      totalSteps: totalSteps.value,
+      visibleQuestionsCount: visibleQuestions.value.size,
+      sectionsCount: templateStructure.value?.sections?.length
+    })
     
   } catch (e: any) {
     console.error('Init failed:', e)
@@ -798,33 +797,62 @@ const loadTemplate = async (id: string) => {
 
 const loadProjectData = async (psId: string) => {
     try {
+        console.log('Loading project data for psId:', psId)
+        
         // First: Get project info from review logs (need projectId)
         const reviewRes = await getReviewLogs(psId) as any
         status.value = reviewRes.currentStatus
         const projectId = reviewRes.projectId
         
+        console.log('Review response:', reviewRes)
+        
         if (!projectId) throw new Error('Project ID not linked')
         
-        // Parallel: Load project info and answers simultaneously
-        const [projectRes, answersRes] = await Promise.all([
+        // Parallel: Load project info, answers, basic info, and visible questions
+        const [projectRes, answersRes, basicInfoRes, visibleRes] = await Promise.all([
           getProject(projectId),
-          getAnswers(psId)
-        ]) as [any, any]
+          getAnswers(psId),
+          getBasicInfo(psId),
+          getVisibleQuestions(psId)
+        ]) as [any, any, any, any]
+        
+        console.log('Project response:', projectRes)
+        console.log('Answers response:', answersRes)
+        console.log('Basic Info response:', basicInfoRes)
+        console.log('Visible Questions response:', visibleRes)
         
         const project = projectRes.data
         projectInfo.value = project
         
+        // Load basic info
+        if (basicInfoRes.data?.basicInfo) {
+           formData.basicInfo = basicInfoRes.data.basicInfo
+        }
+        
+        // Load answers
         if (answersRes.data?.answers) {
            formData.answers = answersRes.data.answers
+           console.log('Loaded answers:', formData.answers)
+        } else {
+           console.warn('No answers found in response')
+        }
+        
+        // Load visible questions
+        if (visibleRes.data?.visibleQuestions) {
+          visibleQuestions.value = new Set(visibleRes.data.visibleQuestions)
         }
         
         // Then: Load template structure (needs templateId from project)
+        console.log('Project templateId:', project.templateId)
         if (project.templateId) {
            await loadTemplate(project.templateId)
+           console.log('Template loaded. Structure:', templateStructure.value)
+        } else {
+           console.error('No templateId found in project!')
         }
         
     } catch (e) {
-       console.error(e)
+       console.error('loadProjectData error:', e)
        throw new Error('Failed to load project data')
     }
 }
