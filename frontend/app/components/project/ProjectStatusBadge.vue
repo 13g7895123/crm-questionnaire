@@ -1,12 +1,29 @@
 <template>
-  <span class="px-2 py-1 rounded text-sm" :class="statusClass">{{ status }}</span>
+  <span class="px-2 py-1 rounded text-sm whitespace-nowrap" :class="statusClass">
+    {{ statusLabel }}
+  </span>
 </template>
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{
   status: string
 }>()
+
+const { t } = useI18n()
+
+const statusLabel = computed(() => {
+  const labels: Record<string, string> = {
+    'DRAFT': t('projects.draft'),
+    'IN_PROGRESS': t('projects.inProgress'),
+    'SUBMITTED': t('projects.submitted'),
+    'REVIEWING': t('projects.reviewing'),
+    'APPROVED': t('projects.approved'),
+    'RETURNED': t('projects.returned')
+  }
+  return labels[props.status] || props.status
+})
 
 const statusClass = computed(() => ({
   'bg-gray-100 text-gray-800': props.status === 'DRAFT',
