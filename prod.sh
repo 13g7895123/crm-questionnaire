@@ -72,6 +72,11 @@ deploy_to_color() {
     while [ $retry -lt $max_retries ]; do
         if docker compose -f "$COMPOSE_FILE" exec "backend-$target_color" php spark list > /dev/null 2>&1; then
             echo "backend-$target_color is ready!"
+            
+            # Run database migrations
+            echo "Running database migrations..."
+            docker compose -f "$COMPOSE_FILE" exec "backend-$target_color" php spark migrate
+            
             return 0
         fi
         retry=$((retry + 1))
