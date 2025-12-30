@@ -84,6 +84,65 @@ export const useApi = () => {
   }
 
   /**
+   * Upload FormData (for file uploads)
+   * Note: Does not set Content-Type header to let browser set it with boundary
+   */
+  const uploadFormData = async <T = any>(
+    endpoint: string,
+    formData: FormData
+  ): Promise<T> => {
+    isLoading.value = true
+    error.value = null
+
+    try {
+      const baseUrl = process.client ? '' : process.env.API_BASE_URL || 'http://localhost:9104'
+      const url = `${baseUrl}/api/v1${endpoint}`
+
+      const headers: Record<string, string> = {}
+
+      // Inject auth token if available
+      if (authStore.token) {
+        headers['Authorization'] = `Bearer ${authStore.token}`
+      }
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: formData,
+        credentials: 'include'
+      })
+
+      // Handle non-2xx responses
+      if (!response.ok) {
+        let data
+        try {
+          data = await response.json()
+        } catch {
+          data = null
+        }
+        handleResponseStatus(response.status, data)
+      }
+
+      const data = await response.json() as T
+      return data
+    } catch (err) {
+      const parsed = parseApiError(err)
+      error.value = parsed
+
+      if (parsed.statusCode === 401) {
+        if (process.client) {
+          await showSystemAlert('登入過期', 'warning')
+          await navigateTo('/login')
+        }
+      }
+
+      throw parsed
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  /**
    * GET request
    */
   const get = <T = any>(endpoint: string, options?: Omit<UseFetchOptions, 'method' | 'body'>) =>
@@ -124,6 +183,7 @@ export const useApi = () => {
     isLoading: computed(() => isLoading.value),
     error: computed(() => error.value),
     fetchApi,
+    uploadFormData,
     get,
     post,
     put,
@@ -132,3 +192,4 @@ export const useApi = () => {
     clearError
   }
 }
+

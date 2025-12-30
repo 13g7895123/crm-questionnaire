@@ -991,15 +991,8 @@ const init = async () => {
 }
 
 const loadTemplate = async (id: string) => {
-    const currentLocale = locale.value.startsWith('zh') ? 'zh' : 'en'
-    
     try {
-      const response = await $fetch<any>(
-        `${config.public.apiBase}/api/v1/templates/${id}/structure`,
-        {
-          query: { lang: currentLocale }
-        }
-      )
+      const response = await getTemplateStructure(id)
       
       if (response?.data) {
          templateStructure.value = response.data.structure

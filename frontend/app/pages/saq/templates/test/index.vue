@@ -189,7 +189,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useAuthStore } from '~/stores/auth'
+import { useApi } from '~/composables/useApi'
 import { useBreadcrumbs } from '~/composables/useBreadcrumbs'
 import { useI18n } from 'vue-i18n'
 
@@ -292,6 +292,8 @@ const clearFile = () => {
   }
 }
 
+const { uploadFormData } = useApi()
+
 const uploadFile = async () => {
   if (!selectedFile.value) return
 
@@ -303,22 +305,7 @@ const uploadFile = async () => {
     const formData = new FormData()
     formData.append('file', selectedFile.value)
 
-    // Get auth token from store
-    const authStore = useAuthStore()
-    const headers: Record<string, string> = {}
-    if (authStore.token) {
-      headers['Authorization'] = `Bearer ${authStore.token}`
-    }
-
-    // Use native fetch for FormData (useApi doesn't support it properly)
-    const response = await fetch('/api/v1/templates/test-excel', {
-      method: 'POST',
-      headers,
-      body: formData,
-      credentials: 'include'
-    })
-
-    const data = await response.json()
+    const data = await uploadFormData<any>('/templates/test-excel', formData)
 
     if (data.success) {
       result.value = data.data

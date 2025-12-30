@@ -243,7 +243,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useTemplates } from '~/composables/useTemplates'
 import { useSweetAlert } from '~/composables/useSweetAlert'
 import { useBreadcrumbs } from '~/composables/useBreadcrumbs'
-import { useAuthStore } from '~/stores/auth'
+import { useApi } from '~/composables/useApi'
 import DataTable from '~/components/common/DataTable.vue'
 import { useI18n } from 'vue-i18n'
 import type { Template } from '~/types/index'
@@ -254,6 +254,7 @@ const { t } = useI18n()
 const { templates, loading, fetchTemplates, createTemplate, updateTemplate, deleteTemplate } = useTemplates()
 const { showConfirmDialog, showLoading, closeAlert, showSystemAlert } = useSweetAlert()
 const { setBreadcrumbs } = useBreadcrumbs()
+const { uploadFormData } = useApi()
 
 const searchQuery = ref('')
 const selected = ref<Template[]>([])
@@ -482,22 +483,8 @@ const handleImport = async () => {
     const formData = new FormData()
     formData.append('file', importFile.value)
 
-    // Get auth token
-    const authStore = useAuthStore()
-    const headers: Record<string, string> = {}
-    if (authStore.token) {
-      headers['Authorization'] = `Bearer ${authStore.token}`
-    }
-
     const templateId = selected.value[0].id
-    const response = await fetch(`/api/v1/templates/${templateId}/import-excel`, {
-      method: 'POST',
-      headers,
-      body: formData,
-      credentials: 'include'
-    })
-
-    const data = await response.json()
+    const data = await uploadFormData<any>(`/templates/${templateId}/import-excel`, formData)
 
     if (data.success) {
       closeImportModal()
