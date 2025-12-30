@@ -1,65 +1,67 @@
 <template>
   <div class="py-8 px-4 sm:px-6 lg:px-8">
     <div class="w-full">
-      <h1 class="text-3xl font-bold mb-8 text-gray-900">{{ $t('projects.projectList') }}</h1>
+      <ClientOnly>
+        <h1 class="text-3xl font-bold mb-8 text-gray-900">{{ $t('projects.projectList') }}</h1>
 
-      <!-- Toolbar -->
-      <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-        <!-- Left: Actions -->
-        <div class="flex items-center gap-2 w-full sm:w-auto">
-          <UButton
-            icon="i-heroicons-plus"
-            color="primary"
-            :label="$t('common.add')"
-            @click="openCreateModal"
-          />
-          <UButton
-            icon="i-heroicons-pencil-square"
-            color="white"
-            :label="$t('common.edit')"
-            :disabled="!selected.length || selected.length > 1"
-            @click="openEditModal"
-          />
-          <UButton
-            icon="i-heroicons-document-duplicate"
-            color="white"
-            :label="$t('common.copy')"
-            :disabled="!selected.length"
-            @click="handleCopy"
-          />
-          <UButton
-            icon="i-heroicons-trash"
-            color="white"
-            class="text-red-600 hover:bg-red-50"
-            :label="$t('common.delete')"
-            :disabled="!selected.length"
-            @click="handleDelete"
-          />
-          <UButton
-            icon="i-heroicons-document-text"
-            color="white"
-            :label="$t('templates.templates')"
-            to="/saq/templates"
-          />
-        </div>
+        <!-- Toolbar -->
+        <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+          <!-- Left: Actions -->
+          <div class="flex items-center gap-2 w-full sm:w-auto">
+            <UButton
+              icon="i-heroicons-plus"
+              color="primary"
+              :label="$t('common.add')"
+              @click="openCreateModal"
+            />
+            <UButton
+              icon="i-heroicons-pencil-square"
+              color="white"
+              :label="$t('common.edit')"
+              :disabled="!selected.length || selected.length > 1"
+              @click="openEditModal"
+            />
+            <UButton
+              icon="i-heroicons-document-duplicate"
+              color="white"
+              :label="$t('common.copy')"
+              :disabled="!selected.length"
+              @click="handleCopy"
+            />
+            <UButton
+              icon="i-heroicons-trash"
+              color="white"
+              class="text-red-600 hover:bg-red-50"
+              :label="$t('common.delete')"
+              :disabled="!selected.length"
+              @click="handleDelete"
+            />
+            <UButton
+              icon="i-heroicons-document-text"
+              color="white"
+              :label="$t('templates.templates')"
+              to="/saq/templates"
+            />
+          </div>
 
-        <!-- Right: Search & Refresh -->
-        <div class="flex items-center gap-2 w-full sm:w-auto">
-          <UInput
-            v-model="searchQuery"
-            icon="i-heroicons-magnifying-glass"
-            :placeholder="$t('common.search')"
-            class="w-full sm:w-64"
-          />
-          <UButton
-            icon="i-heroicons-arrow-path"
-            color="white"
-            :label="$t('common.refresh')"
-            :loading="loading"
-            @click="refreshData"
-          />
+          <!-- Right: Search & Refresh -->
+          <div class="flex items-center gap-2 w-full sm:w-auto">
+            <UInput
+              v-model="searchQuery"
+              icon="i-heroicons-magnifying-glass"
+              :placeholder="$t('common.search')"
+              class="w-full sm:w-64"
+            />
+            <UButton
+              icon="i-heroicons-arrow-path"
+              color="white"
+              :label="$t('common.refresh')"
+              :loading="loading"
+              @click="refreshData"
+            />
+          </div>
         </div>
-      </div>
+      </ClientOnly>
 
       <!-- Error State -->
       <div v-if="error" class="text-center py-12 bg-red-50 rounded-lg border border-red-200 mb-6">
@@ -169,7 +171,7 @@ definePageMeta({ middleware: 'auth' })
 const { t } = useI18n()
 const router = useRouter()
 const { fetchProjects, projects, deleteProject } = useProjects()
-const { showConfirmDialog, showLoading, closeAlert, showSystemAlert } = useSweetAlert()
+const { showConfirm, showLoading, closeAlert, showSystemAlert } = useSweetAlert()
 const { setBreadcrumbs } = useBreadcrumbs()
 
 const loading = ref(true)
@@ -286,7 +288,9 @@ const handleCopy = () => {
 const handleDelete = async () => {
   if (!selected.value.length) return
   
-  const confirmed = await showConfirmDialog(t('common.confirmDelete'))
+  const confirmed = await showConfirm({
+    text: t('common.confirmDelete')
+  })
   if (!confirmed) return
 
   try {
@@ -305,7 +309,9 @@ const handleDelete = async () => {
 }
 
 const handleDeleteRow = async (row: Project) => {
-  const confirmed = await showConfirmDialog(t('common.confirmDelete'))
+  const confirmed = await showConfirm({
+    text: t('common.confirmDelete')
+  })
   if (!confirmed) return
 
   try {
