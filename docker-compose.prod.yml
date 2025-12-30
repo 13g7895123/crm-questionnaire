@@ -8,8 +8,8 @@ services:
     working_dir: /app
     volumes:
       - ./frontend:/app
-      - frontend_dist:/app/.output/public
-    command: sh -c "npm ci && npm run generate"
+      - frontend_dist:/dist
+    command: sh -c "npm ci && npm run generate && rm -rf /dist/* && cp -r /app/.output/public/* /dist/"
     profiles:
       - build
 
