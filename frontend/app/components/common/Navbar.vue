@@ -159,11 +159,34 @@ const languageItems = computed(() => [
   ]
 ])
 
-const items = computed(() => [
-  [{
-    label: t('auth.logout'),
-    icon: 'i-heroicons-arrow-left-on-rectangle',
-    click: handleLogout
-  }]
-])
+const items = computed(() => {
+  return [
+    [
+      {
+        label: user.value?.username || 'Account',
+        slot: 'account',
+        disabled: true
+      }
+    ],
+    [
+      {
+        label: t('member.profile'),
+        icon: 'i-heroicons-user-circle',
+        to: '/account/profile'
+      },
+      {
+        label: t('auth.password'),
+        icon: 'i-heroicons-lock-closed',
+        to: '/account/security'
+      }
+    ],
+    [
+      {
+        label: t('auth.logout'),
+        icon: 'i-heroicons-arrow-left-on-rectangle',
+        click: handleLogout
+      }
+    ]
+  ]
+})
 </script>
