@@ -326,7 +326,7 @@ onMounted(() => {
   setBreadcrumbs([
     { label: t('common.home'), to: '/' },
     { label: t('apps.conflict') },
-    { label: t('projects.projectManagement') }
+    { label: t('projects.projectList') }
   ])
   loadData()
 })

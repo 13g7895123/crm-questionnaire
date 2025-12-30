@@ -1,7 +1,7 @@
 <template>
   <div class="py-8 px-4 sm:px-6 lg:px-8">
     <div class="w-full">
-      <h1 class="text-3xl font-bold mb-8 text-gray-900">{{ $t('projects.projectManagement') }}</h1>
+      <h1 class="text-3xl font-bold mb-8 text-gray-900">{{ $t('projects.projectList') }}</h1>
 
       <!-- Toolbar -->
       <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
@@ -332,7 +332,7 @@ onMounted(() => {
   setBreadcrumbs([
     { label: t('common.home'), to: '/' },
     { label: t('apps.saq') },
-    { label: t('projects.projectManagement') }
+    { label: t('projects.projectList') }
   ])
   loadData()
 })

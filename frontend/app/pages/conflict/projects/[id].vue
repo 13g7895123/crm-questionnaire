@@ -186,7 +186,7 @@ const loadProject = async () => {
     setBreadcrumbs([
       { label: t('common.home'), to: '/' },
       { label: t('apps.conflict') },
-      { label: t('projects.projectManagement'), to: '/conflict/projects' },
+      { label: t('projects.projectList'), to: '/conflict/projects' },
       { label: project.value.name }
     ])
   } catch (e) {

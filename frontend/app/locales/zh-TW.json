@@ -81,7 +81,7 @@
   },
   "projects": {
     "projects": "專案",
-    "projectManagement": "專案管理",
+    "projectList": "專案列表",
     "createProject": "建立專案",
     "addProject": "新增專案",
     "editProject": "編輯專案",
