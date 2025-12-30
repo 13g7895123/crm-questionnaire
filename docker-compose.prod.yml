@@ -1,11 +1,9 @@
-version: '3.8'
-
 services:
   # ===========================================
   # Frontend Builder (Nuxt Static Generation)
   # ===========================================
   frontend-builder:
-    image: node:18-alpine
+    image: node:22-alpine
     container_name: crm_frontend_builder
     working_dir: /app
     volumes:
