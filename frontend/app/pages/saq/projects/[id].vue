@@ -114,6 +114,36 @@
             <template #submittedAt-data="{ row }">
               {{ formatDate(row.submittedAt) }}
             </template>
+            <template #reviewProgress-data="{ row }">
+              <div class="relative w-48 h-5 bg-gray-100 rounded-full overflow-hidden border border-gray-200 shadow-inner group cursor-help" 
+                :title="`總計: ${row.totalQuestions}\n通過 (Yes): ${row.approvedQuestions}\n未通過 (No): ${row.rejectedQuestions}\n待審核: ${row.totalQuestions - row.reviewedQuestions}`">
+                
+                <!-- 通過進度 (藍色/綠色) -->
+                <div 
+                  class="absolute left-0 top-0 h-full bg-gradient-to-r from-primary-400 to-primary-600 transition-all duration-700 ease-out z-10"
+                  :style="{ width: row.totalQuestions > 0 ? `${(row.approvedQuestions * 100 / row.totalQuestions)}%` : '0%' }"
+                />
+                
+                <!-- 未通過部分 (紅色) - 接在通過之後 -->
+                <div 
+                  class="absolute top-0 h-full bg-red-400 transition-all duration-700 ease-out z-0"
+                  :style="{ 
+                    left: row.totalQuestions > 0 ? `${(row.approvedQuestions * 100 / row.totalQuestions)}%` : '0%',
+                    width: row.totalQuestions > 0 ? `${(row.rejectedQuestions * 100 / row.totalQuestions)}%` : '0%' 
+                  }"
+                />
+                
+                <!-- 數字顯示 (在進度條內) -->
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+                  <span 
+                    class="text-[11px] font-bold tracking-tight transition-colors duration-500"
+                    :class="(row.reviewedQuestions / (row.totalQuestions || 1)) > 0.45 ? 'text-white' : 'text-gray-700'"
+                  >
+                    {{ row.approvedQuestions }} / {{ row.rejectedQuestions }} / {{ row.totalQuestions }}
+                  </span>
+                </div>
+              </div>
+            </template>
             <template #actions-data="{ row }">
               <div class="flex items-center gap-2">
                 <UButton
@@ -194,6 +224,7 @@ const supplierColumns = computed(() => [
   { key: 'supplierName', label: t('suppliers.supplier') },
   { key: 'status', label: t('projects.status') },
   { key: 'currentStage', label: t('review.stage') },
+  { key: 'reviewProgress', label: t('review.reviewProgress') || '審核進度' },
   { key: 'submittedAt', label: t('projects.submittedAt') },
   { key: 'actions', label: t('common.action') }
 ])

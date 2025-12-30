@@ -42,7 +42,10 @@ class AnswerController extends BaseApiController
      */
     public function index($projectSupplierId = null): ResponseInterface
     {
+        $startTime = microtime(true);
+
         $projectSupplier = $this->projectSupplierModel->find($projectSupplierId);
+        log_message('info', sprintf('Answers API - find project supplier: %.3fms', (microtime(true) - $startTime) * 1000));
 
         if (!$projectSupplier) {
             return $this->notFoundResponse('找不到指定的專案供應商記錄');
@@ -57,11 +60,17 @@ class AnswerController extends BaseApiController
             );
         }
 
+        $t1 = microtime(true);
         $answers = $this->answerModel->getAnswersForProjectSupplier($projectSupplierId);
+        log_message('info', sprintf('Answers API - get answers (count: %d): %.3fms', count($answers), (microtime(true) - $t1) * 1000));
+
+        $t2 = microtime(true);
         $lastSavedAt = $this->answerModel->getLastSavedAt($projectSupplierId);
+        log_message('info', sprintf('Answers API - get last saved at: %.3fms', (microtime(true) - $t2) * 1000));
 
         // Debug: Log first few answers to verify format
         log_message('info', 'Answers sample: ' . json_encode(array_slice($answers, 0, 3)));
+        log_message('info', sprintf('Answers API - TOTAL: %.3fms', (microtime(true) - $startTime) * 1000));
 
         return $this->successResponse([
             'projectSupplierId' => (int) $projectSupplierId,

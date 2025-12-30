@@ -127,4 +127,23 @@ class TemplateTranslationModel extends Model
             ->whereIn('translatable_id', $ids)
             ->delete();
     }
+
+    /**
+     * Get translations for multiple entities of the same type
+     * Returns raw objects with entity_id, field, translated_text
+     */
+    public function getTranslationsForEntities(string $type, array $ids, string $locale): array
+    {
+        if (empty($ids)) {
+            return [];
+        }
+
+        return $this->builder()
+            ->select('translatable_id as entity_id, field, value as translated_text')
+            ->where('translatable_type', $type)
+            ->whereIn('translatable_id', $ids)
+            ->where('locale', $locale)
+            ->get()
+            ->getResult();
+    }
 }

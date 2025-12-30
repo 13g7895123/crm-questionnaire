@@ -82,4 +82,36 @@ class QuestionReviewModel extends Model
     {
         return $this->where('project_supplier_id', $projectSupplierId)->delete();
     }
+
+    /**
+     * Get reviewed question counts for multiple project suppliers
+     * Returns array keyed by project_supplier_id with breakdown of counts
+     */
+    public function getReviewedCountsForProjectSuppliers(array $projectSupplierIds): array
+    {
+        if (empty($projectSupplierIds)) {
+            return [];
+        }
+
+        $results = $this->builder()
+            ->select('project_supplier_id')
+            ->select('COUNT(*) as total_reviewed')
+            ->select('SUM(CASE WHEN approved = 1 THEN 1 ELSE 0 END) as approved_count')
+            ->select('SUM(CASE WHEN approved = 0 THEN 1 ELSE 0 END) as rejected_count')
+            ->whereIn('project_supplier_id', $projectSupplierIds)
+            ->groupBy('project_supplier_id')
+            ->get()
+            ->getResultArray();
+
+        $counts = [];
+        foreach ($results as $row) {
+            $counts[$row['project_supplier_id']] = [
+                'total' => (int)$row['total_reviewed'],
+                'approved' => (int)$row['approved_count'],
+                'rejected' => (int)$row['rejected_count']
+            ];
+        }
+
+        return $counts;
+    }
 }

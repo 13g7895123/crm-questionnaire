@@ -8,6 +8,8 @@ use App\Models\TemplateModel;
 use App\Models\TemplateVersionModel;
 use App\Models\OrganizationModel;
 use App\Models\ReviewStageConfigModel;
+use App\Models\QuestionReviewModel;
+use App\Repositories\TemplateStructureRepository;
 use CodeIgniter\HTTP\ResponseInterface;
 
 class ProjectController extends BaseApiController
@@ -17,6 +19,8 @@ class ProjectController extends BaseApiController
     protected TemplateModel $templateModel;
     protected OrganizationModel $orgModel;
     protected ReviewStageConfigModel $reviewConfigModel;
+    protected QuestionReviewModel $questionReviewModel;
+    protected TemplateStructureRepository $structureRepo;
 
     public function __construct()
     {
@@ -25,6 +29,8 @@ class ProjectController extends BaseApiController
         $this->templateModel = new TemplateModel();
         $this->orgModel = new OrganizationModel();
         $this->reviewConfigModel = new ReviewStageConfigModel();
+        $this->questionReviewModel = new QuestionReviewModel();
+        $this->structureRepo = new TemplateStructureRepository();
     }
 
     /**
@@ -121,15 +127,28 @@ class ProjectController extends BaseApiController
      */
     public function show($projectId = null): ResponseInterface
     {
+        $startTime = microtime(true);
+
         $project = $this->projectModel->find($projectId);
+        log_message('info', sprintf('Project show - find project: %.3fms', (microtime(true) - $startTime) * 1000));
 
         if (!$project) {
             return $this->notFoundResponse('找不到指定的專案');
         }
 
+        $t1 = microtime(true);
         $template = $this->templateModel->find($project->template_id);
+        log_message('info', sprintf('Project show - find template: %.3fms', (microtime(true) - $t1) * 1000));
+
+        $t2 = microtime(true);
         $reviewConfig = $this->reviewConfigModel->getConfigForProject($projectId);
+        log_message('info', sprintf('Project show - get review config: %.3fms', (microtime(true) - $t2) * 1000));
+
+        $t3 = microtime(true);
         $suppliers = $this->projectSupplierModel->getSuppliersForProject($projectId);
+        log_message('info', sprintf('Project show - get suppliers: %.3fms', (microtime(true) - $t3) * 1000));
+
+        log_message('info', sprintf('Project show - total time: %.3fms', (microtime(true) - $startTime) * 1000));
 
         // Supplier can only see if they are assigned
         if ($this->isSupplier()) {
@@ -169,7 +188,23 @@ class ProjectController extends BaseApiController
 
         // HOST/ADMIN can see suppliers and review config
         if ($this->isHost() || $this->isAdmin()) {
-            $response['suppliers'] = array_map(function ($s) {
+            // Get total questions count from template structure
+            $totalQuestions = 0;
+            if ($project->template_id) {
+                $structure = $this->structureRepo->getTemplateStructure((int)$project->template_id);
+                foreach ($structure as $section) {
+                    foreach ($section['subsections'] ?? [] as $subsection) {
+                        $totalQuestions += count($subsection['questions'] ?? []);
+                    }
+                }
+            }
+
+            // Get reviewed counts for all suppliers in one query
+            $supplierIds = array_map(fn($s) => $s->id, $suppliers);
+            $reviewedCounts = $this->questionReviewModel->getReviewedCountsForProjectSuppliers($supplierIds);
+
+            $response['suppliers'] = array_map(function ($s) use ($totalQuestions, $reviewedCounts) {
+                $counts = $reviewedCounts[$s->id] ?? ['total' => 0, 'approved' => 0, 'rejected' => 0];
                 return [
                     'id' => $s->id,
                     'supplierId' => $s->supplier_id,
@@ -177,6 +212,10 @@ class ProjectController extends BaseApiController
                     'status' => $s->status,
                     'currentStage' => (int) $s->current_stage,
                     'submittedAt' => $s->submitted_at,
+                    'totalQuestions' => $totalQuestions,
+                    'reviewedQuestions' => $counts['total'],
+                    'approvedQuestions' => $counts['approved'],
+                    'rejectedQuestions' => $counts['rejected'],
                 ];
             }, $suppliers);
 

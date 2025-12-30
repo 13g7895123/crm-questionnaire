@@ -15,7 +15,11 @@ export const useQuestionReviews = () => {
      * Save/update question reviews (batch)
      */
     const saveQuestionReviews = async (projectSupplierId: string, reviews: Reviews) => {
-        return await api.put(`/project-suppliers/${projectSupplierId}/question-reviews`, { reviews })
+        // Convert object { id: { ... } } to array [ { ... } ] to ensure stable serialization
+        const reviewsArray = Object.values(reviews)
+        return await api.put(`/project-suppliers/${projectSupplierId}/question-reviews`, {
+            reviews: reviewsArray
+        })
     }
 
     return {

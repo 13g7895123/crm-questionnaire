@@ -36,6 +36,21 @@
           />
         </UDropdown>
 
+        <!-- Batch Review Menu (Review mode only) -->
+        <UDropdown
+          v-if="mode === 'review'"
+          :items="batchReviewOptions"
+          :popper="{ placement: 'bottom-end' }"
+        >
+          <UButton
+            color="purple"
+            variant="soft"
+            icon="i-heroicons-clipboard-document-check"
+            trailing-icon="i-heroicons-chevron-down-20-solid"
+            label="批次審核"
+          />
+        </UDropdown>
+
         <!-- Review Status Badge -->
         <div v-if="mode === 'review' && status">
            <UBadge :color="statusColor">{{ status }}</UBadge>
@@ -453,6 +468,9 @@ const handleReviewUpdate = (review: QuestionReview) => {
 const handleSaveQuestionReviews = async () => {
   if (!props.projectSupplierId) return
   
+  console.log('Saving reviews, reviews.value:', reviews.value)
+  console.log('Reviews count:', Object.keys(reviews.value).length)
+  
   savingReviews.value = true
   try {
     await saveQuestionReviews(props.projectSupplierId, reviews.value)
@@ -486,6 +504,105 @@ const autoFillOptions = computed(() => [
     label: '僅填寫自動公司資料',
     icon: 'i-heroicons-building-office',
     click: handleAutoFillBasic
+  }]
+])
+
+// Random review comments for batch review
+const reviewComments = [
+  '符合規範要求',
+  '資料完整，審核通過',
+  '已確認文件齊全',
+  '符合公司政策',
+  '建議持續維護',
+  '請補充相關說明',
+  '需提供更多佐證資料',
+  '部分內容需要修正',
+  '建議加強此項目',
+  '請確認資料正確性'
+]
+
+const getRandomComment = (approved: boolean): string => {
+  const positiveComments = reviewComments.slice(0, 5)
+  const negativeComments = reviewComments.slice(5)
+  const comments = approved ? positiveComments : negativeComments
+  return comments[Math.floor(Math.random() * comments.length)]
+}
+
+// Get all main question IDs from template structure
+const getAllMainQuestionIds = (): string[] => {
+  if (!templateStructure.value?.sections) return []
+  
+  const questionIds: string[] = []
+  for (const section of templateStructure.value.sections) {
+    for (const subsection of section.subsections || []) {
+      for (const question of subsection.questions || []) {
+        // Only include visible questions
+        if (visibleQuestions.value.size === 0 || visibleQuestions.value.has(question.id)) {
+          questionIds.push(question.id)
+        }
+      }
+    }
+  }
+  return questionIds
+}
+
+// Batch review function
+const batchReview = (type: 'allYes' | 'allNo' | 'random') => {
+  console.log('batchReview called with type:', type)
+  console.log('templateStructure:', templateStructure.value)
+  console.log('visibleQuestions size:', visibleQuestions.value.size)
+  
+  const questionIds = getAllMainQuestionIds()
+  console.log('questionIds found:', questionIds.length, questionIds)
+  
+  for (const questionId of questionIds) {
+    let approved: boolean
+    let comment: string
+    
+    switch (type) {
+      case 'allYes':
+        approved = true
+        comment = getRandomComment(true)
+        break
+      case 'allNo':
+        approved = false
+        comment = getRandomComment(false)
+        break
+      case 'random':
+        approved = Math.random() > 0.3 // 70% chance of Yes
+        comment = getRandomComment(approved)
+        break
+    }
+    
+    reviews.value[questionId] = {
+      questionId,
+      approved,
+      comment
+    }
+  }
+  
+  console.log('After batch, reviews.value:', reviews.value)
+  console.log('After batch, reviews count:', Object.keys(reviews.value).length)
+  
+  showSuccess(`已批次審核 ${questionIds.length} 題`)
+}
+
+// Batch review options for dropdown
+const batchReviewOptions = computed(() => [
+  [{
+    label: '全部審核「Yes」',
+    icon: 'i-heroicons-check-circle',
+    click: () => batchReview('allYes')
+  }],
+  [{
+    label: '全部審核「No」',
+    icon: 'i-heroicons-x-circle',
+    click: () => batchReview('allNo')
+  }],
+  [{
+    label: '隨機審核',
+    icon: 'i-heroicons-sparkles',
+    click: () => batchReview('random')
   }]
 ])
 
@@ -886,98 +1003,102 @@ const loadTemplate = async (id: string) => {
 const loadProjectData = async (psId: string) => {
     try {
         console.log('Loading project data for psId:', psId)
+        console.time('loadProjectData')
         
-        // First: Get project info from review logs (need projectId)
-        const reviewRes = await getReviewLogs(psId) as any
+        // First batch: Load all data in parallel that doesn't depend on each other
+        // - getReviewLogs: for status and projectId (needed for project details)
+        // - getAnswers, getBasicInfo, getVisibleQuestions: only need psId
+        // - getQuestionReviews: only need psId (review mode)
+        console.time('parallelBatch1')
+        
+        const parallelPromises: Promise<any>[] = [
+          getReviewLogs(psId),
+          getAnswers(psId),
+          getBasicInfo(psId),
+          getVisibleQuestions(psId),
+        ]
+        
+        // Add question reviews for review mode
+        if (props.mode === 'review') {
+          parallelPromises.push(getQuestionReviews(psId))
+        }
+        
+        const results = await Promise.all(parallelPromises)
+        console.timeEnd('parallelBatch1')
+        
+        const reviewRes = results[0] as any
+        const answersRes = results[1] as any
+        const basicInfoRes = results[2] as any
+        const visibleRes = results[3] as any
+        const qrRes = props.mode === 'review' ? results[4] as any : null
+        
         status.value = reviewRes.currentStatus
         const projectId = reviewRes.projectId
         
-        console.log('Review response:', reviewRes)
-        
         if (!projectId) throw new Error('Project ID not linked')
         
-        // Parallel: Load project info, answers, basic info, and visible questions
-        const [projectRes, answersRes, basicInfoRes, visibleRes] = await Promise.all([
-          getProject(projectId),
-          getAnswers(psId),
-          getBasicInfo(psId),
-          getVisibleQuestions(psId)
-        ]) as [any, any, any, any]
-        
-        console.log('Project response:', projectRes)
-        console.log('Answers response:', answersRes)
-        console.log('Basic Info response:', basicInfoRes)
-        console.log('Visible Questions response:', visibleRes)
+        // Second batch: Load project and template structure (need projectId from first batch)
+        console.time('parallelBatch2')
+        const projectRes = await getProject(projectId) as any
+        console.timeEnd('parallelBatch2')
         
         const project = projectRes.data
         projectInfo.value = project
         
-        // Load basic info
-        console.log('API Basic Info:', basicInfoRes.data?.basicInfo)
-        if (basicInfoRes.data?.basicInfo) {
-           // Merge API data with default structure to ensure no missing fields
-           Object.assign(formData.basicInfo, {
-             companyName: '',
-             companyAddress: '',
-             employees: { total: 0, male: 0, female: 0, foreign: 0 },
-             facilities: [],
-             certifications: [],
-             rbaOnlineMember: null,
-             contacts: [],
-             ...basicInfoRes.data.basicInfo
-           })
-        } else {
-           console.log('No basic info found, using defaults')
-           Object.assign(formData.basicInfo, {
-             companyName: '',
-             companyAddress: '',
-             employees: { total: 0, male: 0, female: 0, foreign: 0 },
-             facilities: [{ location: '', address: '', area: '', type: '' }],
-             certifications: [],
-             rbaOnlineMember: null,
-             contacts: [{ name: '', title: '', department: '', email: '', phone: '' }]
-           })
-        }
-        console.log('Final formData.basicInfo:', JSON.stringify(formData.basicInfo))
-        
-        // Load answers
+        // Process answers
         if (answersRes.data?.answers) {
-           formData.answers = answersRes.data.answers
-           console.log('Loaded answers:', formData.answers)
-        } else {
-           console.warn('No answers found in response')
+          formData.answers = answersRes.data.answers
         }
         
-        // Load visible questions
+        // Process visible questions
         if (visibleRes.data?.visibleQuestions) {
           visibleQuestions.value = new Set(visibleRes.data.visibleQuestions)
         }
         
-        // Then: Load template structure (needs templateId from project)
-        console.log('Project templateId for structure loading:', project.templateId)
-        if (project.templateId) {
-           await loadTemplate(project.templateId)
-           console.log('Template loaded. Sections:', templateStructure.value?.sections?.length)
-           
-           if (!templateStructure.value?.sections || templateStructure.value.sections.length === 0) {
-             console.warn('Warning: Template structure has no sections! Questions will not render.')
-           }
+        // Process basic info
+        if (basicInfoRes.data?.basicInfo) {
+          Object.assign(formData.basicInfo, {
+            companyName: '',
+            companyAddress: '',
+            employees: { total: 0, male: 0, female: 0, foreign: 0 },
+            facilities: [],
+            certifications: [],
+            rbaOnlineMember: null,
+            contacts: [],
+            ...basicInfoRes.data.basicInfo
+          })
         } else {
-           console.error('No templateId found in project!')
+          Object.assign(formData.basicInfo, {
+            companyName: '',
+            companyAddress: '',
+            employees: { total: 0, male: 0, female: 0, foreign: 0 },
+            facilities: [{ location: '', address: '', area: '', type: '' }],
+            certifications: [],
+            rbaOnlineMember: null,
+            contacts: [{ name: '', title: '', department: '', email: '', phone: '' }]
+          })
         }
         
-        // Load question reviews (review mode only)
-        if (props.mode === 'review') {
-          try {
-            const qrRes = await getQuestionReviews(psId) as any
-            if (qrRes.data?.reviews) {
-              reviews.value = qrRes.data.reviews
-              console.log('Loaded question reviews:', reviews.value)
-            }
-          } catch (qrErr) {
-            console.warn('Could not load question reviews:', qrErr)
-          }
+        // Process question reviews (review mode)
+        if (qrRes?.data?.reviews) {
+          reviews.value = qrRes.data.reviews
+          console.log('Loaded question reviews:', reviews.value)
         }
+        
+        // Third batch: Load template structure (needs templateId from project)
+        console.time('loadTemplate')
+        if (project.templateId) {
+          await loadTemplate(project.templateId)
+          console.log('Template loaded. Sections:', templateStructure.value?.sections?.length)
+          
+          if (!templateStructure.value?.sections || templateStructure.value.sections.length === 0) {
+            console.warn('Warning: Template structure has no sections! Questions will not render.')
+          }
+        } else {
+          console.error('No templateId found in project!')
+        }
+        console.timeEnd('loadTemplate')
+        console.timeEnd('loadProjectData')
         
     } catch (e) {
        console.error('loadProjectData error:', e)

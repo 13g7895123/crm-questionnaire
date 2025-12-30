@@ -30,68 +30,112 @@ class TemplateStructureRepository
      */
     public function getTemplateStructure(int $templateId, ?string $locale = null): array
     {
+        // Batch load all sections
         $sections = $this->sectionModel->where('template_id', $templateId)
             ->orderBy('order', 'ASC')
             ->findAll();
 
-        $structure = [];
+        if (empty($sections)) {
+            return [];
+        }
 
-        foreach ($sections as $section) {
-            $subsections = $this->subsectionModel->where('section_id', $section->id)
+        $sectionIds = array_map(fn($s) => $s->id, $sections);
+        $sectionIdMap = array_column($sections, null, 'id');
+
+        // Batch load all subsections
+        $subsections = $this->subsectionModel->whereIn('section_id', $sectionIds)
+            ->orderBy('order', 'ASC')
+            ->findAll();
+
+        $subsectionIds = array_map(fn($s) => $s->id, $subsections);
+        $subsectionIdMap = array_column($subsections, null, 'id');
+
+        // Batch load all questions
+        $questions = [];
+        if (!empty($subsectionIds)) {
+            $questions = $this->questionModel->whereIn('subsection_id', $subsectionIds)
                 ->orderBy('order', 'ASC')
                 ->findAll();
+        }
 
-            $subsectionsData = [];
+        // Batch load all translations if locale is specified
+        $translations = [];
+        if ($locale) {
+            // Get all translations in one query
+            $allEntityIds = [
+                'section' => $sectionIds,
+                'subsection' => $subsectionIds,
+                'question' => array_map(fn($q) => $q->id, $questions),
+            ];
+            $translations = $this->batchLoadTranslations($allEntityIds, $locale);
+        }
 
-            foreach ($subsections as $subsection) {
-                $questions = $this->questionModel->where('subsection_id', $subsection->id)
-                    ->orderBy('order', 'ASC')
-                    ->findAll();
+        // Build structure from bottom up
+        // Group questions by subsection_id
+        $questionsBySubsection = [];
+        foreach ($questions as $question) {
+            $qData = $question->toApiResponse();
 
-                $questionsData = [];
-                foreach ($questions as $question) {
-                    $questionData = $question->toApiResponse();
-
-                    // Apply translation if locale specified
-                    if ($locale) {
-                        $translatedText = $this->translationModel->getTranslation('question', $question->id, $locale, 'text');
-                        if ($translatedText) {
-                            $questionData['text'] = $translatedText;
-                        }
-                    }
-
-                    $questionsData[] = $questionData;
-                }
-
-                $subsectionData = $subsection->toApiResponse();
-
-                // Apply translation if locale specified
-                if ($locale) {
-                    $translatedTitle = $this->translationModel->getTranslation('subsection', $subsection->id, $locale, 'title');
-                    if ($translatedTitle) {
-                        $subsectionData['title'] = $translatedTitle;
-                    }
-                }
-
-                $subsectionData['questions'] = $questionsData;
-                $subsectionsData[] = $subsectionData;
+            // Apply translation
+            if (isset($translations['question'][$question->id]['text'])) {
+                $qData['text'] = $translations['question'][$question->id]['text'];
             }
 
-            $sectionData = $section->toApiResponse();
+            $questionsBySubsection[$question->subsection_id][] = $qData;
+        }
 
-            // Apply translation if locale specified
-            if ($locale) {
-                $translatedTitle = $this->translationModel->getTranslation('section', $section->id, $locale, 'title');
-                if ($translatedTitle) {
-                    $sectionData['title'] = $translatedTitle;
-                }
+        // Group subsections by section_id
+        $subsectionsBySection = [];
+        foreach ($subsections as $subsection) {
+            $ssData = $subsection->toApiResponse();
+
+            // Apply translation
+            if (isset($translations['subsection'][$subsection->id]['title'])) {
+                $ssData['title'] = $translations['subsection'][$subsection->id]['title'];
             }
 
-            $sectionData['subsections'] = $subsectionsData;
-            $structure[] = $sectionData;
+            $ssData['questions'] = $questionsBySubsection[$subsection->id] ?? [];
+            $subsectionsBySection[$subsection->section_id][] = $ssData;
+        }
+
+        // Build final structure
+        $structure = [];
+        foreach ($sections as $section) {
+            $sData = $section->toApiResponse();
+
+            // Apply translation
+            if (isset($translations['section'][$section->id]['title'])) {
+                $sData['title'] = $translations['section'][$section->id]['title'];
+            }
+
+            $sData['subsections'] = $subsectionsBySection[$section->id] ?? [];
+            $structure[] = $sData;
         }
 
         return $structure;
+    }
+
+    /**
+     * Batch load translations for multiple entity types
+     */
+    protected function batchLoadTranslations(array $allEntityIds, string $locale): array
+    {
+        $result = [
+            'section' => [],
+            'subsection' => [],
+            'question' => [],
+        ];
+
+        foreach ($allEntityIds as $entityType => $ids) {
+            if (empty($ids)) continue;
+
+            $translations = $this->translationModel->getTranslationsForEntities($entityType, $ids, $locale);
+            foreach ($translations as $t) {
+                $result[$entityType][$t->entity_id][$t->field] = $t->translated_text;
+            }
+        }
+
+        return $result;
     }
 
     /**

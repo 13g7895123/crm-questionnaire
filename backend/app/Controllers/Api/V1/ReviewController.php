@@ -397,25 +397,49 @@ class ReviewController extends BaseApiController
 
         // Get JSON body
         $json = $this->request->getJSON(true);
+
+        // Debug logging
+        log_message('info', 'Question reviews PUT - Raw body: ' . json_encode($json));
+
         $reviews = $json['reviews'] ?? null;
 
-        if (!$reviews || !is_array($reviews)) {
+        // Allow empty reviews (nothing to save)
+        if ($reviews === null) {
             return $this->validationErrorResponse([
-                'reviews' => 'reviews 必須為物件格式',
+                'reviews' => 'reviews 欄位為必填',
             ]);
         }
 
-        // Validate each review
-        foreach ($reviews as $questionId => $reviewData) {
-            if (!isset($reviewData['approved'])) {
-                return $this->validationErrorResponse([
-                    "reviews.{$questionId}.approved" => 'approved 欄位為必填',
-                ]);
-            }
+        // If reviews is empty object/array, just return success with 0 count
+        if (empty($reviews)) {
+            return $this->successResponse([
+                'projectSupplierId' => (int) $projectSupplierId,
+                'savedCount' => 0,
+                'message' => '沒有審核資料需要儲存',
+            ]);
         }
 
         $reviewerId = $this->getCurrentUserId();
-        $savedCount = $this->questionReviewModel->saveReviews($projectSupplierId, $reviews, $reviewerId);
+        $reviewsToSave = [];
+
+        foreach ($reviews as $key => $reviewData) {
+            // Handle both Array of Objects [{questionId, ...}] and Object {key: {...}}
+            $questionId = $reviewData['questionId'] ?? $key;
+
+            if (empty($questionId) || !isset($reviewData['approved'])) {
+                continue;
+            }
+
+            $reviewsToSave[$questionId] = [
+                'approved' => (bool)$reviewData['approved'],
+                'comment'  => $reviewData['comment'] ?? null
+            ];
+        }
+
+        $savedCount = 0;
+        if (!empty($reviewsToSave)) {
+            $savedCount = $this->questionReviewModel->saveReviews($projectSupplier->id, $reviewsToSave, $reviewerId);
+        }
 
         return $this->successResponse([
             'projectSupplierId' => (int) $projectSupplierId,
