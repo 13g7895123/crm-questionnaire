@@ -174,9 +174,9 @@ const pagination = ref({
 })
 
 const columns = computed(() => [
-  { key: 'username', label: 'Username', sortable: true },
-  { key: 'email', label: 'Email', sortable: true },
-  { key: 'role', label: 'Role', sortable: true },
+  { key: 'username', label: t('auth.username'), sortable: true },
+  { key: 'email', label: t('auth.email'), sortable: true },
+  { key: 'role', label: t('users.role'), sortable: true },
 ])
 
 // Filter users by department ID

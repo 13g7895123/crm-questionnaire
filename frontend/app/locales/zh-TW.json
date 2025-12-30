@@ -41,6 +41,8 @@
     "import": "匯入",
     "importQuestions": "匯入題目",
     "test": "測試",
+    "type": "類型",
+    "name": "名稱",
     "noData": "暫無資料"
   },
   "auth": {

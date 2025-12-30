@@ -36,6 +36,8 @@
     "import": "Import",
     "importQuestions": "Import Questions",
     "test": "Test",
+    "type": "Type",
+    "name": "Name",
     "noData": "No data available"
   },
   "auth": {
