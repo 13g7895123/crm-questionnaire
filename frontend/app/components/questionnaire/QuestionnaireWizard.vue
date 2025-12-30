@@ -473,8 +473,20 @@ const handleSaveQuestionReviews = async () => {
   
   savingReviews.value = true
   try {
-    await saveQuestionReviews(props.projectSupplierId, reviews.value)
-    showSuccess('題目審核已儲存')
+    const result = await saveQuestionReviews(props.projectSupplierId, reviews.value) as any
+    
+    if (result.data?.stageAdvanced) {
+      // Stage was advanced automatically
+      const msg = result.data.progressMessage || '審核已完成'
+      showSuccess(msg)
+      
+      // Navigate back to project page after a short delay
+      setTimeout(() => {
+        emit('finish')
+      }, 1500)
+    } else {
+      showSuccess('題目審核已儲存')
+    }
   } catch (err: any) {
     console.error('Failed to save question reviews:', err)
     showError(err.message || '儲存審核失敗')

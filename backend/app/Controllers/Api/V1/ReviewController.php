@@ -7,6 +7,7 @@ use App\Models\ProjectSupplierModel;
 use App\Models\ReviewLogModel;
 use App\Models\ReviewStageConfigModel;
 use App\Models\QuestionReviewModel;
+use App\Repositories\TemplateStructureRepository;
 use CodeIgniter\HTTP\ResponseInterface;
 
 class ReviewController extends BaseApiController
@@ -16,6 +17,7 @@ class ReviewController extends BaseApiController
     protected ReviewLogModel $reviewLogModel;
     protected ReviewStageConfigModel $reviewConfigModel;
     protected QuestionReviewModel $questionReviewModel;
+    protected TemplateStructureRepository $structureRepo;
 
     public function __construct()
     {
@@ -24,6 +26,7 @@ class ReviewController extends BaseApiController
         $this->reviewLogModel = new ReviewLogModel();
         $this->reviewConfigModel = new ReviewStageConfigModel();
         $this->questionReviewModel = new QuestionReviewModel();
+        $this->structureRepo = new TemplateStructureRepository();
     }
 
     /**
@@ -363,10 +366,13 @@ class ReviewController extends BaseApiController
             );
         }
 
-        $reviews = $this->questionReviewModel->getReviewsForProjectSupplier($projectSupplierId);
+        // Get reviews for the CURRENT stage of this project supplier
+        $currentStage = (int)($projectSupplier->current_stage ?: 1);
+        $reviews = $this->questionReviewModel->getReviewsForProjectSupplier($projectSupplierId, $currentStage);
 
         return $this->successResponse([
             'projectSupplierId' => (int) $projectSupplierId,
+            'currentStage' => $currentStage,
             'reviews' => $reviews,
         ]);
     }
@@ -387,11 +393,11 @@ class ReviewController extends BaseApiController
             return $this->notFoundResponse('找不到指定的專案供應商記錄');
         }
 
-        // Check project supplier status
+        // Check project supplier status - must be REVIEWING
         if ($projectSupplier->status !== 'REVIEWING') {
             return $this->conflictResponse(
                 'RESOURCE_CONFLICT',
-                '專案目前不在審核狀態'
+                '專案目前不在審核狀態，無法修改題目審核'
             );
         }
 
@@ -420,6 +426,7 @@ class ReviewController extends BaseApiController
         }
 
         $reviewerId = $this->getCurrentUserId();
+        $currentStage = (int)($projectSupplier->current_stage ?: 1);
         $reviewsToSave = [];
 
         foreach ($reviews as $key => $reviewData) {
@@ -438,13 +445,92 @@ class ReviewController extends BaseApiController
 
         $savedCount = 0;
         if (!empty($reviewsToSave)) {
-            $savedCount = $this->questionReviewModel->saveReviews($projectSupplier->id, $reviewsToSave, $reviewerId);
+            $savedCount = $this->questionReviewModel->saveReviews(
+                $projectSupplier->id,
+                $reviewsToSave,
+                $reviewerId,
+                $currentStage
+            );
         }
 
-        return $this->successResponse([
+        // Check if all questions are approved - auto-progress to next stage
+        $project = $this->projectModel->find($projectSupplier->project_id);
+        $stageAdvanced = false;
+        $newStatus = $projectSupplier->status;
+        $newStage = $projectSupplier->current_stage;
+        $progressMessage = null;
+
+        if ($project && $project->template_id) {
+            // Get total questions count from template
+            $structure = $this->structureRepo->getTemplateStructure((int)$project->template_id);
+            $totalQuestions = 0;
+            foreach ($structure as $section) {
+                foreach ($section['subsections'] ?? [] as $subsection) {
+                    $totalQuestions += count($subsection['questions'] ?? []);
+                }
+            }
+
+            // Get current approved count
+            $counts = $this->questionReviewModel->getReviewedCountsForProjectSuppliers([$projectSupplier->id]);
+            $approvedCount = $counts[$projectSupplier->id]['approved'] ?? 0;
+
+            log_message('info', "Question reviews check - Approved: {$approvedCount}, Total: {$totalQuestions}");
+
+            // If all questions are approved, advance to next stage
+            if ($totalQuestions > 0 && $approvedCount >= $totalQuestions) {
+                $totalStages = $this->reviewConfigModel->getTotalStages($project->id);
+
+                if ($projectSupplier->current_stage >= $totalStages) {
+                    // Final stage - mark as APPROVED
+                    $newStatus = 'APPROVED';
+                    $newStage = $projectSupplier->current_stage;
+                    $progressMessage = '所有題目已審核通過，專案審核完成！';
+
+                    // Create approval log
+                    $this->reviewLogModel->createLog(
+                        $projectSupplierId,
+                        $reviewerId,
+                        $projectSupplier->current_stage,
+                        'APPROVE',
+                        '題目審核完成，自動核准'
+                    );
+                } else {
+                    // Move to next stage
+                    $newStage = $projectSupplier->current_stage + 1;
+                    $progressMessage = "所有題目已審核通過，進入第 {$newStage} 階段審核";
+
+                    // Create stage advance log
+                    $this->reviewLogModel->createLog(
+                        $projectSupplierId,
+                        $reviewerId,
+                        $projectSupplier->current_stage,
+                        'APPROVE',
+                        "題目審核完成，自動進入第 {$newStage} 階段"
+                    );
+                }
+
+                // Update project supplier status/stage
+                $this->projectSupplierModel->update($projectSupplierId, [
+                    'status' => $newStatus,
+                    'current_stage' => $newStage,
+                ]);
+                $stageAdvanced = true;
+            }
+        }
+
+        $response = [
             'projectSupplierId' => (int) $projectSupplierId,
             'savedCount' => $savedCount,
             'message' => "已儲存 {$savedCount} 筆題目審核",
-        ]);
+        ];
+
+        if ($stageAdvanced) {
+            $response['stageAdvanced'] = true;
+            $response['newStatus'] = $newStatus;
+            $response['newStage'] = $newStage;
+            $response['progressMessage'] = $progressMessage;
+        }
+
+        return $this->successResponse($response);
     }
 }

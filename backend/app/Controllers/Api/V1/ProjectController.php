@@ -201,7 +201,12 @@ class ProjectController extends BaseApiController
 
             // Get reviewed counts for all suppliers in one query
             $supplierIds = array_map(fn($s) => $s->id, $suppliers);
-            $reviewedCounts = $this->questionReviewModel->getReviewedCountsForProjectSuppliers($supplierIds);
+            // Build stages map for each supplier
+            $stagesMap = [];
+            foreach ($suppliers as $s) {
+                $stagesMap[$s->id] = (int)$s->current_stage ?: 1;
+            }
+            $reviewedCounts = $this->questionReviewModel->getReviewedCountsForProjectSuppliers($supplierIds, $stagesMap);
 
             $response['suppliers'] = array_map(function ($s) use ($totalQuestions, $reviewedCounts) {
                 $counts = $reviewedCounts[$s->id] ?? ['total' => 0, 'approved' => 0, 'rejected' => 0];
