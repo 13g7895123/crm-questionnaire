@@ -160,6 +160,14 @@
                   :label="$t('review.review')"
                   @click="handleAudit(row)"
                 />
+                <UButton
+                  size="2xs"
+                  color="gray"
+                  variant="soft"
+                  icon="i-heroicons-clock"
+                  :label="$t('review.reviewHistory')"
+                  @click="handleViewHistory(row)"
+                />
               </div>
             </template>
           </UTable>
@@ -194,6 +202,50 @@
       :project="project"
       @saved="handleProjectSaved"
     />
+
+    <!-- Review History Modal -->
+    <UModal v-model="showHistoryModal">
+      <UCard :ui="{ divide: 'divide-y divide-gray-100' }">
+        <template #header>
+          <div class="flex items-center justify-between">
+            <h3 class="text-base font-semibold leading-6 text-gray-900">
+              {{ $t('review.reviewHistory') }} - {{ selectedSupplier?.supplierName }}
+            </h3>
+            <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark-20-solid" class="-my-1" @click="showHistoryModal = false" />
+          </div>
+        </template>
+
+        <div class="py-4">
+          <div v-if="loadingHistory" class="flex justify-center py-8">
+            <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin text-primary-500" />
+          </div>
+          <div v-else-if="historyLogs.length === 0" class="text-center py-8 text-gray-500">
+            {{ $t('common.noData') }}
+          </div>
+          <div v-else class="space-y-4">
+            <div v-for="log in historyLogs" :key="log.id" class="border-l-2 border-primary-500 pl-4 py-2 bg-gray-50 rounded-r">
+              <div class="flex justify-between items-start">
+                <div>
+                  <span class="font-bold text-sm">{{ $t('review.stage') }} {{ log.stage }}</span>
+                  <UBadge 
+                    :color="log.action === 'APPROVE' ? 'green' : 'red'" 
+                    size="xs" 
+                    class="ml-2"
+                  >
+                    {{ log.action === 'APPROVE' ? $t('review.approve') : $t('review.return') }}
+                  </UBadge>
+                </div>
+                <span class="text-xs text-gray-400">{{ formatDate(log.timestamp) }}</span>
+              </div>
+              <div class="mt-1 text-sm text-gray-700">
+                <span class="font-medium mr-2">{{ log.reviewerName }} ({{ log.reviewerDepartment?.name || '-' }}):</span>
+                <span>{{ log.comment }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </UCard>
+    </UModal>
   </div>
 </template>
 
@@ -201,6 +253,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useProjects } from '~/composables/useProjects'
+import { useReview } from '~/composables/useReview'
 import ProjectStatusBadge from '~/components/project/ProjectStatusBadge.vue'
 import ProjectForm from '~/components/project/ProjectForm.vue'
 import type { Project } from '~/types/index'
@@ -214,11 +267,17 @@ const { setBreadcrumbs } = useBreadcrumbs()
 const route = useRoute()
 const router = useRouter()
 const { getProject } = useProjects()
+const { getReviewLogs } = useReview()
 
 const loading = ref(true)
 const error = ref('')
 const project = ref<Project | null>(null)
 const showEditModal = ref(false)
+
+const showHistoryModal = ref(false)
+const loadingHistory = ref(false)
+const historyLogs = ref<any[]>([])
+const selectedSupplier = ref<any>(null)
 
 const supplierColumns = computed(() => [
   { key: 'supplierName', label: t('suppliers.supplier') },
@@ -248,6 +307,20 @@ const handleFill = (row: any) => {
 const handleAudit = (row: any) => {
   const projectId = route.params.id as string
   router.push(`/saq/projects/${projectId}/review/${row.id}`)
+}
+
+const handleViewHistory = async (row: any) => {
+  selectedSupplier.value = row
+  showHistoryModal.value = true
+  loadingHistory.value = true
+  try {
+    const res = await getReviewLogs(row.id)
+    historyLogs.value = res.reviews || []
+  } catch (err) {
+    console.error('Failed to load history:', err)
+  } finally {
+    loadingHistory.value = false
+  }
 }
 
 const loadProject = async () => {

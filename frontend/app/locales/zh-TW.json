@@ -158,8 +158,9 @@
     "comment": "備註",
     "approvedAt": "核准時間",
     "returnedAt": "退回時間",
-    "reviewHistory": "審核歷史",
-    "approvalFlow": "審核流程"
+    "reviewHistory": "審核紀錄",
+    "approvalFlow": "審核流程",
+    "reviewProgress": "審核進度"
   },
   "departments": {
     "departments": "部門",

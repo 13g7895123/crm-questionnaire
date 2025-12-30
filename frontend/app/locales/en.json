@@ -147,7 +147,8 @@
     "approvedAt": "Approved At",
     "returnedAt": "Returned At",
     "reviewHistory": "Review History",
-    "approvalFlow": "Approval Flow"
+    "approvalFlow": "Approval Flow",
+    "reviewProgress": "Review Progress"
   },
   "departments": {
     "departments": "Departments",
