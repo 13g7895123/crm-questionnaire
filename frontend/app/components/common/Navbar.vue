@@ -6,13 +6,7 @@
         <!-- Left: Logo/App Name -->
         <NuxtLink :to="currentApp.link" class="group flex items-center gap-3">
           <div class="relative w-10 h-10 flex items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-lg shadow-blue-500/20 group-hover:shadow-blue-500/40 transition-all duration-300 group-hover:scale-105 overflow-hidden">
-            <img 
-              v-if="currentApp.image" 
-              :src="currentApp.image" 
-              :alt="currentApp.title"
-              class="w-full h-full object-cover relative z-10"
-            />
-            <span v-else :class="[currentApp.iconClass, 'relative z-10']">{{ currentApp.icon }}</span>
+            <span class="text-xl relative z-10">{{ currentApp.emoji }}</span>
             <!-- Inner Glow -->
             <div class="absolute inset-0 rounded-xl bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
           </div>
@@ -36,7 +30,7 @@
             class="group relative flex items-center gap-2 px-5 py-2 text-slate-600 hover:text-blue-600 transition-colors"
           >
             <div class="absolute inset-0 bg-blue-50/50 rounded-lg scale-95 opacity-0 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200"></div>
-            <img src="/image/saq.png" class="w-5 h-5 relative z-10 object-cover rounded-md" />
+            <span class="text-lg relative z-10">🏠</span>
             <span class="text-sm font-medium relative z-10">{{ $t('member.memberCenter') }}</span>
           </NuxtLink>
         </div>
@@ -122,18 +116,14 @@ const currentApp = computed(() => {
     return {
       title: t('apps.saq'),
       subtitle: 'SAQ Questionnaire',
-      icon: '📋',
-      image: '/image/saq.png',
-      iconClass: 'text-xl',
+      emoji: '📋',
       link: '/saq/projects'
     }
   }
   return {
     title: t('member.memberCenter'),
     subtitle: 'Member Center',
-    icon: 'C',
-    image: '/image/saq.png',
-    iconClass: 'text-xl',
+    emoji: '🏠',
     link: '/'
   }
 })
@@ -148,7 +138,7 @@ const currentLanguageLabel = computed(() => {
   return locale.value === 'zh-TW' ? '繁中' : 'EN'
 })
 
-const setLanguage = (lang: string) => {
+const setLanguage = (lang: 'zh-TW' | 'en' | 'zh') => {
   locale.value = lang
   // Persist to localStorage
   localStorage.setItem('locale', lang)
@@ -177,4 +167,3 @@ const items = computed(() => [
   }]
 ])
 </script>
-

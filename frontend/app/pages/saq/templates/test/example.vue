@@ -82,7 +82,10 @@
         <!-- 格式概述 -->
         <UCard>
           <template #header>
-            <h3 class="text-lg font-semibold">📋 格式概述</h3>
+            <h3 class="text-lg font-semibold flex items-center gap-2">
+            <UIcon name="i-heroicons-clipboard-document-list" class="w-5 h-5 text-blue-600" />
+            格式概述
+          </h3>
           </template>
 
           <div class="prose max-w-none">
@@ -102,7 +105,10 @@
         <!-- 欄位對應 -->
         <UCard>
           <template #header>
-            <h3 class="text-lg font-semibold">📊 欄位對應表</h3>
+            <h3 class="text-lg font-semibold flex items-center gap-2">
+            <UIcon name="i-heroicons-table-cells" class="w-5 h-5 text-green-600" />
+            欄位對應表
+          </h3>
           </template>
 
           <div class="overflow-x-auto">
@@ -132,7 +138,10 @@
         <!-- 題目類型範例 -->
         <UCard>
           <template #header>
-            <h3 class="text-lg font-semibold">📝 題目類型</h3>
+            <h3 class="text-lg font-semibold flex items-center gap-2">
+            <UIcon name="i-heroicons-pencil-square" class="w-5 h-5 text-purple-600" />
+            題目類型
+          </h3>
           </template>
 
           <div class="space-y-6">
