@@ -1,51 +1,40 @@
 services:
   # ===========================================
-  # Frontend Builder (Nuxt Static Generation)
+  # Frontend Builder Blue (Nuxt Static Generation)
   # ===========================================
-  frontend-builder:
+  frontend-builder-blue:
     image: node:22-alpine
-    container_name: crm_frontend_builder
+    container_name: crm_frontend_builder_blue
     working_dir: /app
     volumes:
       - ./frontend:/app
-      - frontend_dist:/dist
+      - frontend_dist_blue:/dist
     command: sh -c "npm ci && npm run generate && rm -rf /dist/* && cp -r /app/.output/public/* /dist/"
     profiles:
-      - build
+      - build-blue
 
   # ===========================================
-  # Backend Blue (CodeIgniter 4)
+  # Frontend Builder Green (Nuxt Static Generation)
   # ===========================================
-  backend-blue:
-    build:
-      context: ./docker/backend
-      dockerfile: Dockerfile
-    container_name: crm_backend_blue
+  frontend-builder-green:
+    image: node:22-alpine
+    container_name: crm_frontend_builder_green
+    working_dir: /app
     volumes:
-      - ./backend:/var/www/html
-    environment:
-      - CI_ENVIRONMENT=production
-      - database.default.hostname=${DB_HOST}
-      - database.default.database=${DB_DATABASE}
-      - database.default.username=${DB_USERNAME}
-      - database.default.password=${DB_PASSWORD}
-      - database.default.DBDriver=MySQLi
-      - database.default.port=3306
-    depends_on:
-      db:
-        condition: service_healthy
-    networks:
-      - crm_prod_network
-    restart: unless-stopped
+      - ./frontend:/app
+      - frontend_dist_green:/dist
+    command: sh -c "npm ci && npm run generate && rm -rf /dist/* && cp -r /app/.output/public/* /dist/"
+    profiles:
+      - build-green
 
   # ===========================================
-  # Backend Green (CodeIgniter 4)
+  # Backend Service (CodeIgniter 4)
   # ===========================================
-  backend-green:
+  backend:
     build:
       context: ./docker/backend
       dockerfile: Dockerfile
-    container_name: crm_backend_green
+    container_name: crm_backend
     volumes:
       - ./backend:/var/www/html
     environment:
@@ -73,10 +62,10 @@ services:
       - "${PROD_PORT}:80"
     volumes:
       - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
-      - frontend_dist:/usr/share/nginx/html:ro
+      - frontend_dist_blue:/usr/share/nginx/html/blue:ro
+      - frontend_dist_green:/usr/share/nginx/html/green:ro
     depends_on:
-      - backend-blue
-      - backend-green
+      - backend
     networks:
       - crm_prod_network
     restart: unless-stopped
@@ -126,7 +115,8 @@ services:
 
 volumes:
   db_data_prod:
-  frontend_dist:
+  frontend_dist_blue:
+  frontend_dist_green:
 
 networks:
   crm_prod_network:

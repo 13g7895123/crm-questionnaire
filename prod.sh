@@ -1,7 +1,7 @@
 #!/bin/bash
 # ===========================================
 # Production Environment Deployment Script
-# Blue-Green Deployment Strategy
+# Frontend Blue-Green Deployment Strategy
 # ===========================================
 
 set -e
@@ -16,7 +16,7 @@ COMPOSE_FILE="docker-compose.prod.yml"
 
 echo "============================================="
 echo "  CRM Questionnaire - Production Deployment"
-echo "  Blue-Green Deployment Strategy"
+echo "  Frontend Blue-Green Deployment Strategy"
 echo "============================================="
 
 # Check if .env.production file exists
@@ -30,7 +30,7 @@ export $(grep -v '^#' "$ENV_FILE" | xargs)
 
 # Function to get current active color from nginx config
 get_active_color() {
-    if grep -q "default backend_blue" "$NGINX_CONF"; then
+    if grep -q "default blue" "$NGINX_CONF"; then
         echo "blue"
     else
         echo "green"
@@ -43,9 +43,9 @@ switch_traffic() {
     echo "Switching traffic to $target_color..."
     
     if [ "$target_color" == "blue" ]; then
-        sed -i 's/default backend_green/default backend_blue/g' "$NGINX_CONF"
+        sed -i 's/default green/default blue/g' "$NGINX_CONF"
     else
-        sed -i 's/default backend_blue/default backend_green/g' "$NGINX_CONF"
+        sed -i 's/default blue/default green/g' "$NGINX_CONF"
     fi
     
     # Reload nginx
@@ -53,39 +53,15 @@ switch_traffic() {
     echo "Traffic switched to $target_color"
 }
 
-# Function to deploy to a specific color
-deploy_to_color() {
+# Function to build frontend to a specific color
+build_frontend() {
     local target_color=$1
     echo ""
-    echo "Deploying to $target_color environment..."
+    echo "Building frontend to $target_color..."
     
-    # Build and start the target backend
-    docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --build "backend-$target_color"
+    docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" --profile "build-$target_color" run --rm "frontend-builder-$target_color"
     
-    # Wait for the service to be healthy
-    echo "Waiting for backend-$target_color to be ready..."
-    sleep 10
-    
-    # Health check
-    local max_retries=30
-    local retry=0
-    while [ $retry -lt $max_retries ]; do
-        if docker compose -f "$COMPOSE_FILE" exec "backend-$target_color" php spark list > /dev/null 2>&1; then
-            echo "backend-$target_color is ready!"
-            
-            # Run database migrations
-            echo "Running database migrations..."
-            docker compose -f "$COMPOSE_FILE" exec "backend-$target_color" php spark migrate
-            
-            return 0
-        fi
-        retry=$((retry + 1))
-        echo "Waiting... ($retry/$max_retries)"
-        sleep 2
-    done
-    
-    echo "Warning: Health check timed out, but continuing..."
-    return 0
+    echo "Frontend built to $target_color!"
 }
 
 # Main deployment logic
@@ -99,27 +75,27 @@ case "${1:-deploy}" in
         fi
         
         echo ""
-        echo "Current active: $CURRENT_COLOR"
-        echo "Deploying to:   $NEW_COLOR"
+        echo "Current active frontend: $CURRENT_COLOR"
+        echo "Deploying to:            $NEW_COLOR"
         echo ""
         
-        # Step 1: Build frontend
-        echo "Step 1: Building frontend..."
-        docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" --profile build run --rm frontend-builder
-        
-        # Step 2: Start database and shared services
-        echo ""
-        echo "Step 2: Starting database and shared services..."
-        docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d db phpmyadmin nginx
+        # Step 1: Start database and shared services
+        echo "Step 1: Starting database and services..."
+        docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d db phpmyadmin backend nginx
         
         # Wait for database
         echo "Waiting for database to be ready..."
         sleep 15
         
-        # Step 3: Deploy to new color
+        # Step 2: Run database migrations
         echo ""
-        echo "Step 3: Deploying backend to $NEW_COLOR..."
-        deploy_to_color "$NEW_COLOR"
+        echo "Step 2: Running database migrations..."
+        docker compose -f "$COMPOSE_FILE" exec backend php spark migrate
+        
+        # Step 3: Build frontend to new color
+        echo ""
+        echo "Step 3: Building frontend to $NEW_COLOR..."
+        build_frontend "$NEW_COLOR"
         
         # Step 4: Switch traffic
         echo ""
@@ -130,8 +106,8 @@ case "${1:-deploy}" in
         echo "============================================="
         echo "  Deployment Complete!"
         echo "============================================="
-        echo "  Active backend: $NEW_COLOR"
-        echo "  Previous backend ($CURRENT_COLOR) is still running"
+        echo "  Active frontend: $NEW_COLOR"
+        echo "  Previous frontend ($CURRENT_COLOR) is still available"
         echo ""
         echo "  To rollback, run: ./prod.sh rollback"
         echo "============================================="
@@ -149,7 +125,7 @@ case "${1:-deploy}" in
         switch_traffic "$ROLLBACK_COLOR"
         
         echo ""
-        echo "Rollback complete! Active backend: $ROLLBACK_COLOR"
+        echo "Rollback complete! Active frontend: $ROLLBACK_COLOR"
         ;;
         
     switch)
@@ -160,10 +136,18 @@ case "${1:-deploy}" in
         switch_traffic "$2"
         ;;
         
+    build)
+        if [ -z "$2" ]; then
+            echo "Usage: ./prod.sh build [blue|green]"
+            exit 1
+        fi
+        build_frontend "$2"
+        ;;
+        
     status)
         CURRENT_COLOR=$(get_active_color)
         echo ""
-        echo "Current active backend: $CURRENT_COLOR"
+        echo "Current active frontend: $CURRENT_COLOR"
         echo ""
         echo "Service status:"
         docker compose -f "$COMPOSE_FILE" ps
@@ -179,15 +163,23 @@ case "${1:-deploy}" in
         docker compose -f "$COMPOSE_FILE" logs -f "${2:-}"
         ;;
         
+    migrate)
+        echo "Running database migrations..."
+        docker compose -f "$COMPOSE_FILE" exec backend php spark migrate
+        echo "Migrations complete."
+        ;;
+        
     *)
         echo "Usage: ./prod.sh [command]"
         echo ""
         echo "Commands:"
-        echo "  deploy    - Deploy with blue-green strategy (default)"
-        echo "  rollback  - Rollback to previous version"
+        echo "  deploy    - Deploy with frontend blue-green strategy (default)"
+        echo "  rollback  - Rollback to previous frontend version"
         echo "  switch    - Switch traffic to specific color (blue|green)"
+        echo "  build     - Build frontend to specific color (blue|green)"
         echo "  status    - Show current deployment status"
         echo "  stop      - Stop all production services"
         echo "  logs      - View logs (optional: service name)"
+        echo "  migrate   - Run database migrations"
         ;;
 esac
