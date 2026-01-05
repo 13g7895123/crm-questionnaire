@@ -89,7 +89,28 @@ case "${1:-deploy}" in
         echo "Deploying to:            $NEW_COLOR"
         echo ""
         
+        # Step 0: Sync backend database configuration
+        echo "Step 0: Syncing backend database configuration..."
+        
+        # Update backend/.env with production database settings
+        if [ -f "backend/.env" ]; then
+            # Update or add database settings
+            sed -i "s/^database.default.hostname = .*/database.default.hostname = ${DB_HOST}/" backend/.env
+            sed -i "s/^database.default.database = .*/database.default.database = ${DB_DATABASE}/" backend/.env
+            sed -i "s/^database.default.username = .*/database.default.username = ${DB_USERNAME}/" backend/.env
+            sed -i "s/^database.default.password = .*/database.default.password = ${DB_PASSWORD}/" backend/.env
+            sed -i "s/^database.default.port = .*/database.default.port = 3306/" backend/.env
+            
+            # Update environment to production
+            sed -i "s/^CI_ENVIRONMENT = .*/CI_ENVIRONMENT = production/" backend/.env
+            
+            echo "Backend configuration synced successfully"
+        else
+            echo "Warning: backend/.env not found, skipping sync"
+        fi
+        
         # Step 1: Start database and shared services
+        echo ""
         echo "Step 1: Starting database and services..."
         docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d db phpmyadmin backend nginx
         
