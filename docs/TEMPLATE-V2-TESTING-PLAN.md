@@ -16,7 +16,7 @@ cd /home/jarvis/project/job/crm-questionnaire
 docker-compose up -d
 
 # 或使用開發腳本
-./dev.sh
+./scripts/dev.sh
 ```
 
 ### 1.2 執行種子資料

@@ -1,14 +1,14 @@
 # CRM Questionnaire - 部署腳本使用說明
 
-本文件說明開發環境 (`dev.sh`) 與生產環境 (`prod.sh`) 的使用方式。
+本文件說明開發環境 (`scripts/dev.sh`) 與生產環境 (`scripts/prod.sh`) 的使用方式。
 
 ---
 
 ## 目錄
 
 - [環境需求](#環境需求)
-- [開發環境 (dev.sh)](#開發環境-devsh)
-- [生產環境 (prod.sh)](#生產環境-prodsh)
+- [開發環境 (scripts/dev.sh)](#開發環境-devsh)
+- [生產環境 (scripts/prod.sh)](#生產環境-prodsh)
 - [常見問題](#常見問題)
 
 ---
@@ -21,7 +21,7 @@
 
 ---
 
-## 開發環境 (dev.sh)
+## 開發環境 (scripts/dev.sh)
 
 ### 說明
 
@@ -34,7 +34,7 @@
 cp .env.example .env
 
 # 2. 啟動開發環境
-./dev.sh
+./scripts/dev.sh
 ```
 
 ### 啟動後的服務
@@ -98,7 +98,7 @@ DB_PASSWORD=crm_password
 
 ---
 
-## 生產環境 (prod.sh)
+## 生產環境 (scripts/prod.sh)
 
 ### 說明
 
@@ -130,25 +130,25 @@ cp .env.production.example .env.production
 vim .env.production  # 設定安全的密碼等
 
 # 3. 執行部署
-./prod.sh deploy
+./scripts/prod.sh deploy
 ```
 
 ### 指令列表
 
 | 指令 | 說明 |
 |------|------|
-| `./prod.sh` 或 `./prod.sh deploy` | 執行藍綠部署 |
-| `./prod.sh rollback` | 回滾到上一個版本 |
-| `./prod.sh switch blue` | 手動切換流量到 Blue |
-| `./prod.sh switch green` | 手動切換流量到 Green |
-| `./prod.sh status` | 查看目前部署狀態 |
-| `./prod.sh stop` | 停止所有生產服務 |
-| `./prod.sh logs` | 查看所有服務日誌 |
-| `./prod.sh logs nginx` | 查看特定服務日誌 |
+| `./scripts/prod.sh` 或 `./scripts/prod.sh deploy` | 執行藍綠部署 |
+| `./scripts/prod.sh rollback` | 回滾到上一個版本 |
+| `./scripts/prod.sh switch blue` | 手動切換流量到 Blue |
+| `./scripts/prod.sh switch green` | 手動切換流量到 Green |
+| `./scripts/prod.sh status` | 查看目前部署狀態 |
+| `./scripts/prod.sh stop` | 停止所有生產服務 |
+| `./scripts/prod.sh logs` | 查看所有服務日誌 |
+| `./scripts/prod.sh logs nginx` | 查看特定服務日誌 |
 
 ### 部署流程
 
-執行 `./prod.sh deploy` 時，腳本會自動執行以下步驟：
+執行 `./scripts/prod.sh deploy` 時，腳本會自動執行以下步驟：
 
 1. **識別目前狀態** - 檢查當前活躍的是 Blue 還是 Green
 2. **編譯前端** - 執行 `npm run generate` 產生靜態檔案
@@ -162,7 +162,7 @@ vim .env.production  # 設定安全的密碼等
 如果部署後發現問題，可以立即回滾：
 
 ```bash
-./prod.sh rollback
+./scripts/prod.sh rollback
 ```
 
 回滾操作只需約 1 秒，因為它只是切換 Nginx 的流量指向。
@@ -191,16 +191,16 @@ ACTIVE_COLOR=blue    # 初始活躍環境
 
 ```bash
 # 切換到 Blue
-./prod.sh switch blue
+./scripts/prod.sh switch blue
 
 # 切換到 Green
-./prod.sh switch green
+./scripts/prod.sh switch green
 ```
 
 ### 查看部署狀態
 
 ```bash
-./prod.sh status
+./scripts/prod.sh status
 ```
 
 輸出範例：
@@ -242,9 +242,9 @@ docker compose up -d --build  # 重新建置並啟動
 ### Q: 生產環境如何檢視特定容器的日誌？
 
 ```bash
-./prod.sh logs backend-blue
-./prod.sh logs backend-green
-./prod.sh logs nginx
+./scripts/prod.sh logs backend-blue
+./scripts/prod.sh logs backend-green
+./scripts/prod.sh logs nginx
 ```
 
 ### Q: 如何進入容器執行指令？
@@ -274,10 +274,11 @@ docker compose -f docker-compose.prod.yml exec backend-blue bash
 ├── .env.example              # 開發環境變數範本
 ├── .env.production           # 生產環境變數（git 忽略）
 ├── .env.production.example   # 生產環境變數範本
-├── dev.sh                    # 開發環境啟動腳本
-├── prod.sh                   # 生產環境部署腳本
 ├── docker-compose.yml        # 開發環境 Docker 設定
 ├── docker-compose.prod.yml   # 生產環境 Docker 設定
+├── scripts/
+│   ├── dev.sh                # 開發環境啟動腳本
+│   └── prod.sh               # 生產環境部署腳本
 ├── docker/
 │   ├── backend/
 │   │   └── Dockerfile        # PHP 後端映像檔

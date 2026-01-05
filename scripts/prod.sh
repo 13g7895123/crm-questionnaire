@@ -7,7 +7,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+cd "$SCRIPT_DIR/.."
 
 # Configuration
 NGINX_CONF="./docker/nginx/conf.d/default.conf"
@@ -119,7 +119,7 @@ case "${1:-deploy}" in
         echo "  Active frontend: $NEW_COLOR"
         echo "  Previous frontend ($CURRENT_COLOR) is still available"
         echo ""
-        echo "  To rollback, run: ./prod.sh rollback"
+        echo "  To rollback, run: ./scripts/prod.sh rollback"
         echo "============================================="
         ;;
         
@@ -140,7 +140,7 @@ case "${1:-deploy}" in
         
     switch)
         if [ -z "$2" ]; then
-            echo "Usage: ./prod.sh switch [blue|green]"
+            echo "Usage: ./scripts/prod.sh switch [blue|green]"
             exit 1
         fi
         switch_traffic "$2"
@@ -148,7 +148,7 @@ case "${1:-deploy}" in
         
     build)
         if [ -z "$2" ]; then
-            echo "Usage: ./prod.sh build [blue|green]"
+            echo "Usage: ./scripts/prod.sh build [blue|green]"
             exit 1
         fi
         build_frontend "$2"
@@ -180,7 +180,7 @@ case "${1:-deploy}" in
         ;;
         
     *)
-        echo "Usage: ./prod.sh [command]"
+        echo "Usage: ./scripts/prod.sh [command]"
         echo ""
         echo "Commands:"
         echo "  deploy    - Deploy with frontend blue-green strategy (default)"
