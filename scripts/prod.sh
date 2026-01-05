@@ -97,6 +97,11 @@ case "${1:-deploy}" in
         echo "Waiting for database to be ready..."
         sleep 15
         
+        # Fix writable permissions
+        echo ""
+        echo "Fixing writable permissions..."
+        docker compose -f "$COMPOSE_FILE" exec backend chmod -R 777 /var/www/html/writable
+        
         # Step 2: Run database migrations
         echo ""
         echo "Step 2: Running database migrations..."
