@@ -1,22 +1,26 @@
+#!/bin/sh
+# Nginx entrypoint script to handle environment variable substitution
+
+# Set default value for ACTIVE_FRONTEND if not provided
+export ACTIVE_FRONTEND=${ACTIVE_FRONTEND:-blue}
+
+echo "Starting Nginx with active frontend: $ACTIVE_FRONTEND"
+
+# Create the actual config from template
+cat > /etc/nginx/conf.d/default.conf << 'EOF'
 # Blue-Green Deployment Configuration for Frontend
 # Active frontend is controlled by ACTIVE_FRONTEND environment variable
-# Default: blue (can be changed to green via environment variable)
 
 upstream backend {
     server backend:8080;
-}
-
-# Map to active frontend (fallback if env var not available)
-map $host $active_frontend {
-    default blue;
 }
 
 server {
     listen 80;
     server_name _;
 
-    # Dynamic root based on active frontend
-    set $frontend_root /usr/share/nginx/html/$active_frontend;
+    # Dynamic root based on active frontend (set via environment)
+    set $frontend_root /usr/share/nginx/html/ACTIVE_FRONTEND_PLACEHOLDER;
 
     # API v1 requests proxy to backend
     location /api/v1/ {
@@ -51,3 +55,10 @@ server {
     gzip_proxied any;
     gzip_types text/plain text/css text/xml text/javascript application/javascript application/json application/xml;
 }
+EOF
+
+# Replace placeholder with actual environment variable value
+sed -i "s/ACTIVE_FRONTEND_PLACEHOLDER/$ACTIVE_FRONTEND/g" /etc/nginx/conf.d/default.conf
+
+# Start nginx
+exec nginx -g 'daemon off;'

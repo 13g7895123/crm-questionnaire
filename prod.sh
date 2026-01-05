@@ -28,12 +28,24 @@ fi
 # Load environment variables
 export $(grep -v '^#' "$ENV_FILE" | xargs)
 
-# Function to get current active color from nginx config
+# Function to get current active color from environment file
 get_active_color() {
-    if grep -q "default blue" "$NGINX_CONF"; then
-        echo "blue"
-    else
+    if grep -q "ACTIVE_FRONTEND=green" "$ENV_FILE"; then
         echo "green"
+    else
+        echo "blue"
+    fi
+}
+
+# Function to update active frontend in env file
+update_env_active_frontend() {
+    local target_color=$1
+    
+    # Update or add ACTIVE_FRONTEND in .env.production
+    if grep -q "^ACTIVE_FRONTEND=" "$ENV_FILE"; then
+        sed -i "s/^ACTIVE_FRONTEND=.*/ACTIVE_FRONTEND=$target_color/" "$ENV_FILE"
+    else
+        echo "ACTIVE_FRONTEND=$target_color" >> "$ENV_FILE"
     fi
 }
 
@@ -42,14 +54,12 @@ switch_traffic() {
     local target_color=$1
     echo "Switching traffic to $target_color..."
     
-    if [ "$target_color" == "blue" ]; then
-        sed -i 's/default green/default blue/g' "$NGINX_CONF"
-    else
-        sed -i 's/default blue/default green/g' "$NGINX_CONF"
-    fi
+    # Update environment variable
+    update_env_active_frontend "$target_color"
     
-    # Reload nginx
-    docker compose -f "$COMPOSE_FILE" exec nginx nginx -s reload
+    # Recreate nginx container with new environment variable
+    docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d nginx
+    
     echo "Traffic switched to $target_color"
 }
 
