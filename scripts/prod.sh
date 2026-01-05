@@ -94,6 +94,9 @@ case "${1:-deploy}" in
         
         # Update backend/.env with production database settings
         if [ -f "backend/.env" ]; then
+            # Backup current .env
+            cp backend/.env backend/.env.bak
+            
             # Update or add database settings
             sed -i "s/^database.default.hostname = .*/database.default.hostname = ${DB_HOST}/" backend/.env
             sed -i "s/^database.default.database = .*/database.default.database = ${DB_DATABASE}/" backend/.env
@@ -101,12 +104,30 @@ case "${1:-deploy}" in
             sed -i "s/^database.default.password = .*/database.default.password = ${DB_PASSWORD}/" backend/.env
             sed -i "s/^database.default.port = .*/database.default.port = 3306/" backend/.env
             
+            # Ensure no localhost (which triggers socket connection)
+            sed -i "s/^database.default.hostname = localhost$/database.default.hostname = ${DB_HOST}/" backend/.env
+            
             # Update environment to production
             sed -i "s/^CI_ENVIRONMENT = .*/CI_ENVIRONMENT = production/" backend/.env
             
-            echo "Backend configuration synced successfully"
+            echo "Configuration updated:"
+            echo "  - Hostname: ${DB_HOST}"
+            echo "  - Database: ${DB_DATABASE}"
+            echo "  - Username: ${DB_USERNAME}"
+            echo "  - Port: 3306"
+            echo "  - Environment: production"
+            
+            # Verify the configuration
+            echo ""
+            echo "Verifying configuration..."
+            if grep -q "database.default.hostname = ${DB_HOST}" backend/.env; then
+                echo "✓ Hostname configured correctly"
+            else
+                echo "✗ Warning: Hostname may not be set correctly"
+            fi
         else
-            echo "Warning: backend/.env not found, skipping sync"
+            echo "Error: backend/.env not found!"
+            exit 1
         fi
         
         # Step 1: Start database and shared services
@@ -118,10 +139,50 @@ case "${1:-deploy}" in
         echo "Waiting for database to be ready..."
         sleep 15
         
+        # Restart backend to ensure .env changes are loaded
+        echo ""
+        echo "Restarting backend to load configuration..."
+        docker compose -f "$COMPOSE_FILE" restart backend
+        sleep 5
+        
         # Fix writable permissions
         echo ""
         echo "Fixing writable permissions..."
         docker compose -f "$COMPOSE_FILE" exec backend chmod -R 777 /var/www/html/writable
+        
+        # Test database connection
+        echo ""
+        echo "Testing database connection..."
+        if docker compose -f "$COMPOSE_FILE" exec backend php -r "
+            try {
+                \$mysqli = new mysqli('${DB_HOST}', '${DB_USERNAME}', '${DB_PASSWORD}', '${DB_DATABASE}', 3306);
+                if (\$mysqli->connect_error) {
+                    echo 'Connection failed: ' . \$mysqli->connect_error . PHP_EOL;
+                    exit(1);
+                }
+                echo '✓ Database connection successful' . PHP_EOL;
+                echo '  Server: ' . \$mysqli->host_info . PHP_EOL;
+                \$mysqli->close();
+                exit(0);
+            } catch (Exception \$e) {
+                echo 'Connection error: ' . \$e->getMessage() . PHP_EOL;
+                exit(1);
+            }
+        "; then
+            echo "Database is ready for migrations"
+        else
+            echo ""
+            echo "✗ Database connection failed!"
+            echo "Please check the following:"
+            echo "  1. Database container is running: docker compose -f $COMPOSE_FILE ps db"
+            echo "  2. Database credentials in .env.production"
+            echo "  3. backend/.env configuration"
+            echo ""
+            echo "Current backend/.env database settings:"
+            grep "^database.default" backend/.env
+            echo ""
+            exit 1
+        fi
         
         # Step 2: Run database migrations
         echo ""

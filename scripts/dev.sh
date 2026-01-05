@@ -27,6 +27,9 @@ echo ""
 echo "Syncing backend database configuration..."
 
 if [ -f "backend/.env" ]; then
+    # Backup current .env
+    cp backend/.env backend/.env.bak 2>/dev/null || true
+    
     # Update or add database settings
     sed -i "s/^database.default.hostname = .*/database.default.hostname = ${DB_HOST}/" backend/.env
     sed -i "s/^database.default.database = .*/database.default.database = ${DB_DATABASE}/" backend/.env
@@ -34,12 +37,24 @@ if [ -f "backend/.env" ]; then
     sed -i "s/^database.default.password = .*/database.default.password = ${DB_PASSWORD}/" backend/.env
     sed -i "s/^database.default.port = .*/database.default.port = ${DB_PORT:-3306}/" backend/.env
     
+    # Ensure no localhost (which triggers socket connection)
+    sed -i "s/^database.default.hostname = localhost$/database.default.hostname = ${DB_HOST}/" backend/.env
+    
     # Update environment to development
     sed -i "s/^CI_ENVIRONMENT = .*/CI_ENVIRONMENT = development/" backend/.env
     
-    echo "Backend configuration synced successfully"
+    echo "  - Hostname: ${DB_HOST}"
+    echo "  - Database: ${DB_DATABASE}"
+    
+    # Verify the configuration
+    if grep -q "database.default.hostname = ${DB_HOST}" backend/.env; then
+        echo "✓ Configuration verified"
+    else
+        echo "✗ Warning: Configuration may not be correct"
+    fi
 else
-    echo "Warning: backend/.env not found, skipping sync"
+    echo "Error: backend/.env not found!"
+    exit 1
 fi
 
 echo ""
