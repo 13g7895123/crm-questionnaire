@@ -145,6 +145,10 @@ vim .env.production  # 設定安全的密碼等
 | `./scripts/prod.sh stop` | 停止所有生產服務 |
 | `./scripts/prod.sh logs` | 查看所有服務日誌 |
 | `./scripts/prod.sh logs nginx` | 查看特定服務日誌 |
+| `./scripts/prod.sh migrate` | 手動執行資料庫遷移 |
+| `./scripts/seed.sh` | 執行所有資料庫 Seeder |
+| `./scripts/seed.sh initial` | 只執行初始資料 Seeder |
+| `./scripts/seed.sh list` | 列出可用的 Seeder |
 
 ### 部署流程
 
@@ -217,6 +221,50 @@ crm_db_prod          healthy   3306/tcp
 
 ---
 
+### 資料庫管理
+
+#### 執行資料庫遷移 (Migration)
+
+部署時會自動執行 migration，但您也可以手動執行：
+
+```bash
+./scripts/prod.sh migrate
+```
+
+#### 執行資料庫 Seeder
+
+使用 `seed.sh` 腳本來建立預設資料：
+
+```bash
+# 執行所有 Seeder
+./scripts/seed.sh
+
+# 只執行初始資料
+./scripts/seed.sh initial
+
+# 只執行範本資料
+./scripts/seed.sh template
+
+# 只執行 SAQ 完整範本
+./scripts/seed.sh saq
+
+# 執行自訂 Seeder
+./scripts/seed.sh custom YourSeederName
+
+# 列出可用的 Seeder
+./scripts/seed.sh list
+```
+
+**可用的 Seeder**：
+- `InitialDataSeeder` - 建立初始系統資料
+- `TemplateSectionsSeeder` - 建立範本區段資料
+- `CompleteSAQTemplateSeeder` - 建立完整的 SAQ 範本
+
+**注意**：首次部署後，建議執行 `./scripts/seed.sh` 來建立必要的預設資料。
+
+
+---
+
 ## 常見問題
 
 ### Q: 開發環境啟動失敗，顯示 Port 被佔用？
@@ -278,7 +326,8 @@ docker compose -f docker-compose.prod.yml exec backend-blue bash
 ├── docker-compose.prod.yml   # 生產環境 Docker 設定
 ├── scripts/
 │   ├── dev.sh                # 開發環境啟動腳本
-│   └── prod.sh               # 生產環境部署腳本
+│   ├── prod.sh               # 生產環境部署腳本
+│   └── seed.sh               # 資料庫 Seeder 腳本
 ├── docker/
 │   ├── backend/
 │   │   └── Dockerfile        # PHP 後端映像檔
