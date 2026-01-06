@@ -73,7 +73,21 @@ echo "---------------------------------------------"
 check_file ".env.production" "Production environment file"
 check_file "docker-compose.prod.yml" "Production docker compose file"
 check_file "scripts/prod.sh" "Production deployment script"
-check_file "backend/.env" "Backend environment file"
+
+# Check backend/.env with auto-create hint
+if [ -f "backend/.env" ]; then
+    echo -e "${GREEN}✓${NC} Backend environment file: backend/.env"
+else
+    if [ -f "backend/env" ]; then
+        echo -e "${YELLOW}⚠${NC} backend/.env not found, but template exists: backend/env"
+        echo "  The deployment script will automatically create backend/.env from the template"
+    else
+        echo -e "${RED}✗${NC} Backend environment file and template not found"
+        echo "  Please ensure backend/env exists as a template"
+        ((ERRORS++))
+    fi
+fi
+
 check_file "docker/nginx/entrypoint.sh" "Nginx entrypoint script"
 check_file "docker/backend/Dockerfile" "Backend Dockerfile"
 check_file "docker/backend/start.sh" "Backend start script"

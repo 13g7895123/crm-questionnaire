@@ -115,44 +115,54 @@ case "${1:-deploy}" in
         # Step 0: Sync backend database configuration
         echo "Step 0: Syncing backend database configuration..."
         
-        # Update backend/.env with production database settings
-        if [ -f "backend/.env" ]; then
-            # Backup current .env
-            cp backend/.env backend/.env.bak
+        # Ensure backend/.env exists
+        if [ ! -f "backend/.env" ]; then
+            echo "⚠️  backend/.env not found, creating from template..."
             
-            # Update or add database settings using robust function
-            update_or_add_config "backend/.env" "database.default.hostname" "${DB_HOST}"
-            update_or_add_config "backend/.env" "database.default.database" "${DB_DATABASE}"
-            update_or_add_config "backend/.env" "database.default.username" "${DB_USERNAME}"
-            update_or_add_config "backend/.env" "database.default.password" "${DB_PASSWORD}"
-            update_or_add_config "backend/.env" "database.default.port" "3306"
-            update_or_add_config "backend/.env" "database.default.DBDriver" "MySQLi"
-            update_or_add_config "backend/.env" "CI_ENVIRONMENT" "production"
-            
-            echo "Configuration updated:"
-            echo "  - Hostname: ${DB_HOST}"
-            echo "  - Database: ${DB_DATABASE}"
-            echo "  - Username: ${DB_USERNAME}"
-            echo "  - Port: 3306"
-            echo "  - Environment: production"
-            
-            # Verify the configuration
-            echo ""
-            echo "Verifying configuration..."
-            if grep -q "database.default.hostname = ${DB_HOST}" backend/.env; then
-                echo "✓ Hostname configured correctly"
+            if [ -f "backend/env" ]; then
+                cp backend/env backend/.env
+                echo "✅ Created backend/.env from backend/env"
             else
-                echo "✗ Warning: Hostname may not be set correctly"
+                echo "❌ Error: Neither backend/.env nor backend/env template found!"
+                echo "Please ensure backend/env exists or create backend/.env manually."
+                exit 1
             fi
-            
-            if grep -q "CI_ENVIRONMENT = production" backend/.env; then
-                echo "✓ CI_ENVIRONMENT configured correctly"
-            else
-                echo "✗ Warning: CI_ENVIRONMENT may not be set correctly"
-            fi
+        fi
+        
+        # Backup current .env
+        cp backend/.env backend/.env.bak
+        echo "✓ Backed up backend/.env to backend/.env.bak"
+        
+        # Update or add database settings using robust function
+        update_or_add_config "backend/.env" "database.default.hostname" "${DB_HOST}"
+        update_or_add_config "backend/.env" "database.default.database" "${DB_DATABASE}"
+        update_or_add_config "backend/.env" "database.default.username" "${DB_USERNAME}"
+        update_or_add_config "backend/.env" "database.default.password" "${DB_PASSWORD}"
+        update_or_add_config "backend/.env" "database.default.port" "3306"
+        update_or_add_config "backend/.env" "database.default.DBDriver" "MySQLi"
+        update_or_add_config "backend/.env" "CI_ENVIRONMENT" "production"
+        
+        echo ""
+        echo "Configuration updated:"
+        echo "  - Hostname: ${DB_HOST}"
+        echo "  - Database: ${DB_DATABASE}"
+        echo "  - Username: ${DB_USERNAME}"
+        echo "  - Port: 3306"
+        echo "  - Environment: production"
+        
+        # Verify the configuration
+        echo ""
+        echo "Verifying configuration..."
+        if grep -q "database.default.hostname = ${DB_HOST}" backend/.env; then
+            echo "✓ Hostname configured correctly"
         else
-            echo "Error: backend/.env not found!"
-            exit 1
+            echo "✗ Warning: Hostname may not be set correctly"
+        fi
+        
+        if grep -q "CI_ENVIRONMENT = production" backend/.env; then
+            echo "✓ CI_ENVIRONMENT configured correctly"
+        else
+            echo "✗ Warning: CI_ENVIRONMENT may not be set correctly"
         fi
         
         # Step 1: Start database and shared services
