@@ -69,9 +69,19 @@ build_frontend() {
     echo ""
     echo "Building frontend to $target_color..."
     
-    docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" --profile "build-$target_color" run --rm "frontend-builder-$target_color"
+    if ! docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" --profile "build-$target_color" run --rm "frontend-builder-$target_color"; then
+        echo ""
+        echo "❌ Error: Frontend build failed for $target_color"
+        echo "Deployment aborted. Current active frontend: $(get_active_color)"
+        echo ""
+        echo "To debug, check:"
+        echo "  1. Frontend build logs above"
+        echo "  2. Node.js memory issues: docker stats"
+        echo "  3. Package installation errors"
+        exit 1
+    fi
     
-    echo "Frontend built to $target_color!"
+    echo "✅ Frontend successfully built to $target_color!"
 }
 
 # Main deployment logic
@@ -89,6 +99,19 @@ case "${1:-deploy}" in
         echo "Deploying to:            $NEW_COLOR"
         echo ""
         
+        # Function to update or add configuration line
+        update_or_add_config() {
+            local file=$1
+            local key=$2
+            local value=$3
+            
+            if grep -q "^${key} = " "$file" 2>/dev/null; then
+                sed -i "s|^${key} = .*|${key} = ${value}|" "$file"
+            else
+                echo "${key} = ${value}" >> "$file"
+            fi
+        }
+        
         # Step 0: Sync backend database configuration
         echo "Step 0: Syncing backend database configuration..."
         
@@ -97,18 +120,14 @@ case "${1:-deploy}" in
             # Backup current .env
             cp backend/.env backend/.env.bak
             
-            # Update or add database settings
-            sed -i "s/^database.default.hostname = .*/database.default.hostname = ${DB_HOST}/" backend/.env
-            sed -i "s/^database.default.database = .*/database.default.database = ${DB_DATABASE}/" backend/.env
-            sed -i "s/^database.default.username = .*/database.default.username = ${DB_USERNAME}/" backend/.env
-            sed -i "s/^database.default.password = .*/database.default.password = ${DB_PASSWORD}/" backend/.env
-            sed -i "s/^database.default.port = .*/database.default.port = 3306/" backend/.env
-            
-            # Ensure no localhost (which triggers socket connection)
-            sed -i "s/^database.default.hostname = localhost$/database.default.hostname = ${DB_HOST}/" backend/.env
-            
-            # Update environment to production
-            sed -i "s/^CI_ENVIRONMENT = .*/CI_ENVIRONMENT = production/" backend/.env
+            # Update or add database settings using robust function
+            update_or_add_config "backend/.env" "database.default.hostname" "${DB_HOST}"
+            update_or_add_config "backend/.env" "database.default.database" "${DB_DATABASE}"
+            update_or_add_config "backend/.env" "database.default.username" "${DB_USERNAME}"
+            update_or_add_config "backend/.env" "database.default.password" "${DB_PASSWORD}"
+            update_or_add_config "backend/.env" "database.default.port" "3306"
+            update_or_add_config "backend/.env" "database.default.DBDriver" "MySQLi"
+            update_or_add_config "backend/.env" "CI_ENVIRONMENT" "production"
             
             echo "Configuration updated:"
             echo "  - Hostname: ${DB_HOST}"
@@ -124,6 +143,12 @@ case "${1:-deploy}" in
                 echo "✓ Hostname configured correctly"
             else
                 echo "✗ Warning: Hostname may not be set correctly"
+            fi
+            
+            if grep -q "CI_ENVIRONMENT = production" backend/.env; then
+                echo "✓ CI_ENVIRONMENT configured correctly"
+            else
+                echo "✗ Warning: CI_ENVIRONMENT may not be set correctly"
             fi
         else
             echo "Error: backend/.env not found!"
@@ -187,7 +212,19 @@ case "${1:-deploy}" in
         # Step 2: Run database migrations
         echo ""
         echo "Step 2: Running database migrations..."
-        docker compose -f "$COMPOSE_FILE" exec backend php spark migrate
+        if ! docker compose -f "$COMPOSE_FILE" exec backend php spark migrate; then
+            echo ""
+            echo "❌ Error: Database migration failed"
+            echo "Deployment aborted. Please check migration errors and try again."
+            echo ""
+            echo "To view backend logs:"
+            echo "  docker compose -f $COMPOSE_FILE logs backend"
+            echo ""
+            echo "To rollback .env changes:"
+            echo "  cp backend/.env.bak backend/.env"
+            exit 1
+        fi
+        echo "✅ Database migrations completed successfully"
         
         # Step 3: Build frontend to new color
         echo ""
