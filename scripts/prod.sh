@@ -180,6 +180,16 @@ case "${1:-deploy}" in
         docker compose -f "$COMPOSE_FILE" restart backend
         sleep 5
         
+        # Install/Update Composer dependencies
+        echo ""
+        echo "Installing/Updating Composer dependencies..."
+        if ! docker compose -f "$COMPOSE_FILE" exec backend composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev; then
+            echo "⚠️  Warning: Composer install failed, attempting to continue..."
+            echo "  The backend container will attempt to install dependencies on startup"
+        else
+            echo "✅ Composer dependencies installed successfully"
+        fi
+        
         # Fix writable permissions
         echo ""
         echo "Fixing writable permissions..."

@@ -3,10 +3,16 @@ set -e
 
 cd /var/www/html
 
-# Install Composer dependencies if vendor directory doesn't exist
+# Install or update Composer dependencies
+# Using --no-dev for production, remove it for development
+echo "Checking Composer dependencies..."
 if [ ! -d "vendor" ]; then
     echo "Installing Composer dependencies..."
-    composer install --no-interaction --prefer-dist
+    composer install --no-interaction --prefer-dist --optimize-autoloader
+else
+    echo "Updating Composer dependencies..."
+    # Use install instead of update to respect composer.lock
+    composer install --no-interaction --prefer-dist --optimize-autoloader
 fi
 
 # Ensure writable directory exists and has correct permissions

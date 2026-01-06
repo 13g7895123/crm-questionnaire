@@ -26,35 +26,38 @@ export $(grep -v '^#' .env | xargs)
 echo ""
 echo "Syncing backend database configuration..."
 
-if [ -f "backend/.env" ]; then
-    # Backup current .env
-    cp backend/.env backend/.env.bak 2>/dev/null || true
-    
-    # Update or add database settings
-    sed -i "s/^database.default.hostname = .*/database.default.hostname = ${DB_HOST}/" backend/.env
-    sed -i "s/^database.default.database = .*/database.default.database = ${DB_DATABASE}/" backend/.env
-    sed -i "s/^database.default.username = .*/database.default.username = ${DB_USERNAME}/" backend/.env
-    sed -i "s/^database.default.password = .*/database.default.password = ${DB_PASSWORD}/" backend/.env
-    sed -i "s/^database.default.port = .*/database.default.port = ${DB_PORT:-3306}/" backend/.env
-    
-    # Ensure no localhost (which triggers socket connection)
-    sed -i "s/^database.default.hostname = localhost$/database.default.hostname = ${DB_HOST}/" backend/.env
-    
-    # Update environment to development
-    sed -i "s/^CI_ENVIRONMENT = .*/CI_ENVIRONMENT = development/" backend/.env
-    
-    echo "  - Hostname: ${DB_HOST}"
-    echo "  - Database: ${DB_DATABASE}"
-    
-    # Verify the configuration
-    if grep -q "database.default.hostname = ${DB_HOST}" backend/.env; then
-        echo "✓ Configuration verified"
+# Ensure backend/.env exists
+if [ ! -f "backend/.env" ]; then
+    echo "⚠️  backend/.env not found, creating from template..."
+    if [ -f "backend/env" ]; then
+        cp backend/env backend/.env
+        echo "✅ Created backend/.env from backend/env"
     else
-        echo "✗ Warning: Configuration may not be correct"
+        echo "❌ Error: Neither backend/.env nor backend/env template found!"
+        exit 1
     fi
+fi
+
+# Backup current .env
+cp backend/.env backend/.env.bak 2>/dev/null || true
+
+# Update or add database settings
+sed -i "s/^database.default.hostname = .*/database.default.hostname = ${DB_HOST}/" backend/.env
+sed -i "s/^database.default.database = .*/database.default.database = ${DB_DATABASE}/" backend/.env
+sed -i "s/^database.default.username = .*/database.default.username = ${DB_USERNAME}/" backend/.env
+sed -i "s/^database.default.password = .*/database.default.password = ${DB_PASSWORD}/" backend/.env
+sed -i "s/^database.default.port = .*/database.default.port = 3306/" backend/.env
+sed -i "s/^CI_ENVIRONMENT = .*/CI_ENVIRONMENT = development/" backend/.env
+
+echo "  - Hostname: ${DB_HOST}"
+echo "  - Database: ${DB_DATABASE}"
+echo "  - Port: 3306"
+
+# Verify the configuration
+if grep -q "database.default.hostname = ${DB_HOST}" backend/.env; then
+    echo "✓ Configuration verified"
 else
-    echo "Error: backend/.env not found!"
-    exit 1
+    echo "✗ Warning: Configuration may not be correct"
 fi
 
 echo ""
@@ -64,6 +67,16 @@ docker compose up -d --build
 echo ""
 echo "Waiting for services to be ready..."
 sleep 5
+
+# Install/Update Composer dependencies
+echo ""
+echo "Installing/Updating Composer dependencies..."
+if docker compose exec backend composer install --no-interaction --prefer-dist --optimize-autoloader; then
+    echo "✅ Composer dependencies installed successfully"
+else
+    echo "⚠️  Warning: Composer install failed"
+    echo "  Dependencies will be installed when backend container starts"
+fi
 
 echo ""
 echo "============================================="
