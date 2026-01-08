@@ -44,8 +44,11 @@ class Cookie extends BaseConfig
      * --------------------------------------------------------------------------
      *
      * Set to `.your-domain.com` for site-wide cookies.
+     * 
+     * Development: localhost
+     * Production:  crm.l
      */
-    public string $domain = 'crm.l';
+    public string $domain;
 
     /**
      * --------------------------------------------------------------------------
@@ -53,8 +56,11 @@ class Cookie extends BaseConfig
      * --------------------------------------------------------------------------
      *
      * Cookie will only be set if a secure HTTPS connection exists.
+     * 
+     * Development: false (HTTP)
+     * Production:  true (HTTPS)
      */
-    public bool $secure = true;
+    public bool $secure;
 
     /**
      * --------------------------------------------------------------------------
@@ -62,8 +68,11 @@ class Cookie extends BaseConfig
      * --------------------------------------------------------------------------
      *
      * Cookie will only be accessible via HTTP(S) (no JavaScript).
+     * 
+     * Development: false (easier debugging)
+     * Production:  true (security)
      */
-    public bool $httponly = true;
+    public bool $httponly;
 
     /**
      * --------------------------------------------------------------------------
@@ -87,7 +96,21 @@ class Cookie extends BaseConfig
      *
      * @var ''|'Lax'|'None'|'Strict'
      */
-    public string $samesite = 'Lax';
+    public string $samesite;
+
+    /**
+     * Constructor to initialize cookie settings from environment variables
+     */
+    public function __construct()
+    {
+        parent::__construct();
+
+        // Load from environment variables with fallback defaults
+        $this->domain   = env('COOKIE_DOMAIN', '');
+        $this->secure   = filter_var(env('COOKIE_SECURE', 'true'), FILTER_VALIDATE_BOOLEAN);
+        $this->httponly = filter_var(env('COOKIE_HTTPONLY', 'true'), FILTER_VALIDATE_BOOLEAN);
+        $this->samesite = env('COOKIE_SAMESITE', 'Lax');
+    }
 
     /**
      * --------------------------------------------------------------------------

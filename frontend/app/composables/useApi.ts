@@ -33,8 +33,21 @@ export const useApi = () => {
     error.value = null
 
     try {
-      const baseUrl = process.client ? '' : process.env.API_BASE_URL || 'http://localhost:9104'
-      const url = `${baseUrl}/api/v1${endpoint}`
+      const config = useRuntimeConfig()
+      // 優先使用 runtimeConfig.public.apiBase
+      const apiBase = config.public.apiBase || ''
+
+      // 如果 apiBase 是以 http 開頭，則直接拼接
+      // 如果是非 http 開頭（如 /api/v1），則讓它自動拼接 host
+      let url = ''
+      if (apiBase.startsWith('http')) {
+        // endpoint 已經包含 / 了，所以直接拼
+        url = `${apiBase}${endpoint}`
+      } else {
+        // 相對路徑模式
+        const baseUrl = process.client ? '' : process.env.API_BASE_URL || 'http://localhost:9104'
+        url = `${baseUrl}/api/v1${endpoint}`
+      }
 
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -95,8 +108,16 @@ export const useApi = () => {
     error.value = null
 
     try {
-      const baseUrl = process.client ? '' : process.env.API_BASE_URL || 'http://localhost:9104'
-      const url = `${baseUrl}/api/v1${endpoint}`
+      const config = useRuntimeConfig()
+      const apiBase = config.public.apiBase || ''
+
+      let url = ''
+      if (apiBase.startsWith('http')) {
+        url = `${apiBase}${endpoint}`
+      } else {
+        const baseUrl = process.client ? '' : process.env.API_BASE_URL || 'http://localhost:9104'
+        url = `${baseUrl}/api/v1${endpoint}`
+      }
 
       const headers: Record<string, string> = {}
 

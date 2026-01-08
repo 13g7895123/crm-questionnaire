@@ -53,20 +53,19 @@ export default defineNuxtConfig({
   },
   vite: {
     server: {
-      allowedHosts: ['crm.l'],
-      hmr: {
-        protocol: 'wss',
-        host: 'crm.l',
-        clientPort: 443
-      }
+      // 開發環境不強制使用特定 host
+      // allowedHosts 僅在正式環境需要
+      ...(process.env.NODE_ENV === 'production' && {
+        allowedHosts: ['crm.l']
+      }),
+      // HMR 配置：開發環境使用預設 WebSocket，正式環境使用 WSS
+      hmr: process.env.NODE_ENV === 'production'
+        ? {
+          protocol: 'wss',
+          host: 'crm.l',
+          clientPort: 443
+        }
+        : true  // 開發環境使用預設配置 (ws://localhost:8104)
     }
   },
-  nitro: {
-    devProxy: {
-      '/api/v1': {
-        target: 'http://localhost:9104',
-        changeOrigin: true
-      }
-    }
-  }
 })

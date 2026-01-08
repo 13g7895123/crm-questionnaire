@@ -7,6 +7,46 @@ use CodeIgniter\Router\RouteCollection;
  */
 $routes->get('/', 'Home::index');
 
+/**
+ * Helper function to send CORS headers for all OPTIONS requests
+ */
+function sendCorsPreflightResponse()
+{
+    $response = service('response');
+
+    $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+    $allowedOrigins = ['http://localhost:8104', 'http://127.0.0.1:8104', 'http://localhost:3000', 'http://localhost:9104'];
+
+    if (in_array($origin, $allowedOrigins, true)) {
+        $response->setHeader('Access-Control-Allow-Origin', $origin);
+        $response->setHeader('Access-Control-Allow-Credentials', 'true');
+    }
+
+    $response->setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+    $response->setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Accept-Language');
+    $response->setHeader('Access-Control-Max-Age', '7200');
+    $response->setHeader('Content-Length', '0');
+    $response->setStatusCode(204);
+    $response->send();
+    exit;
+}
+
+/**
+ * Handle all OPTIONS requests for CORS preflight at different path depths
+ */
+$routes->options('(:any)', function () {
+    sendCorsPreflightResponse();
+});
+$routes->options('(:any)/(:any)', function () {
+    sendCorsPreflightResponse();
+});
+$routes->options('(:any)/(:any)/(:any)', function () {
+    sendCorsPreflightResponse();
+});
+$routes->options('(:any)/(:any)/(:any)/(:any)', function () {
+    sendCorsPreflightResponse();
+});
+
 // API v1 Routes
 $routes->group('api/v1', ['namespace' => 'App\Controllers\Api\V1'], function ($routes) {
 
