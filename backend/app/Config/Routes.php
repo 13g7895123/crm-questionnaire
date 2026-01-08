@@ -156,4 +156,7 @@ $routes->group('api/v1', ['namespace' => 'App\Controllers\Api\V1'], function ($r
 
     // File upload
     $routes->post('files/upload', 'FileController::upload', ['filter' => 'jwt']);
+
+    // Debug routes
+    $routes->post('debug/log-match', 'DebugController::logMatch');
 });

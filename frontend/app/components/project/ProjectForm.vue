@@ -63,7 +63,7 @@
         </UFormGroup>
 
         <!-- 供應商選擇 -->
-        <UFormGroup :label="$t('suppliers.supplier')" required>
+        <UFormGroup>
           <template #label>
             <div class="flex items-center justify-between w-full">
               <span class="text-sm font-medium text-gray-700 dark:text-gray-200">
@@ -429,43 +429,107 @@ const downloadSupplierTemplate = async () => {
   }
 }
 
+const getCharCodes = (str: string) => {
+  return Array.from(str).map(c => ({
+    char: c,
+    code: c.charCodeAt(0),
+    hex: '0x' + c.charCodeAt(0).toString(16).toUpperCase()
+  }))
+}
+
 const handleExcelImport = async (event: Event) => {
   const input = event.target as HTMLInputElement
   if (!input.files?.length) return
 
   try {
-    const jsonData = await parseExcel(input.files[0])
+    const rawData = await parseExcel(input.files[0])
     
-    // Extract names from Excel (assuming names are in the first column of each row)
+    // Skip the first row (A1) as it's typically a header
+    const jsonData = rawData.slice(1)
+    
+    // Extract names from Excel
     const importedNames = jsonData
       .map(row => row[0])
-      .filter(name => name && (typeof name === 'string' || typeof name === 'number'))
+      .filter(name => name !== undefined && name !== null && name !== '')
       .map(name => String(name).trim())
 
+    console.group('Excel Supplier Import Debug')
+    console.log('Total rows after skipping header:', importedNames.length)
+
     if (importedNames.length === 0) {
+      console.warn('No valid supplier names found in Excel.')
       showSystemAlert(t('common.importExcelNoData'), 'error')
+      console.groupEnd()
       return
     }
 
     // Match with existing suppliers
     const matchedSupplierIds: string[] = []
     const unmatchedNames: string[] = []
+    const detailedLogs: any[] = []
 
-    importedNames.forEach(name => {
-      // Normalize name for comparison (trim and lowercase)
-      const normalizedName = name.toLowerCase()
-      const supplier = suppliers.value.find(s => s.name.toLowerCase() === normalizedName)
+    importedNames.forEach((name, index) => {
+      // Remove ALL spaces for comparison to be robust against "Company A" vs "CompanyA"
+      const normalizedExcelName = name.replace(/\s/g, '').toLowerCase()
+      const supplier = suppliers.value.find(s => s.name.replace(/\s/g, '').toLowerCase() === normalizedExcelName)
       
+      const debugItem: any = {
+        row: index + 2,
+        excelName: name,
+        excelNormalized: normalizedExcelName,
+        excelChars: getCharCodes(name),
+        status: 'FAILED',
+        systemName: '-',
+        systemChars: []
+      }
+
       if (supplier) {
         if (!matchedSupplierIds.includes(String(supplier.id))) {
           matchedSupplierIds.push(String(supplier.id))
         }
+        debugItem.status = 'MATCHED'
+        debugItem.systemId = supplier.id
+        debugItem.systemName = supplier.name
+        debugItem.systemNormalized = supplier.name.replace(/\s/g, '').toLowerCase()
+        debugItem.systemChars = getCharCodes(supplier.name)
       } else {
         unmatchedNames.push(name)
+        // Log closest match attempt for investigation
+        const possibleMatch = suppliers.value[0]; // Just to see system format
+        if (possibleMatch) {
+          debugItem.sampleSystemName = possibleMatch.name
+          debugItem.sampleSystemChars = getCharCodes(possibleMatch.name)
+        }
       }
+      detailedLogs.push(debugItem)
     })
 
-    // Update form (keeping existing selections but adding matched ones)
+    console.table(detailedLogs.map(l => ({ 
+      Row: l.row, 
+      Excel: l.excelName, 
+      Status: l.status, 
+      System: l.systemName 
+    })))
+    
+    // Send to backend for agent to read
+    try {
+      const apiBase = useRuntimeConfig().public.apiBase
+      await fetch(`${apiBase}/debug/log-match`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          summary: { total: importedNames.length, matched: matchedSupplierIds.length, unmatched: unmatchedNames.length },
+          details: detailedLogs
+        })
+      })
+      console.log('Debug logs sent to backend.')
+    } catch (e) {
+      console.error('Failed to send debug logs to backend', e)
+    }
+
+    console.groupEnd()
+
+    // Update form
     const currentIds = new Set(form.value.supplierIds)
     matchedSupplierIds.forEach(id => currentIds.add(id))
     form.value.supplierIds = Array.from(currentIds)
