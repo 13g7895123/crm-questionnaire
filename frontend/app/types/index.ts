@@ -67,6 +67,7 @@ export interface Project {
   type: 'SAQ' | 'CONFLICT'
   templateId: string
   templateVersion: string
+  template?: { id: string; name: string }
   supplierId?: string
   status?: ProjectStatus
   currentStage?: number

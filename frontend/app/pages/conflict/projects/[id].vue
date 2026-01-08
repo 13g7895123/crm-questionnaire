@@ -46,13 +46,13 @@
       <!-- Project Details -->
       <div v-else-if="project" class="space-y-6">
         <!-- Info Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <!-- Basic Info -->
-          <UCard>
+          <UCard class="lg:col-span-2">
             <template #header>
               <h3 class="font-semibold text-gray-900">{{ $t('projects.basicInfo') }}</h3>
             </template>
-            <dl class="space-y-4">
+            <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4">
               <div>
                 <dt class="text-sm text-gray-500">{{ $t('projects.projectName') }}</dt>
                 <dd class="font-medium">{{ project.name }}</dd>
@@ -71,7 +71,7 @@
               </div>
               <div>
                 <dt class="text-sm text-gray-500">{{ $t('templates.version') }}</dt>
-                <dd class="font-medium">{{ project.templateVersion }}</dd>
+                <dd class="font-medium text-primary-600">{{ project.templateVersion }}</dd>
               </div>
             </dl>
           </UCard>
@@ -81,15 +81,20 @@
             <template #header>
               <h3 class="font-semibold text-gray-900">{{ $t('review.reviewFlow') }}</h3>
             </template>
-            <div class="flex flex-col gap-4">
+            <div class="space-y-3">
               <div
                 v-for="(stage, index) in project.reviewConfig"
                 :key="index"
-                class="flex items-center"
+                class="relative flex items-center"
               >
-                <div class="px-4 py-2 rounded-lg border border-gray-200 bg-gray-50 w-full">
-                  <p class="text-xs text-gray-500">{{ $t('review.stage') }} {{ stage.stageOrder }}</p>
-                  <p class="font-medium">{{ stage.department?.name || stage.departmentId }}</p>
+                <!-- Line between stages -->
+                <div v-if="index < project.reviewConfig.length - 1" class="absolute left-4 top-8 bottom-[-12px] w-0.5 bg-gray-200"></div>
+                
+                <div class="z-10 flex items-center justify-center w-8 h-8 rounded-full bg-primary-50 text-primary-600 font-bold text-sm border-2 border-primary-200">
+                  {{ stage.stageOrder }}
+                </div>
+                <div class="ml-4 flex-1 p-2 rounded-lg border border-gray-100 bg-gray-50/50">
+                  <p class="text-sm font-medium">{{ stage.department?.name || stage.departmentId }}</p>
                 </div>
               </div>
             </div>
@@ -99,20 +104,76 @@
         <!-- Suppliers List -->
         <UCard>
           <template #header>
-            <h3 class="font-semibold text-gray-900">{{ $t('suppliers.supplierList') }}</h3>
+            <div class="flex items-center justify-between">
+              <h3 class="font-semibold text-gray-900">{{ $t('suppliers.supplierList') }}</h3>
+              <UInput
+                v-model="supplierSearch"
+                icon="i-heroicons-magnifying-glass"
+                size="sm"
+                :placeholder="$t('common.search')"
+                class="w-64"
+              />
+            </div>
           </template>
+
           <UTable
-            :rows="project.suppliers || []"
+            :rows="filteredSuppliers"
             :columns="supplierColumns"
+            :loading="loading"
           >
+            <!-- 供應商名稱 -->
+            <template #supplierName-data="{ row }">
+              <div class="flex flex-col">
+                <span class="font-medium text-gray-900">{{ row.supplierName }}</span>
+                <span class="text-xs text-gray-400">ID: {{ row.supplierId }}</span>
+              </div>
+            </template>
+
+            <!-- 狀態標籤 -->
             <template #status-data="{ row }">
               <ProjectStatusBadge :status="row.status" />
             </template>
+
+            <!-- 目前審核階段 -->
             <template #currentStage-data="{ row }">
-              <span>{{ row.currentStage }}</span>
+              <UBadge
+                v-if="row.status !== 'APPROVED' && row.status !== 'DRAFT'"
+                color="primary"
+                variant="subtle"
+                size="xs"
+              >
+                {{ $t('review.stage') }} {{ row.currentStage }}
+              </UBadge>
+              <span v-else>-</span>
             </template>
+
+            <!-- 提交日期 -->
             <template #submittedAt-data="{ row }">
-              {{ formatDate(row.submittedAt) }}
+              <span class="text-sm text-gray-500">
+                {{ row.submittedAt ? formatDate(row.submittedAt) : '-' }}
+              </span>
+            </template>
+
+            <!-- 操作 -->
+            <template #actions-data="{ row }">
+              <div class="flex items-center gap-2">
+                <UButton
+                  v-if="row.status === 'SUBMITTED' || row.status === 'REVIEWING'"
+                  icon="i-heroicons-check-badge"
+                  size="xs"
+                  color="primary"
+                  variant="soft"
+                  :label="$t('review.review')"
+                  @click="handleReview(row)"
+                />
+                <UButton
+                  icon="i-heroicons-eye"
+                  size="xs"
+                  color="gray"
+                  variant="ghost"
+                  @click="viewDetails(row)"
+                />
+              </div>
             </template>
           </UTable>
         </UCard>
@@ -135,7 +196,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useProjects } from '~/composables/useProjects'
 import ProjectStatusBadge from '~/components/project/ProjectStatusBadge.vue'
 import ProjectForm from '~/components/project/ProjectForm.vue'
-import type { Project } from '~/types/index'
+import type { Project, ProjectSupplier } from '~/types/index'
 import { useI18n } from 'vue-i18n'
 import { useBreadcrumbs } from '~/composables/useBreadcrumbs'
 
@@ -151,13 +212,26 @@ const loading = ref(true)
 const error = ref('')
 const project = ref<Project | null>(null)
 const showEditModal = ref(false)
+const supplierSearch = ref('')
 
 const supplierColumns = computed(() => [
-  { key: 'supplierName', label: t('suppliers.supplier') },
-  { key: 'status', label: t('projects.status') },
-  { key: 'currentStage', label: t('review.stage') },
-  { key: 'submittedAt', label: t('projects.submittedAt') }
+  { key: 'supplierName', label: t('suppliers.supplier'), sortable: true },
+  { key: 'status', label: t('projects.status'), sortable: true },
+  { key: 'currentStage', label: t('review.stage'), sortable: true },
+  { key: 'submittedAt', label: t('projects.submittedAt'), sortable: true },
+  { key: 'actions', label: t('common.action') }
 ])
+
+const filteredSuppliers = computed(() => {
+  const suppliers = project.value?.suppliers || []
+  if (!supplierSearch.value) return suppliers
+  
+  const search = supplierSearch.value.toLowerCase()
+  return suppliers.filter(s => 
+    s.supplierName.toLowerCase().includes(search) || 
+    s.supplierId.toString().includes(search)
+  )
+})
 
 const formatDate = (dateStr: string) => {
   if (!dateStr) return '-'
@@ -187,7 +261,7 @@ const loadProject = async () => {
       { label: t('common.home'), to: '/' },
       { label: t('apps.conflict') },
       { label: t('projects.projectList'), to: '/conflict/projects' },
-      { label: project.value.name }
+      { label: project.value?.name || '-' }
     ])
   } catch (e) {
     console.error('Failed to load project:', e)
@@ -204,6 +278,14 @@ const openEditModal = () => {
 const handleProjectSaved = (savedProject: Project) => {
   project.value = savedProject
   loadProject() // Reload to get fresh data
+}
+
+const handleReview = (supplier: ProjectSupplier) => {
+  router.push(`/conflict/projects/${project.value?.id}/review/${supplier.supplierId}`)
+}
+
+const viewDetails = (supplier: ProjectSupplier) => {
+  router.push(`/conflict/projects/${project.value?.id}/details/${supplier.supplierId}`)
 }
 
 onMounted(() => {

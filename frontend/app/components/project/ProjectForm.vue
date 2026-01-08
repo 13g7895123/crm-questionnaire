@@ -64,6 +64,40 @@
 
         <!-- 供應商選擇 -->
         <UFormGroup :label="$t('suppliers.supplier')" required>
+          <template #label>
+            <div class="flex items-center justify-between w-full">
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-200">
+                {{ $t('suppliers.supplier') }} <span class="text-red-500">*</span>
+              </span>
+              <div class="flex items-center gap-2">
+                <UButton
+                  icon="i-heroicons-document-arrow-down"
+                  size="xs"
+                  color="gray"
+                  variant="ghost"
+                  @click="downloadSupplierTemplate"
+                >
+                  {{ $t('common.downloadTemplate') }}
+                </UButton>
+                <UButton
+                  icon="i-heroicons-document-arrow-up"
+                  size="xs"
+                  color="primary"
+                  variant="ghost"
+                  @click="triggerExcelImport"
+                >
+                  {{ $t('common.importExcel') }}
+                </UButton>
+                <input
+                  ref="excelInput"
+                  type="file"
+                  class="hidden"
+                  accept=".xlsx, .xls"
+                  @change="handleExcelImport"
+                />
+              </div>
+            </div>
+          </template>
           <USelectMenu
             v-model="form.supplierIds"
             :options="supplierOptions"
@@ -161,10 +195,13 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
+import { useExcel } from '~/composables/useExcel'
 import { useProjects } from '~/composables/useProjects'
 import { useTemplates } from '~/composables/useTemplates'
 import { useSuppliers } from '~/composables/useSuppliers'
 import { useDepartments } from '~/composables/useDepartments'
+import { useSweetAlert } from '~/composables/useSweetAlert'
+import { useI18n } from 'vue-i18n'
 import type { Project, Template } from '~/types/index'
 
 const props = defineProps<{
@@ -182,6 +219,11 @@ const { createProject, updateProject, getProject } = useProjects()
 const { templates, fetchTemplates } = useTemplates()
 const { suppliers, fetchSuppliers } = useSuppliers()
 const { departments, fetchDepartments } = useDepartments()
+const { showSystemAlert } = useSweetAlert()
+const { t } = useI18n()
+const { parseExcel, downloadTemplate } = useExcel()
+
+const excelInput = ref<HTMLInputElement | null>(null)
 
 const loading = ref(false)
 const templatesLoading = ref(false)
@@ -373,6 +415,81 @@ const getSupplierName = (id: string) => {
 
 const removeSupplier = (id: string) => {
   form.value.supplierIds = form.value.supplierIds.filter(sid => sid !== id)
+}
+
+const triggerExcelImport = () => {
+  excelInput.value?.click()
+}
+
+const downloadSupplierTemplate = async () => {
+  try {
+    await downloadTemplate(t('suppliers.supplierTemplate'), [t('suppliers.supplierName')])
+  } catch (error) {
+    console.error('Failed to download template:', error)
+  }
+}
+
+const handleExcelImport = async (event: Event) => {
+  const input = event.target as HTMLInputElement
+  if (!input.files?.length) return
+
+  try {
+    const jsonData = await parseExcel(input.files[0])
+    
+    // Extract names from Excel (assuming names are in the first column of each row)
+    const importedNames = jsonData
+      .map(row => row[0])
+      .filter(name => name && (typeof name === 'string' || typeof name === 'number'))
+      .map(name => String(name).trim())
+
+    if (importedNames.length === 0) {
+      showSystemAlert(t('common.importExcelNoData'), 'error')
+      return
+    }
+
+    // Match with existing suppliers
+    const matchedSupplierIds: string[] = []
+    const unmatchedNames: string[] = []
+
+    importedNames.forEach(name => {
+      // Normalize name for comparison (trim and lowercase)
+      const normalizedName = name.toLowerCase()
+      const supplier = suppliers.value.find(s => s.name.toLowerCase() === normalizedName)
+      
+      if (supplier) {
+        if (!matchedSupplierIds.includes(String(supplier.id))) {
+          matchedSupplierIds.push(String(supplier.id))
+        }
+      } else {
+        unmatchedNames.push(name)
+      }
+    })
+
+    // Update form (keeping existing selections but adding matched ones)
+    const currentIds = new Set(form.value.supplierIds)
+    matchedSupplierIds.forEach(id => currentIds.add(id))
+    form.value.supplierIds = Array.from(currentIds)
+
+    // Reset input
+    input.value = ''
+
+    // Result Feedback
+    if (unmatchedNames.length === 0) {
+      showSystemAlert(t('common.importExcelSuccess', { count: matchedSupplierIds.length }), 'success')
+    } else {
+      showSystemAlert(
+        t('common.importExcelPartial', {
+          matched: matchedSupplierIds.length,
+          unmatched: unmatchedNames.length,
+          names: unmatchedNames.slice(0, 3).join(', ') + (unmatchedNames.length > 3 ? '...' : '')
+        }),
+        'info'
+      )
+    }
+  } catch (error) {
+    console.error('Failed to parse Excel:', error)
+    showSystemAlert(t('common.importExcelError'), 'error')
+  }
 }
 
 const closeModal = () => {
