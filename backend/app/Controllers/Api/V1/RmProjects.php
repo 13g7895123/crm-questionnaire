@@ -77,61 +77,91 @@ class RmProjects extends BaseController
             $supplierIds = $input['supplierIds'] ?? [];
 
             // 處理 review_config
-            if (isset($input['review_config']) && is_array($input['review_config'])) {
-                $input['review_config'] = json_encode($input['review_config']);
+            if (isset($input['reviewConfig']) && is_array($input['reviewConfig'])) {
+                $input['review_config'] = json_encode($input['reviewConfig']);
             }
 
             // 1. 建立專案
             if (!$this->model->insert($input)) {
-                return $this->failValidationErrors($this->model->errors());
+                $errors = $this->model->errors();
+                log_message('error', 'Failed to create project: ' . json_encode($errors));
+                return $this->failValidationErrors($errors);
             }
 
             $projectId = $this->model->getInsertID();
 
-            // 2. 獲取位本組設定
+            // 2. 獲取範本組設定
             $templateSetModel = new \App\Models\TemplateSetModel();
             $templateSet = $templateSetModel->find($input['template_set_id']);
 
-            if ($templateSet && !empty($supplierIds)) {
+            if (!$templateSet) {
+                throw new \Exception('找不到指定的範本組');
+            }
+
+            if (!empty($supplierIds)) {
                 $assignmentModel = new \App\Models\RmSupplierAssignmentModel();
                 $orgModel = new \App\Models\OrganizationModel();
                 $userModel = new \App\Models\UserModel();
 
                 foreach ($supplierIds as $supplierId) {
                     $org = $orgModel->find($supplierId);
-                    if (!$org) continue;
+                    if (!$org) {
+                        log_message('warning', "Supplier not found: {$supplierId}");
+                        continue;
+                    }
+
+                    // 支援 Entity 物件和陣列兩種格式
+                    $orgName = is_object($org) ? ($org->name ?? '') : ($org['name'] ?? '');
 
                     // 尋找該組織的第一個使用者作為 Email 來源
                     $user = $userModel->where('organization_id', $supplierId)->first();
-                    $email = $user ? $user->email : '';
+                    $email = '';
+                    if ($user) {
+                        // 支援 Entity 物件和陣列兩種格式
+                        $email = is_object($user) ? ($user->email ?? '') : ($user['email'] ?? '');
+                    }
 
-                    $assignmentModel->insert([
+                    // 處理 amrt_minerals JSON 編碼
+                    $amrtMinerals = $templateSet['amrt_minerals'] ?? null;
+                    if (is_array($amrtMinerals)) {
+                        $amrtMinerals = json_encode($amrtMinerals);
+                    }
+
+                    $assignmentData = [
                         'project_id'     => $projectId,
                         'supplier_id'    => $supplierId,
-                        'supplier_name'  => $org->name,
+                        'supplier_name'  => $orgName,
                         'supplier_email' => $email,
-                        'cmrt_required'  => $templateSet['cmrt_enabled'],
-                        'emrt_required'  => $templateSet['emrt_enabled'],
-                        'amrt_required'  => $templateSet['amrt_enabled'],
-                        'amrt_minerals'  => $templateSet['amrt_minerals'],
+                        'cmrt_required'  => $templateSet['cmrt_enabled'] ?? 0,
+                        'emrt_required'  => $templateSet['emrt_enabled'] ?? 0,
+                        'amrt_required'  => $templateSet['amrt_enabled'] ?? 0,
+                        'amrt_minerals'  => $amrtMinerals,
                         'status'         => 'not_assigned'
-                    ]);
+                    ];
+
+                    if (!$assignmentModel->insert($assignmentData)) {
+                        $errors = $assignmentModel->errors();
+                        log_message('error', 'Failed to create assignment for supplier ' . $supplierId . ': ' . json_encode($errors));
+                        throw new \Exception('建立供應商指派失敗: ' . json_encode($errors));
+                    }
                 }
             }
 
             $db->transComplete();
 
             if ($db->transStatus() === false) {
+                log_message('error', 'Transaction failed for project creation');
                 return $this->failServerError('建立專案失敗（資料庫事務錯誤）');
             }
 
             return $this->respondCreated([
                 'success' => true,
                 'message' => '專案建立成功',
-                'id'      => $projectId
+                'data'    => ['id' => $projectId]
             ]);
         } catch (\Exception $e) {
             $db->transRollback();
+            log_message('error', 'Exception in project creation: ' . $e->getMessage());
             return $this->failServerError($e->getMessage());
         }
     }
@@ -184,18 +214,30 @@ class RmProjects extends BaseController
                         $org = $orgModel->find($sid);
                         if (!$org) continue;
 
+                        // 支援 Entity 物件和陣列兩種格式
+                        $orgName = is_object($org) ? ($org->name ?? '') : ($org['name'] ?? '');
+
                         $user = $userModel->where('organization_id', $sid)->first();
-                        $email = $user ? $user->email : '';
+                        $email = '';
+                        if ($user) {
+                            $email = is_object($user) ? ($user->email ?? '') : ($user['email'] ?? '');
+                        }
+
+                        // 處理 amrt_minerals JSON 編碼
+                        $amrtMinerals = $templateSet['amrt_minerals'] ?? null;
+                        if (is_array($amrtMinerals)) {
+                            $amrtMinerals = json_encode($amrtMinerals);
+                        }
 
                         $assignmentModel->insert([
                             'project_id'     => $id,
                             'supplier_id'    => $sid,
-                            'supplier_name'  => $org->name,
+                            'supplier_name'  => $orgName,
                             'supplier_email' => $email,
-                            'cmrt_required'  => $templateSet['cmrt_enabled'],
-                            'emrt_required'  => $templateSet['emrt_enabled'],
-                            'amrt_required'  => $templateSet['amrt_enabled'],
-                            'amrt_minerals'  => $templateSet['amrt_minerals'],
+                            'cmrt_required'  => $templateSet['cmrt_enabled'] ?? 0,
+                            'emrt_required'  => $templateSet['emrt_enabled'] ?? 0,
+                            'amrt_required'  => $templateSet['amrt_enabled'] ?? 0,
+                            'amrt_minerals'  => $amrtMinerals,
                             'status'         => 'not_assigned'
                         ]);
                     }
@@ -432,6 +474,8 @@ class RmProjects extends BaseController
 
             $writer->save('php://output');
             exit;
+        } catch (\Exception $e) {
+            return $this->failServerError('匯出失敗: ' . $e->getMessage());
         }
     }
 
@@ -449,21 +493,21 @@ class RmProjects extends BaseController
 
             $answerModel = new \App\Models\RmAnswerModel();
             $answerIds = $answerModel->whereIn('assignment_id', $assignmentIds)
-                                     ->whereIn('status', ['submitted', 'approved', 'completed'])
-                                     ->findColumn('id') ?: [0];
+                ->whereIn('status', ['submitted', 'approved', 'completed'])
+                ->findColumn('id') ?: [0];
 
             $smelterAnswerModel = new \App\Models\RmAnswerSmelterModel();
-            
+
             // 抓取所有冶煉廠並進行彙整
             $rawSmelters = $smelterAnswerModel->whereIn('answer_id', $answerIds)->findAll();
-            
+
             $consolidated = [];
             foreach ($rawSmelters as $s) {
                 // 以 ID 或 (名稱+國家+金屬) 為 Key
-                $key = $s['smelter_id'] 
-                    ? $s['smelter_id'] 
+                $key = $s['smelter_id']
+                    ? $s['smelter_id']
                     : ($s['smelter_name'] . '|' . $s['smelter_country'] . '|' . $s['metal_type']);
-                
+
                 if (!isset($consolidated[$key])) {
                     $consolidated[$key] = [
                         'metal_type'      => $s['metal_type'],
@@ -474,7 +518,7 @@ class RmProjects extends BaseController
                         'suppliers'       => []
                     ];
                 }
-                
+
                 // 反向找出供應商名稱
                 $ans = $answerModel->find($s['answer_id']);
                 if ($ans) {
@@ -494,7 +538,7 @@ class RmProjects extends BaseController
             // 標頭
             $headers = ['金屬種類', '冶煉廠 ID', '冶煉廠名稱', '國家', '引用供應商數', '供應商明細'];
             $sheet->fromArray($headers, NULL, 'A1');
-            
+
             // 資料行
             $row = 2;
             foreach ($consolidated as $item) {
@@ -522,7 +566,6 @@ class RmProjects extends BaseController
             header('Content-Disposition: attachment; filename="' . $fileName . '"');
             $writer->save('php://output');
             exit;
-
         } catch (\Exception $e) {
             return $this->failServerError($e->getMessage());
         }

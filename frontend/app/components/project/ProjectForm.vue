@@ -567,16 +567,40 @@ const closeModal = () => {
 }
 
 const handleSubmit = async () => {
-  if (!form.value.name.trim()) return
-
-  if (props.projectType === 'CONFLICT') {
-    if (!form.value.template_set_id) return
-  } else {
-    if (!form.value.templateId || !form.value.templateVersion) return
+  // 驗證專案名稱
+  if (!form.value.name.trim()) {
+    showSystemAlert(t('validation.required') + ': ' + t('projects.projectName'), 'error')
+    return
   }
 
-  if (form.value.supplierIds.length === 0) return
-  if (!form.value.reviewConfig.every(r => r.departmentId)) return
+  // 驗證範本選擇
+  if (props.projectType === 'CONFLICT') {
+    if (!form.value.template_set_id) {
+      showSystemAlert('請選擇範本組', 'error')
+      return
+    }
+  } else {
+    if (!form.value.templateId) {
+      showSystemAlert(t('validation.required') + ': ' + t('templates.template'), 'error')
+      return
+    }
+    if (!form.value.templateVersion) {
+      showSystemAlert(t('validation.required') + ': ' + t('templates.version'), 'error')
+      return
+    }
+  }
+
+  // 驗證供應商選擇
+  if (form.value.supplierIds.length === 0) {
+    showSystemAlert('請至少選擇一個供應商', 'error')
+    return
+  }
+
+  // 驗證審核流程
+  if (!form.value.reviewConfig.every(r => r.departmentId)) {
+    showSystemAlert('請為所有審核階段選擇部門', 'error')
+    return
+  }
 
   loading.value = true
   try {
@@ -602,10 +626,12 @@ const handleSubmit = async () => {
       result = await createProject(payload)
     }
     
+    showSystemAlert(isEditing.value ? '專案更新成功' : '專案建立成功', 'success')
     emit('saved', result.data)
     closeModal()
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to save project:', error)
+    showSystemAlert(error?.message || '操作失敗，請稍後再試', 'error')
   } finally {
     loading.value = false
   }

@@ -35,7 +35,7 @@ class RmProjectModel extends Model
         'name'            => 'required|min_length[3]|max_length[255]',
         'year'            => 'required|integer|greater_than_equal_to[2020]|less_than_equal_to[2030]',
         'template_set_id' => 'required|is_not_unique[rm_template_sets.id]',
-        'status'          => 'required|in_list[DRAFT,IN_PROGRESS,COMPLETED,ARCHIVED]',
+        'status'          => 'permit_empty|in_list[DRAFT,IN_PROGRESS,COMPLETED,ARCHIVED]',
     ];
 
     protected $validationMessages = [
