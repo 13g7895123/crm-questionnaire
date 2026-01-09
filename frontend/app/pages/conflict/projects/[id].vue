@@ -1,9 +1,9 @@
 <template>
-  <div class="py-8 px-4 sm:px-6 lg:px-8">
-    <div class="w-full">
-      <!-- Back Button & Title -->
-      <div class="flex items-center justify-between mb-8">
-        <div class="flex items-center gap-4">
+  <div class="rm-project-detail-page">
+    <!-- 頁面標題 -->
+    <div class="page-header">
+      <div class="header-top">
+        <div class="header-left">
           <UButton
             icon="i-heroicons-arrow-left"
             color="gray"
@@ -11,284 +11,294 @@
             @click="router.back()"
           />
           <div>
-            <h1 class="text-2xl font-bold text-gray-900">{{ project?.name || $t('projects.projectDetail') }}</h1>
+            <h1 class="text-2xl font-bold text-gray-900">{{ project?.name || '專案詳情' }}</h1>
             <p class="text-sm text-gray-500 mt-1" v-if="project">
-              {{ project.year }} · {{ project.type }}
+              {{ project.year }} · {{ project.type }} · 建立於 {{ formatDate(project.createdAt) }}
             </p>
           </div>
         </div>
+
+        <!-- 頁籤導航 -->
+        <div v-if="project" class="tabs-nav">
+          <button
+            v-for="tab in tabs"
+            :key="tab.id"
+            :class="['tab-button', { active: activeTab === tab.id }]"
+            @click="activeTab = tab.id"
+          >
+            <UIcon :name="tab.icon" class="w-4 h-4" />
+            {{ tab.label }}
+            <UBadge v-if="tab.badge" color="gray" variant="subtle" size="xs">
+              {{ tab.badge }}
+            </UBadge>
+          </button>
+        </div>
+
         <UButton
           v-if="project"
           icon="i-heroicons-pencil-square"
           color="white"
-          :label="$t('common.edit')"
-          @click="openEditModal"
-        />
-      </div>
-
-      <!-- Loading -->
-      <div v-if="loading" class="flex justify-center py-12">
-        <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin text-primary-500" />
-      </div>
-
-      <!-- Error -->
-      <div v-else-if="error" class="text-center py-12 bg-red-50 rounded-lg border border-red-200">
-        <div class="text-red-600 font-medium">{{ error }}</div>
-        <UButton
-          class="mt-4"
-          color="primary"
-          variant="soft"
-          :label="$t('common.retry')"
-          @click="loadProject"
-        />
-      </div>
-
-      <!-- Project Details -->
-      <div v-else-if="project" class="space-y-6">
-        <!-- Info Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <!-- Basic Info -->
-          <UCard class="lg:col-span-2">
-            <template #header>
-              <h3 class="font-semibold text-gray-900">{{ $t('projects.basicInfo') }}</h3>
-            </template>
-            <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4">
-              <div>
-                <dt class="text-sm text-gray-500">{{ $t('projects.projectName') }}</dt>
-                <dd class="font-medium">{{ project.name }}</dd>
-              </div>
-              <div>
-                <dt class="text-sm text-gray-500">{{ $t('projects.projectYear') }}</dt>
-                <dd class="font-medium">{{ project.year }}</dd>
-              </div>
-              <div>
-                <dt class="text-sm text-gray-500">{{ $t('projects.projectType') }}</dt>
-                <dd class="font-medium">{{ project.type }}</dd>
-              </div>
-              <div>
-                <dt class="text-sm text-gray-500">{{ $t('templates.template') }}</dt>
-                <dd class="font-medium">{{ project.template?.name || project.templateId }}</dd>
-              </div>
-              <div>
-                <dt class="text-sm text-gray-500">{{ $t('templates.version') }}</dt>
-                <dd class="font-medium text-primary-600">{{ project.templateVersion }}</dd>
-              </div>
-            </dl>
-          </UCard>
-
-          <!-- Review Config -->
-          <UCard v-if="project.reviewConfig?.length">
-            <template #header>
-              <h3 class="font-semibold text-gray-900">{{ $t('review.reviewFlow') }}</h3>
-            </template>
-            <div class="space-y-3">
-              <div
-                v-for="(stage, index) in project.reviewConfig"
-                :key="index"
-                class="relative flex items-center"
-              >
-                <!-- Line between stages -->
-                <div v-if="index < project.reviewConfig.length - 1" class="absolute left-4 top-8 bottom-[-12px] w-0.5 bg-gray-200"></div>
-                
-                <div class="z-10 flex items-center justify-center w-8 h-8 rounded-full bg-primary-50 text-primary-600 font-bold text-sm border-2 border-primary-200">
-                  {{ stage.stageOrder }}
-                </div>
-                <div class="ml-4 flex-1 p-2 rounded-lg border border-gray-100 bg-gray-50/50">
-                  <p class="text-sm font-medium">{{ stage.department?.name || stage.departmentId }}</p>
-                </div>
-              </div>
-            </div>
-          </UCard>
-        </div>
-
-        <!-- Suppliers List -->
-        <UCard>
-          <template #header>
-            <div class="flex items-center justify-between">
-              <h3 class="font-semibold text-gray-900">{{ $t('suppliers.supplierList') }}</h3>
-              <UInput
-                v-model="supplierSearch"
-                icon="i-heroicons-magnifying-glass"
-                size="sm"
-                :placeholder="$t('common.search')"
-                class="w-64"
-              />
-            </div>
-          </template>
-
-          <UTable
-            :rows="filteredSuppliers"
-            :columns="supplierColumns"
-            :loading="loading"
-          >
-            <!-- 供應商名稱 -->
-            <template #supplierName-data="{ row }">
-              <div class="flex flex-col">
-                <span class="font-medium text-gray-900">{{ row.supplierName }}</span>
-                <span class="text-xs text-gray-400">ID: {{ row.supplierId }}</span>
-              </div>
-            </template>
-
-            <!-- 狀態標籤 -->
-            <template #status-data="{ row }">
-              <ProjectStatusBadge :status="row.status" />
-            </template>
-
-            <!-- 目前審核階段 -->
-            <template #currentStage-data="{ row }">
-              <UBadge
-                v-if="row.status !== 'APPROVED' && row.status !== 'DRAFT'"
-                color="primary"
-                variant="subtle"
-                size="xs"
-              >
-                {{ $t('review.stage') }} {{ row.currentStage }}
-              </UBadge>
-              <span v-else>-</span>
-            </template>
-
-            <!-- 提交日期 -->
-            <template #submittedAt-data="{ row }">
-              <span class="text-sm text-gray-500">
-                {{ row.submittedAt ? formatDate(row.submittedAt) : '-' }}
-              </span>
-            </template>
-
-            <!-- 操作 -->
-            <template #actions-data="{ row }">
-              <div class="flex items-center gap-2">
-                <UButton
-                  v-if="row.status === 'SUBMITTED' || row.status === 'REVIEWING'"
-                  icon="i-heroicons-check-badge"
-                  size="xs"
-                  color="primary"
-                  variant="soft"
-                  :label="$t('review.review')"
-                  @click="handleReview(row)"
-                />
-                <UButton
-                  icon="i-heroicons-eye"
-                  size="xs"
-                  color="gray"
-                  variant="ghost"
-                  @click="viewDetails(row)"
-                />
-              </div>
-            </template>
-          </UTable>
-        </UCard>
+          @click="showEditModal = true"
+        >
+          編輯專案
+        </UButton>
       </div>
     </div>
 
-    <!-- Edit Modal -->
-    <ProjectForm
-      v-model="showEditModal"
-      :project-type="project?.type || 'CONFLICT'"
-      :project="project"
-      @saved="handleProjectSaved"
-    />
+    <!-- Loading -->
+    <div v-if="loading" class="flex justify-center py-12">
+      <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin text-primary-500" />
+    </div>
+
+    <!-- Error -->
+    <div v-else-if="error" class="text-center py-12 bg-red-50 rounded-lg border border-red-200">
+      <div class="text-red-600 font-medium">{{ error }}</div>
+      <UButton
+        class="mt-4"
+        color="primary"
+        variant="soft"
+        @click="loadProject"
+      >
+        重試
+      </UButton>
+    </div>
+
+    <!-- 內容區 -->
+    <div v-else-if="project" class="content-container">
+      <!-- 頁籤內容 -->
+      <div class="tab-content">
+        <!-- 總覽 -->
+        <div v-show="activeTab === 'overview'" class="tab-pane">
+          <ProjectOverview :project="project" @edit="showEditModal = true" />
+        </div>
+
+        <!-- 供應商範本管理 -->
+        <div v-show="activeTab === 'suppliers'" class="tab-pane">
+          <SupplierTemplates :project-id="projectId" />
+        </div>
+
+        <!-- 進度追蹤 -->
+        <div v-show="activeTab === 'progress'" class="tab-pane">
+          <ProjectProgress :project-id="projectId" />
+        </div>
+
+        <!-- 審核 -->
+        <div v-show="activeTab === 'review'" class="tab-pane">
+          <ReviewManagement :project-id="projectId" />
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useProjects } from '~/composables/useProjects'
-import ProjectStatusBadge from '~/components/project/ProjectStatusBadge.vue'
-import ProjectForm from '~/components/project/ProjectForm.vue'
-import type { Project, ProjectSupplier } from '~/types/index'
-import { useI18n } from 'vue-i18n'
 import { useBreadcrumbs } from '~/composables/useBreadcrumbs'
+import type { Project } from '~/types/index'
+
+// 動態匯入子頁面
+const ProjectOverview = defineAsyncComponent(() => import('~/components/conflict/ProjectOverview.vue'))
+const SupplierTemplates = defineAsyncComponent(() => import('./[id]/suppliers.vue'))
+const ProjectProgress = defineAsyncComponent(() => import('./[id]/progress.vue'))
+const ReviewManagement = defineAsyncComponent(() => import('~/components/conflict/ReviewManagement.vue'))
 
 definePageMeta({ middleware: 'auth' })
 
-const { t } = useI18n()
-const { setBreadcrumbs } = useBreadcrumbs()
 const route = useRoute()
 const router = useRouter()
+const { setBreadcrumbs } = useBreadcrumbs()
 const { getProject } = useProjects()
 
+const projectId = computed(() => Number(route.params.id))
 const loading = ref(true)
 const error = ref('')
 const project = ref<Project | null>(null)
 const showEditModal = ref(false)
-const supplierSearch = ref('')
+const activeTab = ref('overview')
 
-const supplierColumns = computed(() => [
-  { key: 'supplierName', label: t('suppliers.supplier'), sortable: true },
-  { key: 'status', label: t('projects.status'), sortable: true },
-  { key: 'currentStage', label: t('review.stage'), sortable: true },
-  { key: 'submittedAt', label: t('projects.submittedAt'), sortable: true },
-  { key: 'actions', label: t('common.action') }
+// 頁籤定義
+const tabs = computed(() => [
+  {
+    id: 'overview',
+    label: '專案總覽',
+    icon: 'i-heroicons-squares-2x2',
+    badge: null
+  },
+  {
+    id: 'suppliers',
+    label: '供應商管理',
+    icon: 'i-heroicons-user-group',
+    badge: project.value?.suppliers?.length || null
+  },
+  {
+    id: 'progress',
+    label: '進度追蹤',
+    icon: 'i-heroicons-chart-bar',
+    badge: null
+  },
+  {
+    id: 'review',
+    label: '審核管理',
+    icon: 'i-heroicons-check-circle',
+    badge: null
+  }
 ])
 
-const filteredSuppliers = computed(() => {
-  const suppliers = project.value?.suppliers || []
-  if (!supplierSearch.value) return suppliers
-  
-  const search = supplierSearch.value.toLowerCase()
-  return suppliers.filter(s => 
-    s.supplierName.toLowerCase().includes(search) || 
-    s.supplierId.toString().includes(search)
-  )
-})
-
-const formatDate = (dateStr: string) => {
+const formatDate = (dateStr?: string) => {
   if (!dateStr) return '-'
   return new Date(dateStr).toLocaleDateString('zh-TW', {
     year: 'numeric',
     month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
+    day: '2-digit'
   })
 }
 
 const loadProject = async () => {
-  const id = route.params.id as string
-  if (!id) {
-    error.value = 'Invalid project ID'
-    return
-  }
-
   loading.value = true
   error.value = ''
   try {
-    const response = await getProject(id)
+    const response = await getProject(projectId.value.toString())
     project.value = response.data
 
     setBreadcrumbs([
-      { label: t('common.home'), to: '/' },
-      { label: t('apps.conflict') },
-      { label: t('projects.projectList'), to: '/conflict/projects' },
-      { label: project.value?.name || '-' }
+      { label: '首頁', to: '/' },
+      { label: '衝突礦產', to: '/conflict' },
+      { label: '專案列表', to: '/conflict/projects' },
+      { label: project.value?.name || '專案詳情' }
     ])
-  } catch (e) {
-    console.error('Failed to load project:', e)
-    error.value = 'Failed to load project'
+  } catch (err: any) {
+    error.value = err.message || '載入失敗'
   } finally {
     loading.value = false
   }
 }
 
-const openEditModal = () => {
-  showEditModal.value = true
+// URL 參數控制活動頁籤
+const initActiveTab = () => {
+  const tab = route.query.tab as string
+  if (tab && ['overview', 'suppliers', 'progress', 'review'].includes(tab)) {
+    activeTab.value = tab
+  }
 }
 
-const handleProjectSaved = (savedProject: Project) => {
-  project.value = savedProject
-  loadProject() // Reload to get fresh data
-}
-
-const handleReview = (supplier: ProjectSupplier) => {
-  router.push(`/conflict/projects/${project.value?.id}/review/${supplier.supplierId}`)
-}
-
-const viewDetails = (supplier: ProjectSupplier) => {
-  router.push(`/conflict/projects/${project.value?.id}/details/${supplier.supplierId}`)
-}
+// 監聽頁籤變化，更新 URL
+watch(activeTab, (newTab) => {
+  router.replace({
+    query: { ...route.query, tab: newTab }
+  })
+})
 
 onMounted(() => {
+  initActiveTab()
   loadProject()
 })
 </script>
+
+<style scoped>
+.rm-project-detail-page {
+  padding: 1.5rem 1rem;
+}
+
+@media (min-width: 640px) {
+  .rm-project-detail-page {
+    padding: 2rem 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .rm-project-detail-page {
+    padding: 2rem;
+  }
+}
+
+.page-header {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+
+.tabs-nav {
+  display: flex;
+  gap: 0.5rem;
+  flex: 1;
+  justify-content: center;
+  overflow-x: auto;
+}
+
+.tab-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6b7280;
+  border-radius: 0.5rem;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.tab-button:hover {
+  color: #374151;
+  background: #f9fafb;
+}
+
+.tab-button.active {
+  color: #2563eb;
+  background: #eff6ff;
+}
+
+.tab-content {
+  background: white;
+  border-radius: 0.75rem;
+  min-height: 400px;
+}
+
+.tab-pane {
+  animation: fadeIn 0.3s;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 響應式調整 */
+@media (max-width: 1024px) {
+  .header-top {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .tabs-nav {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+</style>
