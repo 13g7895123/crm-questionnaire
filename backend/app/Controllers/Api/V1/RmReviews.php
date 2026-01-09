@@ -27,9 +27,10 @@ class RmReviews extends BaseController
     public function pending()
     {
         try {
-            $data = $this->assignmentModel->select('rm_supplier_assignments.*, projects.name as project_name')
-                ->join('projects', 'projects.id = rm_supplier_assignments.project_id')
+            $data = $this->assignmentModel->select('rm_supplier_assignments.*, rm_projects.name as project_name, rm_projects.id as project_id')
+                ->join('rm_projects', 'rm_projects.id = rm_supplier_assignments.project_id')
                 ->where('rm_supplier_assignments.status', 'submitted')
+                ->orderBy('rm_supplier_assignments.submitted_at', 'DESC')
                 ->findAll();
 
             return $this->respond([
@@ -37,6 +38,7 @@ class RmReviews extends BaseController
                 'data'    => $data
             ]);
         } catch (\Exception $e) {
+            log_message('error', 'Failed to fetch pending reviews: ' . $e->getMessage());
             return $this->failServerError($e->getMessage());
         }
     }

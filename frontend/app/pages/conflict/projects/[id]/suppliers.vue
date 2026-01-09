@@ -1,10 +1,5 @@
 <template>
   <div class="rm-suppliers-page">
-    <div class="page-header">
-      <h1>供應商範本管理</h1>
-      <p class="page-description">為專案中的供應商指派需要填寫的範本類型</p>
-    </div>
-
     <div class="action-toolbar">
       <div class="action-group">
         <button
@@ -94,8 +89,8 @@
                 v-model="selectedSuppliers"
               />
             </td>
-            <td class="supplier-name">{{ supplier.supplierName }}</td>
-            <td class="supplier-email">{{ supplier.supplierEmail }}</td>
+            <td class="supplier-name">{{ supplier.supplier_name }}</td>
+            <td class="supplier-email">{{ supplier.supplier_email }}</td>
             <td class="text-center">
               <span v-if="supplier.cmrt_required" class="badge badge-success">✓</span>
               <span v-else class="badge badge-gray">✗</span>
@@ -151,7 +146,7 @@
     <div v-if="showEditModal" class="modal-overlay" @click="closeEditModal">
       <div class="modal-content" @click.stop>
         <div class="modal-header">
-          <h2>設定範本 - {{ editingSupplier?.supplierName }}</h2>
+          <h2>設定範本 - {{ editingSupplier?.supplier_name }}</h2>
           <button class="modal-close" @click="closeEditModal">&times;</button>
         </div>
         
@@ -361,8 +356,8 @@ const filteredSuppliers = computed(() => {
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
     result = result.filter(s =>
-      s.supplierName.toLowerCase().includes(query) ||
-      s.supplierEmail.toLowerCase().includes(query)
+      (s.supplier_name?.toLowerCase().includes(query)) ||
+      (s.supplier_email?.toLowerCase().includes(query))
     )
   }
 
@@ -537,7 +532,7 @@ const downloadTemplate = () => {
 
 const notifySupplier = async (supplier: SupplierAssignment) => {
   const confirmed = await showConfirm(
-    `確定要發送填寫邀請給 ${supplier.supplierName} 嗎？`,
+    `確定要發送填寫邀請給 ${supplier.supplier_name} 嗎？`,
     '發送通知'
   )
   if (!confirmed) return

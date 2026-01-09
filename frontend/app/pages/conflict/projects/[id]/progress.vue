@@ -57,7 +57,7 @@
                 <UIcon :name="stat.icon" :class="['w-5 h-5', stat.colorClass]" />
               </div>
               <div>
-                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{{ stat.label }}</div>
+                <div class="text-xs font-bold text-gray-400 uppercase tracking-widest">{{ stat.label }}</div>
                 <div class="text-2xl font-black text-gray-900 mt-0.5 leading-none">{{ stat.value }}</div>
               </div>
             </div>
@@ -90,11 +90,11 @@
               </div>
               <div class="grid grid-cols-2 gap-x-8 gap-y-1">
                 <div class="flex flex-col">
-                  <span class="text-[10px] font-bold text-gray-400 uppercase">{{ $t('conflict.smelterCount') }}</span>
+                  <span class="text-xs font-bold text-gray-400 uppercase">{{ $t('conflict.smelterCount') }}</span>
                   <span class="text-lg font-bold text-gray-800">{{ progressData?.smelterStats?.total || 0 }}</span>
                 </div>
                 <div class="flex flex-col">
-                  <span class="text-[10px] font-bold text-gray-400 uppercase">{{ $t('conflict.rmiConformant') }}</span>
+                  <span class="text-xs font-bold text-gray-400 uppercase">{{ $t('conflict.rmiConformant') }}</span>
                   <span class="text-lg font-bold text-green-600">{{ progressData?.smelterStats?.conformant || 0 }}</span>
                 </div>
               </div>
@@ -107,7 +107,7 @@
                   class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-gradient-to-r from-green-500 to-emerald-400 transition-all duration-1000"
                 ></div>
               </div>
-              <div class="flex justify-between text-[10px] mt-1 font-bold text-gray-300">
+              <div class="flex justify-between text-xs mt-1 font-bold text-gray-300">
                 <span>0%</span>
                 <span>100%</span>
               </div>
@@ -129,7 +129,7 @@
               <div class="flex justify-between items-end">
                 <div>
                   <h4 class="font-bold text-gray-900">{{ type }}</h4>
-                  <p class="text-[10px] text-gray-400 font-semibold">{{ getTemplateDesc(type) }}</p>
+                  <p class="text-xs text-gray-400 font-semibold">{{ getTemplateDesc(type) }}</p>
                 </div>
                 <span class="text-sm font-black text-primary-600">{{ stats.percentage }}%</span>
               </div>
@@ -140,7 +140,7 @@
                   :style="{ width: `${stats.percentage}%` }"
                 ></div>
               </div>
-              <div class="flex justify-between items-center text-[10px] font-bold text-gray-500">
+              <div class="flex justify-between items-center text-xs font-bold text-gray-500">
                 <span>{{ stats.completed }} / {{ stats.total }}</span>
                 <span v-if="stats.completed === stats.total" class="text-green-500 flex items-center gap-0.5">
                   <UIcon name="i-heroicons-check-circle" class="w-3 h-3" />
@@ -196,10 +196,10 @@
             }"
           >
             <!-- 供應商名稱 -->
-            <template #supplierName-data="{ row }">
+            <template #supplier_name-data="{ row }">
               <div class="flex flex-col">
-                <span class="font-bold text-gray-900">{{ row.supplierName }}</span>
-                <span class="text-[10px] text-gray-400 font-medium">ID: {{ row.supplierId }}</span>
+                <span class="font-bold text-gray-900">{{ row.supplier_name }}</span>
+                <span class="text-xs text-gray-400 font-medium">ID: {{ row.supplier_id }}</span>
               </div>
             </template>
 
@@ -318,7 +318,7 @@ const statusFilterOptions = [
 ]
 
 const supplierColumns = [
-  { key: 'supplierName', label: '供應商名稱', sortable: true },
+  { key: 'supplier_name', label: '供應商名稱', sortable: true },
   { key: 'assignedTemplates', label: '指派範本' },
   { key: 'status', label: '狀態' },
   { key: 'completionRate', label: '完成度', sortable: true },
@@ -335,7 +335,7 @@ const filteredSuppliers = computed(() => {
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
     result = result.filter(s =>
-      s.supplierName.toLowerCase().includes(query)
+      s.supplier_name.toLowerCase().includes(query)
     )
   }
 
