@@ -4,6 +4,7 @@
     base-route="/conflict"
     :title="$t('projects.projectList')"
     show-templates-button
+    show-reviews-button
   />
 </template>
 

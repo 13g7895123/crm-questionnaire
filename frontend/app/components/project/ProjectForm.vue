@@ -37,21 +37,21 @@
           />
         </UFormGroup>
 
-        <!-- 範本選擇 -->
-        <UFormGroup :label="$t('templates.template')" required>
+        <!-- 範本選擇 / 範本組選擇 -->
+        <UFormGroup :label="projectType === 'CONFLICT' ? '範本組' : $t('templates.template')" required>
           <USelectMenu
             v-model="selectedTemplate"
             :options="templateOptions"
             option-attribute="label"
             value-attribute="value"
-            :placeholder="$t('templates.selectTemplate')"
+            :placeholder="projectType === 'CONFLICT' ? '選擇範本組' : $t('templates.selectTemplate')"
             :disabled="loading || templatesLoading"
             :loading="templatesLoading"
           />
         </UFormGroup>
 
-        <!-- 範本版本 -->
-        <UFormGroup v-if="selectedTemplate" :label="$t('templates.version')" required>
+        <!-- 範本版本 (僅 SAQ 需要，RM 已包含在範本組中) -->
+        <UFormGroup v-if="projectType === 'SAQ' && selectedTemplate" :label="$t('templates.version')" required>
           <USelectMenu
             v-model="form.templateVersion"
             :options="versionOptions"
@@ -198,6 +198,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useExcel } from '~/composables/useExcel'
 import { useProjects } from '~/composables/useProjects'
 import { useTemplates } from '~/composables/useTemplates'
+import { useTemplateSets } from '~/composables/useTemplateSets'
 import { useSuppliers } from '~/composables/useSuppliers'
 import { useDepartments } from '~/composables/useDepartments'
 import { useSweetAlert } from '~/composables/useSweetAlert'
@@ -217,6 +218,7 @@ const emit = defineEmits<{
 
 const { createProject, updateProject, getProject } = useProjects()
 const { templates, fetchTemplates } = useTemplates()
+const { templateSets, fetchTemplateSets } = useTemplateSets()
 const { suppliers, fetchSuppliers } = useSuppliers()
 const { departments, fetchDepartments } = useDepartments()
 const { showSystemAlert } = useSweetAlert()
@@ -243,22 +245,29 @@ const form = ref({
   year: 0,
   templateId: '',
   templateVersion: '',
+  template_set_id: '',
   supplierIds: [] as string[],
   reviewConfig: [{ stageOrder: 1, departmentId: '' }] as { stageOrder: number; departmentId: string }[]
 })
 
-const templateOptions = computed(() => 
-  templates.value
+const templateOptions = computed(() => {
+  if (props.projectType === 'CONFLICT') {
+    return templateSets.value.map(ts => ({
+      label: ts.name,
+      value: String(ts.id)
+    }))
+  }
+  return templates.value
     .filter(t => t.type === props.projectType)
     .map(t => ({
       label: t.name,
       value: String(t.id)
     }))
-)
+})
 
 // ... existing computed properties ...
 const versionOptions = computed(() => {
-  if (!selectedTemplate.value) return []
+  if (props.projectType === 'CONFLICT' || !selectedTemplate.value) return []
   const template = templates.value.find(t => String(t.id) === String(selectedTemplate.value))
   if (!template?.versions) return []
   return template.versions.map(v => ({
@@ -287,6 +296,7 @@ const resetForm = () => {
     year: 0,
     templateId: '',
     templateVersion: '',
+    template_set_id: '',
     supplierIds: [],
     reviewConfig: [{ stageOrder: 1, departmentId: '' }]
   }
@@ -294,22 +304,10 @@ const resetForm = () => {
 }
 
 watch(selectedTemplate, (newVal) => {
-  form.value.templateId = newVal || ''
-  // Only reset version if template changed and it's not the initial load of editing project
-  // preventing overwrite if we just set it from project data
-  // But here we rely on form.value.templateVersion being set after this if needed?
-  // Actually, standard behavior: if template changes, version resets. 
-  // We need to be careful not to reset it when we programmatically set templateId during edit load.
-  // We can handle that by setting version AFTER setting templateId in the load function.
-  
-  if (newVal) {
-     // If the current version in form is not valid for this template, reset it? 
-     // Or just let UI handle it. 
-     // For safety, if user manually changes template, we reset version.
-     // But we need to distinguish manual change vs programmatic set.
-     // For now, let's just default to latest if not set or invalid?
-     // We'll skip auto-select logic here to avoid overriding loaded data, 
-     // unless we add a check.
+  if (props.projectType === 'CONFLICT') {
+    form.value.template_set_id = newVal || ''
+  } else {
+    form.value.templateId = newVal || ''
   }
 })
 
@@ -340,29 +338,37 @@ const loadInitialData = async () => {
   departmentsLoading.value = true
   
   try {
-    // 1. Fetch options first
-    await Promise.all([
-      fetchTemplates(props.projectType),
+    const promises: Promise<any>[] = [
       fetchSuppliers(),
       fetchDepartments()
-    ])
+    ]
+    
+    if (props.projectType === 'CONFLICT') {
+      promises.push(fetchTemplateSets())
+    } else {
+      promises.push(fetchTemplates(props.projectType))
+    }
+    
+    await Promise.all(promises)
 
-    // 2. If editing, fetch full project details and populate form
     if (isEditing.value && props.project?.id) {
-       const { data: projectData } = await getProject(props.project.id)
+       const { data: projectData } = await getProject(props.project.id, props.projectType)
        
        if (projectData) {
          form.value.name = projectData.name
          form.value.year = projectData.year
-         // Convert to string to ensure matching with options
-         const tmplId = String(projectData.templateId)
-         form.value.templateId = tmplId
-         selectedTemplate.value = tmplId // This triggers watch
          
-         // Set version (need to wait for watch to validly set options? or just set it)
-         form.value.templateVersion = String(projectData.templateVersion)
+         if (props.projectType === 'CONFLICT') {
+           const tsId = String(projectData.template_set_id)
+           form.value.template_set_id = tsId
+           selectedTemplate.value = tsId
+         } else {
+           const tmplId = String(projectData.templateId)
+           form.value.templateId = tmplId
+           selectedTemplate.value = tmplId
+           form.value.templateVersion = String(projectData.templateVersion)
+         }
          
-         // Populate suppliers
          if (projectData.suppliers && Array.isArray(projectData.suppliers)) {
            form.value.supplierIds = projectData.suppliers.map((s: any) => String(s.supplierId))
          } else if (projectData.supplierId) {
@@ -371,7 +377,6 @@ const loadInitialData = async () => {
            form.value.supplierIds = []
          }
 
-         // Populate review config
          if (projectData.reviewConfig && Array.isArray(projectData.reviewConfig)) {
            form.value.reviewConfig = projectData.reviewConfig.map((r: any, i: number) => ({
              stageOrder: i + 1,
@@ -564,30 +569,37 @@ const closeModal = () => {
 const handleSubmit = async () => {
   if (!form.value.name.trim()) return
 
-  // Validate required fields (same for create and edit now)
-  if (!form.value.templateId || !form.value.templateVersion) return
+  if (props.projectType === 'CONFLICT') {
+    if (!form.value.template_set_id) return
+  } else {
+    if (!form.value.templateId || !form.value.templateVersion) return
+  }
+
   if (form.value.supplierIds.length === 0) return
   if (!form.value.reviewConfig.every(r => r.departmentId)) return
 
   loading.value = true
   try {
     let result
-    const payload = {
+    const payload: any = {
       name: form.value.name,
       year: form.value.year,
-      templateId: form.value.templateId,
-      templateVersion: form.value.templateVersion,
       supplierIds: form.value.supplierIds,
-      reviewConfig: form.value.reviewConfig
+      reviewConfig: form.value.reviewConfig,
+      type: props.projectType
+    }
+
+    if (props.projectType === 'CONFLICT') {
+      payload.template_set_id = form.value.template_set_id
+    } else {
+      payload.templateId = form.value.templateId
+      payload.templateVersion = form.value.templateVersion
     }
 
     if (isEditing.value && props.project) {
       result = await updateProject(props.project.id, payload)
     } else {
-      result = await createProject({
-        ...payload,
-        type: props.projectType
-      })
+      result = await createProject(payload)
     }
     
     emit('saved', result.data)

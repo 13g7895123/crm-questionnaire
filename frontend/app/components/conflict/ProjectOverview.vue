@@ -1,153 +1,161 @@
 <template>
   <div class="project-overview space-y-6">
-    <!-- 基本資訊與統計 -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <!-- 基本資訊卡片 -->
-      <UCard>
-        <template #header>
-          <h3 class="font-semibold text-gray-900">基本資訊</h3>
-        </template>
-        
-        <dl class="space-y-4">
-          <div>
-            <dt class="text-sm text-gray-500">專案名稱</dt>
-            <dd class="font-medium text-gray-900">{{ project.name }}</dd>
+    <!-- 核心統計數據 -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <UCard
+        v-for="stat in quickStats"
+        :key="stat.label"
+        :ui="{ 
+          base: 'overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1',
+          body: { padding: 'p-5' }
+        }"
+      >
+        <div class="flex items-center gap-4">
+          <div :class="['p-3 rounded-xl bg-opacity-10', stat.colorClass.replace('text', 'bg')]">
+            <UIcon :name="stat.icon" :class="['w-6 h-6', stat.colorClass]" />
           </div>
           <div>
-            <dt class="text-sm text-gray-500">專案年份</dt>
-            <dd class="font-medium text-gray-900">{{ project.year }}</dd>
-          </div>
-          <div>
-            <dt class="text-sm text-gray-500">專案類型</dt>
-            <dd class="font-medium text-gray-900">{{ project.type }}</dd>
-          </div>
-          <div>
-            <dt class="text-sm text-gray-500">專案狀態</dt>
-            <dd>
-              <UBadge
-                :color="getStatusColor(project.status)"
-                variant="subtle"
-              >
-                {{ getStatusLabel(project.status) }}
-              </UBadge>
-            </dd>
-          </div>
-          <div>
-            <dt class="text-sm text-gray-500">建立日期</dt>
-            <dd class="text-sm text-gray-900">{{ formatDate(project.createdAt) }}</dd>
-          </div>
-          <div>
-            <dt class="text-sm text-gray-500">最後更新</dt>
-            <dd class="text-sm text-gray-900">{{ formatDate(project.updatedAt) }}</dd>
-          </div>
-        </dl>
-      </UCard>
-
-      <!-- 統計卡片 -->
-      <UCard>
-        <template #header>
-          <h3 class="font-semibold text-gray-900">快速統計</h3>
-        </template>
-        
-        <div class="grid grid-cols-2 gap-4">
-          <div class="stat-item">
-            <div class="text-2xl font-bold text-gray-900">{{ supplierCount }}</div>
-            <div class="text-sm text-gray-500">供應商總數</div>
-          </div>
-          <div class="stat-item">
-            <div class="text-2xl font-bold text-primary-600">{{ assignedCount }}</div>
-            <div class="text-sm text-gray-500">已指派範本</div>
-          </div>
-          <div class="stat-item">
-            <div class="text-2xl font-bold text-green-600">{{ completedCount }}</div>
-            <div class="text-sm text-gray-500">已完成填寫</div>
-          </div>
-          <div class="stat-item">
-            <div class="text-2xl font-bold text-blue-600">{{ completionRate }}%</div>
-            <div class="text-sm text-gray-500">完成度</div>
+            <div class="text-sm font-medium text-gray-500">{{ stat.label }}</div>
+            <div class="text-2xl font-bold text-gray-900 tracking-tight">
+              {{ stat.value }}<span v-if="stat.suffix" class="text-sm font-normal text-gray-400 ml-1">{{ stat.suffix }}</span>
+            </div>
           </div>
         </div>
       </UCard>
     </div>
 
-    <!-- 審核流程 -->
-    <UCard v-if="project.reviewConfig?.length">
-      <template #header>
-        <h3 class="font-semibold text-gray-900">審核流程</h3>
-      </template>
-      
-      <div class="flex flex-col gap-4">
-        <div
-          v-for="(stage, index) in project.reviewConfig"
-          :key="index"
-          class="flex items-center gap-3"
-        >
-          <div class="flex-shrink-0 w-8 h-8 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center font-semibold text-sm">
-            {{ stage.stageOrder || index + 1 }}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- 基本資訊明細 -->
+      <UCard class="lg:col-span-1 shadow-sm">
+        <template #header>
+          <div class="flex items-center gap-2">
+            <UIcon name="i-heroicons-information-circle" class="w-5 h-5 text-primary-500" />
+            <h3 class="font-bold text-gray-900">{{ $t('projects.basicInfo') }}</h3>
           </div>
-          <div class="flex-1 px-4 py-2 rounded-lg border border-gray-200 bg-gray-50">
-            <p class="text-xs text-gray-500">審核階段 {{ stage.stageOrder || index + 1 }}</p>
-            <p class="font-medium text-gray-900">{{ stage.department?.name || `部門 ${stage.departmentId}` }}</p>
+        </template>
+        
+        <div class="space-y-4">
+          <div v-for="info in basicInfoItems" :key="info.label" class="flex flex-col border-b border-gray-50 pb-3 last:border-0 last:pb-0">
+            <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">{{ info.label }}</span>
+            <div v-if="info.type === 'badge'" class="mt-1">
+              <UBadge :color="getStatusColor(project.status)" variant="subtle" size="md">
+                {{ getStatusLabel(project.status) }}
+              </UBadge>
+            </div>
+            <span v-else class="text-sm font-medium text-gray-700 mt-0.5 truncate">{{ info.value }}</span>
           </div>
-          <UIcon 
-            v-if="index < project.reviewConfig.length - 1"
-            name="i-heroicons-arrow-right"
-            class="w-5 h-5 text-gray-400"
-          />
         </div>
-      </div>
-    </UCard>
+      </UCard>
 
-    <!-- 快速操作 -->
-    <UCard>
-      <template #header>
-        <h3 class="font-semibold text-gray-900">快速操作</h3>
-      </template>
-      
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <UButton
-          color="primary"
-          variant="soft"
-          block
-          @click="handleNotifyAll"
-        >
-          <template #leading>
-            <UIcon name="i-heroicons-envelope" />
-          </template>
-          發送通知
-        </UButton>
+      <!-- 審核階段可視化 -->
+      <UCard class="lg:col-span-2 shadow-sm">
+        <template #header>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <UIcon name="i-heroicons-shield-check" class="w-5 h-5 text-green-500" />
+              <h3 class="font-bold text-gray-900">{{ $t('review.reviewFlow') }}</h3>
+            </div>
+            <UBadge v-if="project.reviewConfig?.length" size="xs" variant="soft" color="primary">
+              {{ project.reviewConfig.length }} {{ $t('review.stage') }}
+            </UBadge>
+          </div>
+        </template>
         
-        <UButton
-          color="gray"
-          variant="soft"
-          block
-          @click="handleExportReport"
-        >
-          <template #leading>
-            <UIcon name="i-heroicons-arrow-down-tray" />
-          </template>
-          匯出報表
-        </UButton>
+        <div v-if="project.reviewConfig?.length" class="relative py-4">
+          <!-- 背景連接線 (Desktop) -->
+          <div class="hidden md:block absolute top-[2.25rem] left-8 right-8 h-0.5 bg-gray-100 -z-0"></div>
+          
+          <div class="flex flex-col md:flex-row items-center md:items-start justify-between gap-8 md:gap-4">
+            <div
+              v-for="(stage, index) in project.reviewConfig"
+              :key="index"
+              class="relative flex flex-col items-center flex-1 max-w-[200px]"
+            >
+              <div 
+                class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm z-10 transition-colors shadow-sm"
+                :class="[
+                  index + 1 <= (project.currentStage || 1) 
+                  ? 'bg-primary-500 text-white shadow-primary-200' 
+                  : 'bg-white border-2 border-gray-200 text-gray-400'
+                ]"
+              >
+                {{ index + 1 }}
+              </div>
+              <div class="mt-3 text-center">
+                <p class="text-xs font-bold text-gray-400 uppercase">{{ $t('review.stage') }} {{ index + 1 }}</p>
+                <p class="text-sm font-semibold text-gray-800 mt-0.5">{{ stage.department?.name || `Dept ${stage.departmentId}` }}</p>
+              </div>
+              
+              <!-- 箭頭 (Mobile only) -->
+              <UIcon 
+                v-if="index < project.reviewConfig.length - 1"
+                name="i-heroicons-chevron-down"
+                class="md:hidden w-5 h-5 text-gray-300 mt-2"
+              />
+            </div>
+          </div>
+        </div>
+        <div v-else class="flex flex-col items-center justify-center py-8 text-gray-400 bg-gray-50 rounded-lg border border-dashed">
+          <UIcon name="i-heroicons-no-symbol" class="w-8 h-8 mb-2" />
+          <p class="text-sm italic">未設定審核流程</p>
+        </div>
+      </UCard>
+    </div>
+
+    <!-- 快速操作區 -->
+    <UCard :ui="{ body: { padding: 'p-4' } }" class="bg-gray-50/50 border-gray-100 shadow-none">
+      <div class="flex flex-wrap items-center justify-center sm:justify-between gap-4">
+        <div class="flex items-center gap-2">
+          <UIcon name="i-heroicons-bolt text-yellow-500" class="w-5 h-5" />
+          <span class="text-sm font-bold text-gray-700">{{ $t('common.action') }}</span>
+        </div>
         
-        <UButton
-          color="gray"
-          variant="soft"
-          block
-          @click="$emit('edit')"
-        >
-          <template #leading>
-            <UIcon name="i-heroicons-pencil-square" />
-          </template>
-          編輯專案
-        </UButton>
+        <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+          <UButton
+            color="primary"
+            variant="ghost"
+            icon="i-heroicons-envelope"
+            class="hidden sm:inline-flex"
+            @click="handleNotifyAll"
+          >
+            發送通知
+          </UButton>
+          
+          <UDropdown
+            :items="exportOptions"
+            :popper="{ placement: 'bottom-end' }"
+          >
+            <UButton
+              color="gray"
+              variant="white"
+              icon="i-heroicons-arrow-down-tray"
+              trailing-icon="i-heroicons-chevron-down"
+              class="border-gray-200"
+            >
+              {{ $t('common.export') }}
+            </UButton>
+          </UDropdown>
+          
+          <UButton
+            color="white"
+            icon="i-heroicons-pencil-square"
+            class="border-gray-200"
+            @click="$emit('edit')"
+          >
+            {{ $t('common.edit') }}
+          </UButton>
+        </div>
       </div>
     </UCard>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import type { Project } from '~/types/index'
+import { useResponsibleMinerals } from '~/composables/useResponsibleMinerals'
+import { useSweetAlert } from '~/composables/useSweetAlert'
+import { useI18n } from 'vue-i18n'
 
 interface Props {
   project: Project
@@ -156,25 +164,64 @@ interface Props {
 const props = defineProps<Props>()
 const emit = defineEmits(['edit'])
 
-const supplierCount = computed(() => props.project.suppliers?.length || 0)
-const assignedCount = computed(() => {
-  // TODO: 從 API 取得已指派範本的供應商數量
-  return 0
-})
-const completedCount = computed(() => {
-  // TODO: 從 API 取得已完成填寫的供應商數量
-  return 0
-})
+const { fetchProgress, progressData, exportProgress, exportConsolidatedReport } = useResponsibleMinerals()
+const { showSuccess, showError, showLoading, closeAlert } = useSweetAlert()
+const { t } = useI18n()
+
+// 統計數據配置
+const supplierCount = computed(() => progressData.value?.summary?.totalSuppliers || props.project.suppliers?.length || 0)
+const assignedCount = computed(() => progressData.value?.summary?.assignedSuppliers || 0)
+const completedCount = computed(() => progressData.value?.summary?.completedSuppliers || 0)
 const completionRate = computed(() => {
   if (supplierCount.value === 0) return 0
   return Math.round((completedCount.value / supplierCount.value) * 100)
 })
 
+const quickStats = computed(() => [
+  {
+    label: '供應商總數',
+    value: supplierCount.value,
+    icon: 'i-heroicons-user-group',
+    colorClass: 'text-indigo-600',
+    suffix: ''
+  },
+  {
+    label: '已指派範本',
+    value: assignedCount.value,
+    icon: 'i-heroicons-clipboard-document-check',
+    colorClass: 'text-primary-600',
+    suffix: ''
+  },
+  {
+    label: '已完成填寫',
+    value: completedCount.value,
+    icon: 'i-heroicons-check-circle',
+    colorClass: 'text-green-600',
+    suffix: ''
+  },
+  {
+    label: '完成度',
+    value: completionRate.value,
+    icon: 'i-heroicons-chart-pie',
+    colorClass: 'text-orange-500',
+    suffix: '%'
+  }
+])
+
+const basicInfoItems = computed(() => [
+  { label: t('projects.projectName'), value: props.project.name, type: 'text' },
+  { label: t('projects.projectYear'), value: props.project.year, type: 'text' },
+  { label: t('projects.projectType'), value: props.project.type, type: 'text' },
+  { label: t('projects.status'), value: props.project.status, type: 'badge' },
+  { label: t('projects.createdAt'), value: formatDate(props.project.createdAt), type: 'text' },
+  { label: t('projects.updatedAt'), value: formatDate(props.project.updatedAt), type: 'text' }
+])
+
 const getStatusLabel = (status?: string) => {
   const statusMap: Record<string, string> = {
-    DRAFT: '草稿',
-    IN_PROGRESS: '進行中',
-    COMPLETED: '已完成',
+    DRAFT: t('projects.draft'),
+    IN_PROGRESS: t('projects.inProgress'),
+    COMPLETED: t('projects.submitted'),
     ARCHIVED: '已封存'
   }
   return statusMap[status || ''] || status || '未知'
@@ -202,25 +249,54 @@ const formatDate = (dateStr?: string) => {
 }
 
 const handleNotifyAll = () => {
-  // TODO: 實作發送通知功能
-  console.log('發送通知給所有供應商')
+  showSuccess('功能開發中：將發送 Email 通知所有未完成的供應商')
 }
 
-const handleExportReport = () => {
-  // TODO: 實作匯出報表功能
-  console.log('匯出專案報表')
+const handleExportProgress = async () => {
+  showLoading('報表產出中...')
+  try {
+    await exportProgress(Number(props.project.id))
+    closeAlert()
+  } catch (err: any) {
+    showError(err.message || '匯出失敗')
+  }
 }
+
+const handleExportConsolidated = async () => {
+  showLoading('報表產出中...')
+  try {
+    await exportConsolidatedReport(Number(props.project.id))
+    closeAlert()
+  } catch (err: any) {
+    showError(err.message || '匯出失敗')
+  }
+}
+
+const exportOptions = [
+  [
+    {
+      label: t('conflict.progressReport'),
+      icon: 'i-heroicons-list-bullet',
+      click: handleExportProgress
+    },
+    {
+      label: t('conflict.consolidatedReport'),
+      icon: 'i-heroicons-table-cells',
+      click: handleExportConsolidated
+    }
+  ]
+]
+
+onMounted(async () => {
+  if (props.project.id) {
+    await fetchProgress(Number(props.project.id))
+  }
+})
 </script>
 
 <style scoped>
-.project-overview {
-  /* 移除原本的 padding，由父組件控制 */
-}
-
-.stat-item {
-  padding: 12px;
-  background: #f9fafb;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
+/* 保持乾淨，主要利用 TailwindCSS */
+.tracking-tight {
+  letter-spacing: -0.025em;
 }
 </style>

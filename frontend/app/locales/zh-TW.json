@@ -49,7 +49,13 @@
     "test": "測試",
     "type": "類型",
     "name": "名稱",
-    "noData": "暫無資料"
+    "export": "匯出",
+    "exportExcel": "匯出 Excel",
+    "exportConsolidated": "匯出彙總報表",
+    "noData": "暫無資料",
+    "noDataYet": "尚無紀錄資料",
+    "modify": "修改",
+    "addFirstSmelter": "點擊新增第一筆冶煉廠資料"
   },
   "auth": {
     "login": "登入",
@@ -153,7 +159,8 @@
     "of": "的",
     "confirmSubmit": "確定要提交問卷嗎？提交後將無法修改。",
     "submitFailed": "問卷提交失敗，請稍後再試。",
-    "saveFailed": "保存失敗，請稍後再試。"
+    "saveFailed": "保存失敗，請稍後再試。",
+    "instruction": "請依序完成所有指派的範本，或直接上傳官方 Excel。"
   },
   "review": {
     "review": "審核",
@@ -168,7 +175,8 @@
     "returnedAt": "退回時間",
     "reviewHistory": "審核紀錄",
     "approvalFlow": "審核流程",
-    "reviewProgress": "審核進度"
+    "reviewProgress": "審核進度",
+    "returnFeedback": "退回意見反饋"
   },
   "departments": {
     "departments": "部門",
@@ -203,7 +211,26 @@
     "confirmDelete": "確定要刪除此使用者嗎？此操作無法復原。"
   },
   "conflict": {
-    "projectList": "衝突資產專案列表"
+    "projectList": "衝突資產專案列表",
+    "rmQuestionnaire": "責任礦產問卷",
+    "smelterAnalytics": "冶煉廠合規統計",
+    "conformantRate": "總體合規率",
+    "smelterCount": "冶煉廠總結",
+    "rmiConformant": "符合 RMI 標準",
+    "onlineForm": "線上填寫表單",
+    "useOnlineForm": "使用線上表單",
+    "uploadExcel": "上傳 Excel 檔案",
+    "progressReport": "進度追蹤報表",
+    "consolidatedReport": "冶煉廠彙總報表 (Roll-up)",
+    "declaration": "基本宣告",
+    "mineralDeclaration": "礦產宣告",
+    "smelterList": "冶煉廠清單",
+    "processorList": "加工廠清單",
+    "reviewManagement": "審核管理",
+    "declarationScope": "宣告範圍",
+    "declarationNote": "請核實每項礦產的使用情況。若選擇「是」，則需在標籤頁中提供對應的冶煉廠清單。",
+    "smelterListPreview": "冶煉廠/加工廠清單預覽",
+    "uploadInstruction": "請下載官方範本填寫後上傳，或使用直觀的線上表單進行手動輸入。"
   },
   "validation": {
     "required": "此欄位為必填",

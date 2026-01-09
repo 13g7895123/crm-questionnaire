@@ -250,5 +250,29 @@ CREATE TABLE rm_supplier_assignments (
 
 **更新完成** ✅
 
-主規劃文件：`RESPONSIBLE_MINERALS_IMPLEMENTATION_PLAN.md`  
-技術文件：`CONFLICT_MINERALS_EXCEL_IMPORT.md`
+---
+
+## 當前實作進度 (2026-01-09)
+
+### ✅ Phase 1: 基礎架構與 CMRT 支援 (已完成)
+- [x] 資料庫 Migrations (rm_projects, rm_supplier_assignments, rm_answers, rm_smelters)
+- [x] 後端實作 `RMITemplateDetector` 與 `CMRTParser` (使用 PhpSpreadsheet)
+- [x] 整合 `RmProjects` 與 `RmSupplierAssignments` API
+- [x] 前端 `useResponsibleMinerals` Composable 對應對接
+
+### ✅ Phase 2: 供應商 Portal 與專案整合 (已完成)
+- [x] 專案管理頁面對接 (`suppliers.vue`, `progress.vue`)
+- [x] 供應商問卷填寫頁面 (`RMQuestionnairePortal.vue`)
+- [x] 支援 CMRT Excel 檔案上傳、自動解析與儲存
+- [x] 問卷提交流程 (Draft -> Submitted)
+- [x] 擴展支援 EMRT/AMRT 解析與填寫。
+- [x] 實作審核管理功能頁面清單。
+- [x] 整合冶煉廠 (Smelter) 合規統計圖表至進度頁面。
+- [x] 實作衝突礦產專案彙整報表 (Roll-up Report) 匯出功能。
+- [x] 完善全系統 RM 模組的多國語系 (i18n) 支援。
+- [x] 實作線上問卷手動填寫介面 (Online Form) - CMRT。
+
+### 🔜 下一步計畫
+- [ ] 完善 EMRT / AMRT 的線上表單手動填寫介面。
+- [ ] 強化 RMI Smelter 主檔資料自動更新機制 (外部資料對接)。
+- [ ] 實作專案年度對比分析功能。

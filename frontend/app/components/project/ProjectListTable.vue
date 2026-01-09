@@ -43,6 +43,13 @@
               :label="$t('templates.templates')"
               :to="`${baseRoute}/templates`"
             />
+            <UButton
+              v-if="showReviewsButton"
+              icon="i-heroicons-clipboard-document-check"
+              color="white"
+              label="審核管理"
+              :to="`${baseRoute}/reviews/pending`"
+            />
           </div>
 
           <!-- Right: Search & Refresh -->
@@ -170,6 +177,7 @@ const props = defineProps<{
   baseRoute: string
   title?: string
   showTemplatesButton?: boolean
+  showReviewsButton?: boolean
 }>()
 
 const { t } = useI18n()

@@ -469,7 +469,7 @@ const saveTemplateAssignment = async () => {
   try {
     await assignTemplateToSupplier(
       projectId.value,
-      editingSupplier.value.supplierId,
+      editingSupplier.value.id,
       {
         cmrt_required: editForm.value.cmrt_required,
         emrt_required: editForm.value.emrt_required,
@@ -543,8 +543,9 @@ const notifySupplier = async (supplier: SupplierAssignment) => {
   if (!confirmed) return
 
   try {
-    await notifySupplierApi(projectId.value, supplier.supplierId)
+    await notifySupplierApi(projectId.value, supplier.id)
     showSuccess('通知發送成功')
+    await loadSuppliers() // 重新載入以更新狀態
   } catch (err: any) {
     showError(err.message || '通知發送失敗')
   }
@@ -560,6 +561,7 @@ const handleNotifyAll = async () => {
   try {
     await notifyAllSuppliers(projectId.value)
     showSuccess(`已發送通知給 ${assignedCount.value} 位供應商`)
+    await loadSuppliers() // 重新載入以更新狀態
   } catch (err: any) {
     showError(err.message || '批量通知失敗')
   }

@@ -61,7 +61,7 @@ export const useResponsibleMinerals = () => {
     const fetchSuppliersWithTemplates = async (projectId: number) => {
         try {
             const response = await api.get(`/rm/projects/${projectId}/suppliers`)
-            suppliers.value = response.data || []
+            suppliers.value = response.data.data || response.data || []
             return suppliers.value
         } catch (error) {
             throw error
@@ -73,12 +73,12 @@ export const useResponsibleMinerals = () => {
      */
     const assignTemplateToSupplier = async (
         projectId: number,
-        supplierId: number,
+        assignmentId: number,
         templates: TemplateType
     ) => {
         try {
             return await api.put(
-                `/rm/projects/${projectId}/suppliers/${supplierId}/templates`,
+                `/rm/projects/${projectId}/suppliers/${assignmentId}/templates`,
                 templates
             )
         } catch (error) {
@@ -91,14 +91,14 @@ export const useResponsibleMinerals = () => {
      */
     const batchAssignTemplates = async (
         projectId: number,
-        supplierIds: number[],
+        assignmentIds: number[],
         templates: TemplateType
     ) => {
         try {
             return await api.post(
                 `/rm/projects/${projectId}/suppliers/batch-assign-templates`,
                 {
-                    supplierIds,
+                    assignmentIds,
                     templates
                 }
             )
@@ -116,7 +116,7 @@ export const useResponsibleMinerals = () => {
             formData.append('file', file)
 
             return await api.post(
-                `/rm/projects/${projectId}/suppliers/import-template-assignments`,
+                `/rm/projects/${projectId}/suppliers/import`,
                 formData,
                 {
                     headers: {
@@ -132,10 +132,10 @@ export const useResponsibleMinerals = () => {
     /**
      * 通知單一供應商
      */
-    const notifySupplier = async (projectId: number, supplierId: number) => {
+    const notifySupplier = async (projectId: number, assignmentId: number) => {
         try {
             return await api.post(
-                `/rm/projects/${projectId}/suppliers/${supplierId}/notify`
+                `/rm/projects/${projectId}/suppliers/${assignmentId}/notify`
             )
         } catch (error) {
             throw error
@@ -159,7 +159,7 @@ export const useResponsibleMinerals = () => {
     const fetchProgress = async (projectId: number) => {
         try {
             const response = await api.get(`/rm/projects/${projectId}/progress`)
-            progressData.value = response.data
+            progressData.value = response.data.data || response.data
             return progressData.value
         } catch (error) {
             throw error
@@ -183,7 +183,7 @@ export const useResponsibleMinerals = () => {
     const exportProgress = async (projectId: number) => {
         try {
             const response = await api.get(
-                `/rm/projects/${projectId}/export/progress`,
+                `/rm/projects/${projectId}/export`,
                 {
                     responseType: 'blob'
                 }
@@ -194,6 +194,33 @@ export const useResponsibleMinerals = () => {
             const link = document.createElement('a')
             link.href = url
             link.setAttribute('download', `project_${projectId}_progress.xlsx`)
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+            window.URL.revokeObjectURL(url)
+
+            return response
+        } catch (error) {
+            throw error
+        }
+    }
+
+    /**
+     * 匯出冶煉廠彙整報表 (Roll-up)
+     */
+    const exportConsolidatedReport = async (projectId: number) => {
+        try {
+            const response = await api.get(
+                `/rm/projects/${projectId}/consolidated-report`,
+                {
+                    responseType: 'blob'
+                }
+            )
+
+            const url = window.URL.createObjectURL(new Blob([response.data]))
+            const link = document.createElement('a')
+            link.href = url
+            link.setAttribute('download', `Consolidated_Smelters_Project_${projectId}.xlsx`)
             document.body.appendChild(link)
             link.click()
             document.body.removeChild(link)
@@ -232,6 +259,102 @@ export const useResponsibleMinerals = () => {
         window.URL.revokeObjectURL(url)
     }
 
+    /**
+     * 取得指派資訊 (對供應商 Portal)
+     */
+    const getAssignmentInfo = async (assignmentId: number) => {
+        try {
+            const response = await api.get(`/rm/questionnaires/${assignmentId}`)
+            return response.data.data
+        } catch (error) {
+            throw error
+        }
+    }
+
+    /**
+     * 匯入問卷 Excel
+     */
+    const importQuestionnaire = async (assignmentId: number, file: File) => {
+        try {
+            const formData = new FormData()
+            formData.append('file', file)
+
+            const response = await api.post(`/rm/questionnaires/${assignmentId}/import`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            })
+            return response.data
+        } catch (error) {
+            throw error
+        }
+    }
+
+    /**
+     * 手動儲存問卷 (線上表單)
+     */
+    const saveQuestionnaire = async (assignmentId: number, data: any) => {
+        try {
+            const response = await api.post(`/rm/questionnaires/${assignmentId}/save`, data)
+            return response.data
+        } catch (error) {
+            throw error
+        }
+    }
+
+    /**
+     * 提交問卷
+     */
+    const submitQuestionnaire = async (assignmentId: number, templateType: string) => {
+        try {
+            const response = await api.post(`/rm/questionnaires/${assignmentId}/submit`, {
+                template_type: templateType
+            })
+            return response.data
+        } catch (error) {
+            throw error
+        }
+    }
+
+    /**
+     * 取得待審核清單
+     */
+    const fetchPendingReviews = async () => {
+        try {
+            const response = await api.get('/rm/reviews/pending')
+            return response.data.data
+        } catch (error) {
+            throw error
+        }
+    }
+
+    /**
+     * 執行審核 (核准/退回)
+     */
+    const reviewAssignment = async (assignmentId: number, action: 'approve' | 'return', comment: string) => {
+        try {
+            const response = await api.post(`/rm/reviews/${assignmentId}`, {
+                action,
+                comment
+            })
+            return response.data
+        } catch (error) {
+            throw error
+        }
+    }
+
+    /**
+     * 取得審核歷史歷程
+     */
+    const fetchReviewHistory = async (assignmentId: number) => {
+        try {
+            const response = await api.get(`/rm/reviews/${assignmentId}/history`)
+            return response.data.data
+        } catch (error) {
+            throw error
+        }
+    }
+
     return {
         // 狀態
         suppliers,
@@ -251,6 +374,18 @@ export const useResponsibleMinerals = () => {
         fetchProgress,
         fetchSuppliersStatus,
         exportProgress,
+        exportConsolidatedReport,
+
+        // 問卷填寫 (Portal)
+        getAssignmentInfo,
+        importQuestionnaire,
+        submitQuestionnaire,
+        saveQuestionnaire,
+
+        // 審核管理
+        fetchPendingReviews,
+        reviewAssignment,
+        fetchReviewHistory,
 
         // 工具函數
         downloadTemplateAssignmentTemplate

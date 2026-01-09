@@ -8,28 +8,33 @@ export const useProjects = () => {
 
   const fetchProjects = async (type: 'SAQ' | 'CONFLICT' = 'SAQ') => {
     try {
-      const response = await api.get(`/projects?type=${type}`)
-      projects.value = response.data || []
+      const url = type === 'CONFLICT' ? '/rm/projects' : `/projects?type=${type}`
+      const response = await api.get(url)
+      projects.value = response.data.data || response.data || []
       return projects.value
     } catch (error) {
       throw error
     }
   }
 
-  const getProject = async (id: string) => {
-    return await api.get(`/projects/${id}`)
+  const getProject = async (id: string | number, type: 'SAQ' | 'CONFLICT' = 'SAQ') => {
+    const url = type === 'CONFLICT' ? `/rm/projects/${id}` : `/projects/${id}`
+    return await api.get(url)
   }
 
   const createProject = async (data: any) => {
-    return await api.post('/projects', data)
+    const url = data.type === 'CONFLICT' ? '/rm/projects' : '/projects'
+    return await api.post(url, data)
   }
 
-  const updateProject = async (id: string, data: any) => {
-    return await api.put(`/projects/${id}`, data)
+  const updateProject = async (id: string | number, data: any) => {
+    const url = data.type === 'CONFLICT' ? `/rm/projects/${id}` : `/projects/${id}`
+    return await api.put(url, data)
   }
 
-  const deleteProject = async (id: string) => {
-    return await api.delete(`/projects/${id}`)
+  const deleteProject = async (id: string | number, type: 'SAQ' | 'CONFLICT' = 'SAQ') => {
+    const url = type === 'CONFLICT' ? `/rm/projects/${id}` : `/projects/${id}`
+    return await api.delete(url)
   }
 
   return {

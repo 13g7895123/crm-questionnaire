@@ -49,7 +49,13 @@
     "test": "Test",
     "type": "Type",
     "name": "Name",
-    "noData": "No data available"
+    "export": "Export",
+    "exportExcel": "Export to Excel",
+    "exportConsolidated": "Export Consolidated Report",
+    "noData": "No data available",
+    "noDataYet": "No records found yet",
+    "modify": "Modify",
+    "addFirstSmelter": "Click to add your first smelter"
   },
   "auth": {
     "login": "Log In",
@@ -153,7 +159,8 @@
     "of": "of",
     "confirmSubmit": "Are you sure you want to submit? After submission, you will not be able to modify it.",
     "submitFailed": "Submission failed, please try again later.",
-    "saveFailed": "Save failed, please try again later."
+    "saveFailed": "Save failed, please try again later.",
+    "instruction": "Please complete the assigned templates or upload your official Excel files."
   },
   "review": {
     "review": "Review",
@@ -168,7 +175,8 @@
     "returnedAt": "Returned At",
     "reviewHistory": "Review History",
     "approvalFlow": "Approval Flow",
-    "reviewProgress": "Review Progress"
+    "reviewProgress": "Review Progress",
+    "returnFeedback": "Return Feedback"
   },
   "departments": {
     "departments": "Departments",
@@ -203,7 +211,26 @@
     "confirmDelete": "Are you sure you want to delete this user? This action cannot be undone."
   },
   "conflict": {
-    "projectList": "Conflict Minerals Project List"
+    "projectList": "Conflict Minerals Project List",
+    "rmQuestionnaire": "Responsible Minerals Questionnaire",
+    "smelterAnalytics": "Smelter Compliance Analytics",
+    "conformantRate": "Overall Conformant Rate",
+    "smelterCount": "Smelter Summary",
+    "rmiConformant": "RMI Conformant",
+    "onlineForm": "Online Response Form",
+    "useOnlineForm": "Use Online Form",
+    "uploadExcel": "Upload Excel File",
+    "progressReport": "Progress Tracking Report",
+    "consolidatedReport": "Consolidated Smelter Report (Roll-up)",
+    "declaration": "Declaration",
+    "mineralDeclaration": "Mineral Declaration",
+    "smelterList": "Smelter List",
+    "processorList": "Processor List",
+    "reviewManagement": "Review Management",
+    "declarationScope": "Declaration Scope",
+    "declarationNote": "Verify the usage of each mineral. Selecting 'Yes' requires corresponding smelter data in the list tab.",
+    "smelterListPreview": "Smelter/Processor List Preview",
+    "uploadInstruction": "Download official template to fill and upload, or use our intuitive online form for manual data entry."
   },
   "validation": {
     "required": "This field is required",

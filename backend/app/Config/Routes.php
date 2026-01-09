@@ -159,4 +159,46 @@ $routes->group('api/v1', ['namespace' => 'App\Controllers\Api\V1'], function ($r
 
     // Debug routes
     $routes->post('debug/log-match', 'DebugController::logMatch');
+
+    // Responsible Minerals (RM) Routes
+    $routes->group('rm', ['filter' => 'jwt'], function ($routes) {
+        // Template Sets
+        $routes->get('template-sets', 'TemplateSets::index');
+        $routes->post('template-sets', 'TemplateSets::create');
+        $routes->get('template-sets/(:num)', 'TemplateSets::show/$1');
+        $routes->put('template-sets/(:num)', 'TemplateSets::update/$1');
+        $routes->delete('template-sets/(:num)', 'TemplateSets::delete/$1');
+
+        // 專案
+        $routes->group('projects', function ($routes) {
+            $routes->get('/', 'RmProjects::index');
+            $routes->post('/', 'RmProjects::create');
+            $routes->get('(:num)', 'RmProjects::show/$1');
+            $routes->put('(:num)', 'RmProjects::update/$1');
+            $routes->delete('(:num)', 'RmProjects::delete/$1');
+            $routes->get('(:num)/progress', 'RmProjects::progress/$1');
+            $routes->get('(:num)/export', 'RmProjects::export/$1');
+            $routes->get('(:num)/consolidated-report', 'RmProjects::consolidatedReport/$1');
+            $routes->post('(:num)/suppliers/import', 'RmProjects::importSuppliers/$1');
+        });
+
+        // Supplier Assignments
+        $routes->get('projects/(:num)/suppliers', 'RmSupplierAssignments::index/$1');
+        $routes->put('projects/(:num)/suppliers/(:num)/templates', 'RmSupplierAssignments::assignTemplate/$1/$2');
+        $routes->post('projects/(:num)/suppliers/batch-assign-templates', 'RmSupplierAssignments::batchAssign/$1');
+        $routes->get('projects/(:num)/suppliers/template-assignment-template', 'RmSupplierAssignments::downloadTemplateAssignmentTemplate/$1');
+        $routes->post('projects/(:num)/suppliers/(:num)/notify', 'RmSupplierAssignments::notify/$1/$2');
+        $routes->post('projects/(:num)/suppliers/notify-all', 'RmSupplierAssignments::notifyAll/$1');
+
+        // Questionnaire Portal (Supplier Filling)
+        $routes->get('questionnaires/(:num)', 'RmQuestionnaires::show/$1');
+        $routes->post('questionnaires/(:num)/import', 'RmQuestionnaires::import/$1');
+        $routes->post('questionnaires/(:num)/save', 'RmQuestionnaires::saveManual/$1');
+        $routes->post('questionnaires/(:num)/submit', 'RmQuestionnaires::submit/$1');
+
+        // Review Management
+        $routes->get('reviews/pending', 'RmReviews::pending');
+        $routes->post('reviews/(:num)', 'RmReviews::review/$1');
+        $routes->get('reviews/(:num)/history', 'RmReviews::history/$1');
+    });
 });
