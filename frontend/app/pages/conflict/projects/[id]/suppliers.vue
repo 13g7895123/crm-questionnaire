@@ -4,18 +4,18 @@
       <div class="action-group">
         <button
           class="btn btn-primary"
-          @click="showBatchAssignModal = true"
+          @click="openBatchModal"
           :disabled="selectedSuppliers.length === 0"
         >
-          <i class="icon-batch"></i>
+          <UIcon name="i-heroicons-clipboard-document-list" />
           批量設定範本 ({{ selectedSuppliers.length }})
         </button>
         <button class="btn btn-secondary" @click="handleExcelImport">
-          <i class="icon-upload"></i>
+          <UIcon name="i-heroicons-arrow-up-tray" />
           Excel 匯入
         </button>
         <button class="btn btn-secondary" @click="downloadTemplate">
-          <i class="icon-download"></i>
+          <UIcon name="i-heroicons-arrow-down-tray" />
           下載範本
         </button>
       </div>
@@ -25,7 +25,7 @@
         @click="handleNotifyAll"
         :disabled="assignedCount === 0"
       >
-        <i class="icon-email"></i>
+        <UIcon name="i-heroicons-envelope" />
         全部通知 ({{ assignedCount }})
       </button>
     </div>
@@ -117,21 +117,31 @@
               </span>
             </td>
             <td class="actions-col">
-              <button
-                class="btn-icon btn-edit"
-                @click="editSupplier(supplier)"
-                title="編輯範本"
-              >
-                <i class="icon-edit"></i>
-              </button>
-              <button
-                v-if="isAssigned(supplier)"
-                class="btn-icon btn-notify"
-                @click="notifySupplier(supplier)"
-                title="發送通知"
-              >
-                <i class="icon-bell"></i>
-              </button>
+              <div class="actions-inner">
+                <button
+                  class="btn-icon btn-edit"
+                  @click="editSupplier(supplier)"
+                  title="編輯範本"
+                >
+                  <UIcon name="i-heroicons-pencil-square" />
+                </button>
+                <button
+                  v-if="isAssigned(supplier)"
+                  class="btn-icon btn-fill"
+                  @click="goToAnswer(supplier)"
+                  title="填寫問卷"
+                >
+                  <UIcon name="i-heroicons-pencil" />
+                </button>
+                <button
+                  v-if="isAssigned(supplier)"
+                  class="btn-icon btn-notify"
+                  @click="notifySupplier(supplier)"
+                  title="發送通知"
+                >
+                  <UIcon name="i-heroicons-bell" />
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>
@@ -292,11 +302,12 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useResponsibleMinerals, type SupplierAssignment, type TemplateType } from '~/composables/useResponsibleMinerals'
 import { useSweetAlert } from '~/composables/useSweetAlert'
 
 const route = useRoute()
+const router = useRouter()
 const { showSuccess, showError, showConfirm } = useSweetAlert()
 const {
   suppliers,
@@ -443,6 +454,35 @@ const editSupplier = (supplier: SupplierAssignment) => {
   showEditModal.value = true
 }
 
+const openBatchModal = () => {
+  if (selectedSuppliers.value.length === 0) return
+
+  const selectedData = suppliers.value.filter(s => selectedSuppliers.value.includes(s.id))
+  if (selectedData.length > 0) {
+    const first = selectedData[0]
+    
+    // 檢查是否所有選中的供應商設定都相同，若不同則預設為 false
+    const allCmrtSame = selectedData.every(s => s.cmrt_required === first.cmrt_required)
+    const allEmrtSame = selectedData.every(s => s.emrt_required === first.emrt_required)
+    const allAmrtSame = selectedData.every(s => s.amrt_required === first.amrt_required)
+    
+    // 檢查礦產清單是否相同 (轉為字串比較)
+    const firstMineralsStr = JSON.stringify([...(first.amrt_minerals || [])].sort())
+    const allMineralsSame = selectedData.every(s => 
+      JSON.stringify([...(s.amrt_minerals || [])].sort()) === firstMineralsStr
+    )
+
+    batchForm.value = {
+      cmrt_required: allCmrtSame ? first.cmrt_required : false,
+      emrt_required: allEmrtSame ? first.emrt_required : false,
+      amrt_required: allAmrtSame ? first.amrt_required : false,
+      amrt_minerals: allMineralsSame ? [...(first.amrt_minerals || [])] : []
+    }
+  }
+
+  showBatchAssignModal.value = true
+}
+
 const closeEditModal = () => {
   showEditModal.value = false
   editingSupplier.value = null
@@ -560,6 +600,10 @@ const handleNotifyAll = async () => {
   } catch (err: any) {
     showError(err.message || '批量通知失敗')
   }
+}
+
+const goToAnswer = (supplier: SupplierAssignment) => {
+  router.push(`/supplier/projects/${supplier.id}/answer`)
 }
 
 onMounted(() => {
@@ -725,23 +769,43 @@ onMounted(() => {
 }
 
 .actions-col {
-  width: 100px;
-  text-align: center;
+  width: 120px;
+  padding: 8px 12px !important;
+  vertical-align: middle;
+}
+
+.actions-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
 }
 
 .btn-icon {
-  padding: 6px 10px;
+  padding: 4px;
   border: none;
   background: none;
   cursor: pointer;
   color: #007bff;
-  font-size: 16px;
+  font-size: 1.25rem;
   border-radius: 4px;
   transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.btn-icon.btn-fill {
+  color: #28a745;
+}
+
+.btn-icon.btn-notify {
+  color: #fd7e14;
 }
 
 .btn-icon:hover {
-  background: #e7f3ff;
+  background: #f8f9fa;
 }
 
 .btn {

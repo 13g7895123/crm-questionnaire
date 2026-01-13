@@ -47,16 +47,23 @@ class RmSupplierAssignments extends BaseController
                 $templates = $input['templates'];
             }
 
+            // 處理 amrt_minerals JSON 編碼
+            $amrtMinerals = $templates['amrt_minerals'] ?? null;
+            if (is_array($amrtMinerals)) {
+                $amrtMinerals = json_encode($amrtMinerals);
+            }
+
             $dbData = [
-                'cmrt_required' => isset($templates['cmrt_required']) ? (int)$templates['cmrt_required'] : 0,
-                'emrt_required' => isset($templates['emrt_required']) ? (int)$templates['emrt_required'] : 0,
-                'amrt_required' => isset($templates['amrt_required']) ? (int)$templates['amrt_required'] : 0,
-                'amrt_minerals' => isset($templates['amrt_minerals']) ? json_encode($templates['amrt_minerals']) : null,
+                'cmrt_required' => (isset($templates['cmrt_required']) && $templates['cmrt_required']) ? 1 : 0,
+                'emrt_required' => (isset($templates['emrt_required']) && $templates['emrt_required']) ? 1 : 0,
+                'amrt_required' => (isset($templates['amrt_required']) && $templates['amrt_required']) ? 1 : 0,
+                'amrt_minerals' => $amrtMinerals,
                 'status'        => 'assigned'
             ];
 
             if (!$this->model->update($id, $dbData)) {
-                return $this->failValidationErrors($this->model->errors());
+                $errors = $this->model->errors();
+                return $this->failValidationErrors($errors);
             }
 
             return $this->respond([
@@ -64,6 +71,7 @@ class RmSupplierAssignments extends BaseController
                 'message' => '範本指派成功'
             ]);
         } catch (\Exception $e) {
+            log_message('error', 'assignTemplate error: ' . $e->getMessage());
             return $this->failServerError($e->getMessage());
         }
     }
@@ -82,26 +90,44 @@ class RmSupplierAssignments extends BaseController
                 return $this->failValidationError('未提供指派清單');
             }
 
+            // 處理 amrt_minerals JSON 編碼
+            $amrtMinerals = $templates['amrt_minerals'] ?? null;
+            if (is_array($amrtMinerals)) {
+                $amrtMinerals = json_encode($amrtMinerals);
+            }
+
             $templateData = [
-                'cmrt_required' => isset($templates['cmrt_required']) ? (int)$templates['cmrt_required'] : 0,
-                'emrt_required' => isset($templates['emrt_required']) ? (int)$templates['emrt_required'] : 0,
-                'amrt_required' => isset($templates['amrt_required']) ? (int)$templates['amrt_required'] : 0,
-                'amrt_minerals' => isset($templates['amrt_minerals']) ? json_encode($templates['amrt_minerals']) : null,
+                'cmrt_required' => (isset($templates['cmrt_required']) && $templates['cmrt_required']) ? 1 : 0,
+                'emrt_required' => (isset($templates['emrt_required']) && $templates['emrt_required']) ? 1 : 0,
+                'amrt_required' => (isset($templates['amrt_required']) && $templates['amrt_required']) ? 1 : 0,
+                'amrt_minerals' => $amrtMinerals,
                 'status'        => 'assigned'
             ];
 
-            if (!$this->model->where('project_id', $projectId)
-                ->whereIn('id', $assignmentIds)
-                ->set($templateData)
-                ->update()) {
+            // 執行批量更新
+            // 注意：Model::update($ids, $data) 會執行對應 ID 的更新
+            $db = \Config\Database::connect();
+            $db->transStart();
+
+            $success = $this->model->update($assignmentIds, $templateData);
+
+            $db->transComplete();
+
+            if (!$success || $db->transStatus() === false) {
                 return $this->failServerError('批量設定失敗');
             }
 
+            // 獲取受影響的行數 (CodeIgniter 4 update 如果資料相同，affectedRows 可能為 0，所以不適合當作失敗判斷，但適合記錄)
+            $affected = $db->affectedRows();
+            log_message('info', "Batch update success. Affected rows: $affected");
+
             return $this->respond([
                 'success' => true,
-                'message' => '供應商範本批量指派成功'
+                'message' => '供應商範本批量指派成功',
+                'affected_rows' => $affected
             ]);
         } catch (\Exception $e) {
+            log_message('error', 'batchAssign error: ' . $e->getMessage());
             return $this->failServerError($e->getMessage());
         }
     }

@@ -35,8 +35,8 @@ class RmSupplierAssignmentModel extends Model
     // Validation
     protected $validationRules = [
         'project_id'    => 'required|is_not_unique[rm_projects.id]',
-        'supplier_id'   => 'required',
-        'supplier_name' => 'required',
+        'supplier_id'   => 'permit_empty',
+        'supplier_name' => 'permit_empty',
         'status'        => 'required|in_list[not_assigned,assigned,in_progress,submitted,reviewing,completed]',
     ];
 
@@ -48,29 +48,48 @@ class RmSupplierAssignmentModel extends Model
     protected $afterFind = ['processJsonFields'];
 
     /**
-     * 處理 JSON 欄位
+     * 處理 JSON 欄位與型別轉換
      */
     protected function processJsonFields(array $data)
     {
-        if (!isset($data['data'])) {
+        if (!isset($data['data']) || empty($data['data'])) {
             return $data;
         }
 
-        // 處理單一結果
-        if (isset($data['data']['amrt_minerals']) && is_string($data['data']['amrt_minerals'])) {
-            $data['data']['amrt_minerals'] = json_decode($data['data']['amrt_minerals'], true);
-        }
+        $fieldsToCast = ['cmrt_required', 'emrt_required', 'amrt_required'];
+        $isSingleton = $data['singleton'] ?? false;
 
-        // 處理多個結果
-        if (isset($data['data'][0])) {
+        if ($isSingleton) {
+            // 單一結果：$data['data'] 是該列資料陣列
+            $this->castRow($data['data'], $fieldsToCast);
+        } else {
+            // 多個結果：$data['data'] 是列表陣列
             foreach ($data['data'] as &$row) {
-                if (isset($row['amrt_minerals']) && is_string($row['amrt_minerals'])) {
-                    $row['amrt_minerals'] = json_decode($row['amrt_minerals'], true);
-                }
+                $this->castRow($row, $fieldsToCast);
             }
         }
 
         return $data;
+    }
+
+    /**
+     * 對單一列進行轉型與 JSON 處理
+     */
+    protected function castRow(&$row, $fieldsToCast)
+    {
+        if (!is_array($row)) return;
+
+        // JSON 處理
+        if (isset($row['amrt_minerals']) && is_string($row['amrt_minerals'])) {
+            $row['amrt_minerals'] = json_decode($row['amrt_minerals'], true);
+        }
+
+        // 型別轉換：將字串 "1"/"0" 轉為布林 true/false
+        foreach ($fieldsToCast as $field) {
+            if (isset($row[$field])) {
+                $row[$field] = (bool)$row[$field];
+            }
+        }
     }
 
     /**

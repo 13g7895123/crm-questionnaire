@@ -1,16 +1,17 @@
-    <RMOnlineForm
-      v-if="onlineFormMode.isEditing"
-      :assignment-id="id"
-      :assignment="assignment"
-      :type="onlineFormMode.type"
-      :initial-data="currentOnlineData"
-      @back="onlineFormMode.isEditing = false"
-      @saved="onOnlineFormSaved"
-      @submitted="onOnlineFormSubmitted"
-    />
+<template>
+  <RMOnlineForm
+    v-if="onlineFormMode.isEditing"
+    :assignment-id="id"
+    :assignment="assignment"
+    :type="onlineFormMode.type"
+    :initial-data="currentOnlineData"
+    @back="onlineFormMode.isEditing = false"
+    @saved="onOnlineFormSaved"
+    @submitted="onOnlineFormSubmitted"
+  />
 
-    <div v-else class="space-y-8 animate-fade-in max-w-7xl mx-auto">
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+  <div v-else class="space-y-8 animate-fade-in pt-6 pb-8">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 px-6">
         <div class="flex items-center gap-4">
           <UButton
             icon="i-heroicons-arrow-left"
@@ -20,8 +21,8 @@
             @click="$emit('back')"
           />
           <div>
-            <h1 class="text-3xl font-black text-gray-900 tracking-tight">{{ assignment?.project?.name || '責任礦產問卷' }}</h1>
-            <p class="text-sm text-gray-400 font-medium mt-1">
+            <h1 class="text-2xl font-bold text-gray-900">{{ assignment?.project?.name || '責任礦產問卷' }}</h1>
+            <p class="text-sm text-gray-500 mt-1">
               {{ $t('questionnaire.instruction') || '請依序完成以下範本填寫，或直接上傳官方 Excel。' }}
             </p>
           </div>
@@ -38,7 +39,7 @@
       </div>
 
       <!-- Summary Statistics Grid -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 px-6">
         <UCard
           v-for="tmpl in assignedTemplates"
           :key="tmpl.type"
@@ -115,7 +116,7 @@
 
       <!-- Review Feedback Section -->
       <transition name="slide-down">
-        <div v-if="latestReturnLog" class="bg-red-50 rounded-2xl p-6 border border-red-100 shadow-sm relative overflow-hidden">
+        <div v-if="latestReturnLog" class="bg-red-50 rounded-2xl p-6 border border-red-100 shadow-sm relative overflow-hidden mx-6">
           <div class="flex items-start gap-4">
             <div class="bg-red-100 p-2 rounded-xl text-red-600">
               <UIcon name="i-heroicons-exclamation-triangle" class="w-6 h-6" />
@@ -130,7 +131,7 @@
       </transition>
 
       <!-- Detailed View -->
-      <UCard :ui="{ body: { padding: 'p-0' }, rounded: 'rounded-2xl', shadow: 'shadow-lg' }" class="overflow-hidden border-none ring-1 ring-gray-100">
+      <UCard :ui="{ body: { padding: 'p-0' }, rounded: 'rounded-2xl', shadow: 'shadow-lg' }" class="overflow-hidden border-none ring-1 ring-gray-100 mx-6">
         <UTabs :items="tabItems" @change="onTabChange" :ui="{ list: { base: 'bg-gray-50/50 p-1 border-b border-gray-100', rounded: 'rounded-none' } }">
           <template #default="{ item, selected }">
             <div class="flex items-center gap-2 px-6 py-3 transition-all duration-300">
@@ -187,12 +188,12 @@
                     </div>
                     <div>
                       <div class="font-black text-green-900 tracking-tight">{{ $t('projects.submitted') }}</div>
-                      <div class="text-[10px] text-green-600 font-bold uppercase tracking-widest">{{ $t('projects.updatedAt') }}：{{ tmplStatus[item.type]?.updatedAt }}</div>
+                      <div class="text-[10px] text-green-600 font-bold uppercase tracking-widest">{{ $t('projects.updatedAt') }}：{{ formatDate(tmplStatus[item.type]?.updatedAt) }}</div>
                     </div>
                   </div>
                   
                   <div class="flex flex-wrap gap-2 z-10">
-                    <UButton size="sm" color="gray" variant="white" icon="i-heroicons-pencil-square" @click="enterOnlineForm(item.type)">{{ $t('common.edit') }}</UButton>
+                    <UButton size="sm" color="white" variant="solid" icon="i-heroicons-pencil-square" @click="enterOnlineForm(item.type)">{{ $t('common.edit') }}</UButton>
                     <UButton size="sm" color="green" variant="solid" icon="i-heroicons-paper-airplane" class="font-bold" @click="handleSubmit(item.type)" :loading="submitting">{{ $t('common.submit') }}</UButton>
                   </div>
                   
@@ -295,7 +296,6 @@
         </template>
       </UCard>
     </UModal>
-  </div>
 </template>
 
 <script setup lang="ts">
@@ -397,12 +397,34 @@ const onOnlineFormSubmitted = async () => {
   }
 }
 
+const onTabChange = (index: number) => {
+  // 可以根據需求處理標籤切換
+}
+
+const handleDownloadTemplate = (type: string) => {
+  // RMI 官方範本下載連結
+  const templateUrls: Record<string, string> = {
+    CMRT: 'https://www.responsiblemineralsinitiative.org/reporting-templates/cmrt/',
+    EMRT: 'https://www.responsiblemineralsinitiative.org/reporting-templates/emrt/',
+    AMRT: 'https://www.responsiblemineralsinitiative.org/reporting-templates/amrt/'
+  }
+  
+  const url = templateUrls[type]
+  if (url) {
+    // 開啟新分頁前往 RMI 官網下載頁面
+    window.open(url, '_blank')
+    showSuccess(`正在前往 ${type} 官方範本下載頁面...`)
+  } else {
+    showError('無法取得範本下載連結')
+  }
+}
+
 const assignedTemplates = computed(() => {
   if (!assignment.value) return []
   const list = []
-  if (assignment.value.cmrt_required) list.push({ type: 'CMRT', completed: tmplStatus.CMRT.completed })
-  if (assignment.value.emrt_required) list.push({ type: 'EMRT', completed: tmplStatus.EMRT.completed })
-  if (assignment.value.amrt_required) list.push({ type: 'AMRT', completed: tmplStatus.AMRT.completed })
+  if (assignment.value.cmrt_required) list.push({ type: 'CMRT', completed: tmplStatus.CMRT.completed, version: '6.4' })
+  if (assignment.value.emrt_required) list.push({ type: 'EMRT', completed: tmplStatus.EMRT.completed, version: '1.2' })
+  if (assignment.value.amrt_required) list.push({ type: 'AMRT', completed: tmplStatus.AMRT.completed, version: '2.1' })
   return list
 })
 
@@ -473,7 +495,7 @@ const handleUpload = async () => {
   if (!selectedFile.value) return
   isUploading.value = true
   try {
-    const res = await importQuestionnaire(Number(props.id), selectedFile.value)
+    await importQuestionnaire(Number(props.id), selectedFile.value)
     showSuccess('匯入完成')
     uploadModal.isOpen = false
     await init()
@@ -485,8 +507,12 @@ const handleUpload = async () => {
 }
 
 const handleSubmit = async (type: string) => {
-  const confirm = await showConfirm(`確定要提交 ${type} 嗎？提交後將無法修改。`)
-  if (!confirm.isConfirmed) return
+  const confirmed = await showConfirm({
+    text: `確定要提交 ${type} 嗎？提交後將無法修改。`,
+    icon: 'question',
+    confirmButtonText: '確定提交'
+  })
+  if (!confirmed) return
 
   submitting.value = true
   try {
@@ -495,7 +521,7 @@ const handleSubmit = async (type: string) => {
     await init()
     
     // Check if all submitted
-    if (assignment.value.status === 'submitted') {
+    if (assignment.value.status === 'submitted' || assignment.value.status === 'completed') {
       emit('submitted')
     }
   } catch (err: any) {

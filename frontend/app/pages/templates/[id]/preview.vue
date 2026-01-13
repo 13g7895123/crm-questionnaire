@@ -6,7 +6,7 @@
         <div class="flex justify-between items-center">
           <div>
             <h1 class="text-2xl font-bold text-gray-800">{{ templateName }}</h1>
-            <p class="text-sm text-gray-500 mt-1">步驟 {{ currentStep }}/6</p>
+            <p class="text-sm text-gray-500 mt-1">步驟 {{ currentStep }}/{{ steps.length }}</p>
           </div>
           <button
             @click="$router.push('/templates')"
@@ -51,22 +51,22 @@
 
       <!-- 表单内容 -->
       <div class="bg-white rounded-lg shadow-md p-8 mx-auto">
-        <!-- 第一步：公司基本资料 -->
-        <div v-if="currentStep === 1">
+        <!-- 第一步：公司基本资料 (如果配置了) -->
+        <div v-if="currentStep === 1 && templateStructure?.includeBasicInfo">
           <QuestionnaireStepOneBasicInfo v-model="formData.step1" />
         </div>
 
-        <!-- 第二步到第五步：A-E 评估 -->
-        <div v-else-if="currentStep >= 2 && currentStep <= 5">
-          <QuestionnaireStepDynamicQuestions
-            :section="sections[currentStep - 2]"
-            v-model="formData[`step${currentStep}`]"
-          />
+        <!-- 结果展示 (最后一步) -->
+        <div v-else-if="currentStep === steps.length">
+          <QuestionnaireStepResults :data="formData" />
         </div>
 
-        <!-- 第六步：结果展示 -->
-        <div v-else-if="currentStep === 6">
-          <QuestionnaireStepResults :data="formData" />
+        <!-- 中间步骤：区段评估 -->
+        <div v-else>
+          <QuestionnaireStepDynamicQuestions
+            :section="sections[templateStructure?.includeBasicInfo ? currentStep - 2 : currentStep - 1]"
+            v-model="formData[`step${currentStep}`]"
+          />
         </div>
       </div>
 
@@ -81,7 +81,7 @@
         </button>
         <div v-else></div>
         <button
-          v-if="currentStep < 6"
+          v-if="currentStep < steps.length"
           @click="nextStep"
           class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
         >
@@ -115,7 +115,7 @@ const error = ref<string | null>(null);
 // 從 API 載入範本結構
 const templateStructure = ref<TemplateStructure | null>(null);
 
-const { data: templateData, error: apiError } = await useFetch(
+const { data: templateData, error: apiError } = await useFetch<any>(
   `${config.public.apiBase}/api/v1/templates/${templateId.value}/structure`,
   {
     headers: {
@@ -127,10 +127,10 @@ const { data: templateData, error: apiError } = await useFetch(
 if (apiError.value) {
   error.value = '無法載入範本資料';
   loading.value = false;
-} else if (templateData.value?.data) {
-  const data = templateData.value.data as any;
+} else if (templateData.value?.success) {
+  const data = templateData.value.data;
   templateStructure.value = data.structure;
-  templateName.value = '範本預覽'; // 可以從 templates 表取得真實名稱
+  templateName.value = data.name || '範本預覽';
   loading.value = false;
 }
 
@@ -171,7 +171,18 @@ const steps = computed(() => {
 // 取得當前區段資料
 const sections = computed(() => {
   if (!templateStructure.value?.sections) return [];
-  return templateStructure.value.sections;
+  
+  // 為了相容於填寫組件，將大寫類型轉換為小寫
+  return templateStructure.value.sections.map(section => ({
+    ...section,
+    subsections: (section.subsections || []).map(sub => ({
+      ...sub,
+      questions: (sub.questions || []).map(q => ({
+        ...q,
+        type: q.type.toLowerCase() as any
+      }))
+    }))
+  })) as any[];
 });
 
 // 舊的硬編碼資料（作為後備）
@@ -374,16 +385,43 @@ const fallbackSections = [
   },
 ];
 
-const formData = ref({
-  step1: {},
+const formData = ref<any>({
+  step1: {
+    companyFullName: '',
+    companyAddress: '',
+    totalRevenue: null,
+    facilities: [
+      {
+        name: '',
+        address: '',
+        employees: {
+          localMale: 0,
+          localFemale: 0,
+          foreignMale: 0,
+          foreignFemale: 0,
+        },
+        servicesProducts: '',
+        certifications: [],
+        rbaOnline: '',
+      },
+    ],
+    contacts: [
+      {
+        name: '',
+        title: '',
+        email: '',
+      },
+    ],
+  },
   step2: {},
   step3: {},
   step4: {},
   step5: {},
+  step6: {},
 });
 
 const nextStep = () => {
-  if (currentStep.value < 6) {
+  if (currentStep.value < steps.value.length) {
     currentStep.value++;
   }
 };

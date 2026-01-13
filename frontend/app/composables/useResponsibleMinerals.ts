@@ -61,7 +61,7 @@ export const useResponsibleMinerals = () => {
     const fetchSuppliersWithTemplates = async (projectId: number) => {
         try {
             const response = await api.get(`/rm/projects/${projectId}/suppliers`)
-            suppliers.value = response.data.data || response.data || []
+            suppliers.value = response.data || []
             return suppliers.value
         } catch (error) {
             throw error
@@ -159,7 +159,7 @@ export const useResponsibleMinerals = () => {
     const fetchProgress = async (projectId: number) => {
         try {
             const response = await api.get(`/rm/projects/${projectId}/progress`)
-            progressData.value = response.data.data || response.data
+            progressData.value = response.data
             return progressData.value
         } catch (error) {
             throw error
@@ -265,7 +265,7 @@ export const useResponsibleMinerals = () => {
     const getAssignmentInfo = async (assignmentId: number) => {
         try {
             const response = await api.get(`/rm/questionnaires/${assignmentId}`)
-            return response.data.data
+            return response.data
         } catch (error) {
             throw error
         }
@@ -322,7 +322,7 @@ export const useResponsibleMinerals = () => {
     const fetchPendingReviews = async () => {
         try {
             const response = await api.get('/rm/reviews/pending')
-            return response.data.data
+            return response.data
         } catch (error) {
             throw error
         }
@@ -349,7 +349,7 @@ export const useResponsibleMinerals = () => {
     const fetchReviewHistory = async (assignmentId: number) => {
         try {
             const response = await api.get(`/rm/reviews/${assignmentId}/history`)
-            return response.data.data
+            return response.data
         } catch (error) {
             throw error
         }

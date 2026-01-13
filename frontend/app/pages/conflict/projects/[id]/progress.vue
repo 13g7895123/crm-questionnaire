@@ -290,6 +290,7 @@ const projectId = computed(() => Number(projectIdFromProps.value || projectIdFro
 const loading = ref(false)
 const error = ref('')
 const searchQuery = ref('')
+const templateFilter = ref('all')
 const statusFilter = ref('all')
 
 // 摘要統計配置

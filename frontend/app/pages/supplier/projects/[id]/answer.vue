@@ -1,5 +1,5 @@
 <template>
-  <div class="py-8 px-4 sm:px-6 lg:px-8">
+  <div :class="project?.type === 'CONFLICT' ? '' : 'py-8 px-4 sm:px-6 lg:px-8'">
     <!-- Loading -->
     <div v-if="loading" class="flex flex-col items-center justify-center py-12">
       <UIcon name="i-heroicons-arrow-path" class="w-12 h-12 text-primary-500 animate-spin" />
@@ -63,6 +63,10 @@ const init = async () => {
   try {
     const data = await getAssignmentInfo(Number(id.value))
     project.value = data.assignment.project
+    
+    // Debug: 確認專案類型
+    console.log('🔍 專案資訊:', project.value)
+    console.log('📋 專案類型:', project.value?.type)
   } catch (err: any) {
     error.value = err.message || '無法載入專案資訊'
   } finally {

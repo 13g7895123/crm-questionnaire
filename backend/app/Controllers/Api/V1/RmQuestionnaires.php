@@ -34,6 +34,13 @@ class RmQuestionnaires extends BaseController
                 return $this->failNotFound('找不到指派記錄');
             }
 
+            // JOIN project 表以取得專案類型資訊
+            $projectModel = new \App\Models\RmProjectModel();
+            $project = $projectModel->find($assignment['project_id']);
+            if ($project) {
+                $assignment['project'] = $project;
+            }
+
             // 取得已有的回答
             $answers = $this->answerModel->where('assignment_id', $assignmentId)->findAll();
 

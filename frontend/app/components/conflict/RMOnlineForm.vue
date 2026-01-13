@@ -136,6 +136,7 @@ const activeMinerals = computed(() => {
   }
   return []
 })
+</script>
 
 <template>
   <div class="rm-online-form space-y-6 relative pb-20">
