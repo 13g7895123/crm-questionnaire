@@ -126,7 +126,7 @@
                   <td class="px-4 py-3 border-b font-mono text-blue-600">{{ col.column }}</td>
                   <td class="px-4 py-3 border-b">{{ col.header }}</td>
                   <td class="px-4 py-3 border-b">
-                    <UBadge :color="col.fieldColor" variant="subtle">{{ col.field }}</UBadge>
+                    <UBadge :color="col.fieldColor" variant="soft">{{ col.field }}</UBadge>
                   </td>
                   <td class="px-4 py-3 border-b text-gray-600">{{ col.description }}</td>
                 </tr>
@@ -166,7 +166,7 @@
                       <td class="px-3 py-2 text-center font-mono text-blue-600 border-r">A.1.2</td>
                       <td class="px-3 py-2 border-r">Does the Company establish...</td>
                       <td class="px-3 py-2 text-center border-r">
-                        <UBadge color="gray" variant="subtle">是/否</UBadge>
+                        <UBadge color="gray" variant="soft">是/否</UBadge>
                       </td>
                       <td class="px-3 py-2 text-gray-600 text-xs">
                         <code>=IF(D7=1, "Content of...", "")</code>
@@ -205,7 +205,7 @@
                         Has the Company violated...
                       </td>
                       <td class="px-3 py-2 text-center border-r" :rowspan="idx === 0 ? 5 : undefined" v-if="idx === 0">
-                        <UBadge color="gray" variant="subtle">是</UBadge>
+                        <UBadge color="gray" variant="soft">是</UBadge>
                       </td>
                       <td class="px-3 py-2 border-r text-gray-600">{{ row.label }}</td>
                       <td class="px-3 py-2 text-center border-r text-xs text-gray-400">{{ row.col1 }}</td>

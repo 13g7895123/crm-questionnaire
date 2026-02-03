@@ -59,6 +59,10 @@ writable/session/*
 
 writable/uploads/*
 !writable/uploads/index.html
+!writable/uploads/templates/
+writable/uploads/templates/*.xlsx
+!writable/uploads/templates/README.md
+!writable/uploads/templates/.gitkeep
 
 writable/debugbar/*
 !writable/debugbar/index.html

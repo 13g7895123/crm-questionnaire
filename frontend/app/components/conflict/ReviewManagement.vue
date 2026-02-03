@@ -79,7 +79,7 @@
         <template #status-data="{ row }">
           <UBadge 
             :color="getStatusColor(row.status)" 
-            variant="subtle" 
+            variant="soft" 
             size="xs"
             class="capitalize"
           >

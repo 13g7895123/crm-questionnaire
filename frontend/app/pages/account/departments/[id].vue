@@ -50,7 +50,7 @@
         @update:limit="pagination.limit = $event"
       >
         <template #role-data="{ row }">
-          <UBadge :color="getRoleColor(row.role)" variant="subtle">
+          <UBadge :color="getRoleColor(row.role)" variant="soft">
             {{ row.role }}
           </UBadge>
         </template>

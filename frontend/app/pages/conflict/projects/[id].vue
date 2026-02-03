@@ -28,7 +28,7 @@
           >
             <UIcon :name="tab.icon" class="w-4 h-4" />
             {{ tab.label }}
-            <UBadge v-if="tab.badge" color="gray" variant="subtle" size="xs">
+            <UBadge v-if="tab.badge" color="gray" variant="soft" size="xs">
               {{ tab.badge }}
             </UBadge>
           </button>

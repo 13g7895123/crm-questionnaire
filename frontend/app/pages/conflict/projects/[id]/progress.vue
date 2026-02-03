@@ -8,8 +8,8 @@
       </div>
       <div class="flex gap-2">
         <UButton
-          color="gray"
-          variant="white"
+          color="white"
+          variant="solid"
           icon="i-heroicons-arrow-path"
           :loading="loading"
           @click="loadProgress"
@@ -224,7 +224,7 @@
             <template #status-data="{ row }">
               <UBadge
                 :color="getStatusColor(row.status)"
-                variant="subtle"
+                variant="soft"
                 class="px-2.5 py-0.5 rounded-md text-xs font-bold"
               >
                 {{ row.status }}

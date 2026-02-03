@@ -126,7 +126,7 @@
                       class="border-l-2 border-gray-200 pl-3 py-1"
                     >
                       <div class="flex items-start gap-2">
-                        <UBadge color="gray" variant="subtle" size="xs">{{ question.id }}</UBadge>
+                        <UBadge color="gray" variant="soft" size="xs">{{ question.id }}</UBadge>
                         <span class="text-sm text-gray-700 flex-1">
                           {{ truncateText(question.text, 100) }}
                         </span>

@@ -70,7 +70,7 @@
                   <UBadge 
                     size="xs" 
                     :color="user?.role === 'HOST' ? 'primary' : 'gray'"
-                    variant="subtle"
+                    variant="soft"
                     class="font-mono text-[10px] px-1.5 py-0.5 rounded-md ring-1 ring-inset ring-opacity-20"
                     :class="user?.role === 'HOST' ? 'ring-primary-500' : 'ring-gray-500'"
                   >

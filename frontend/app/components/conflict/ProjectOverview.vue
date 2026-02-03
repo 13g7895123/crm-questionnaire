@@ -38,7 +38,7 @@
           <div v-for="info in basicInfoItems" :key="info.label" class="flex flex-col border-b border-gray-50 pb-3 last:border-0 last:pb-0">
             <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">{{ info.label }}</span>
             <div v-if="info.type === 'badge'" class="mt-1">
-              <UBadge :color="getStatusColor(project.status)" variant="subtle" size="md">
+              <UBadge :color="getStatusColor(project.status)" variant="soft" size="md">
                 {{ getStatusLabel(project.status) }}
               </UBadge>
             </div>
@@ -126,8 +126,8 @@
             :popper="{ placement: 'bottom-end' }"
           >
             <UButton
-              color="gray"
-              variant="white"
+              color="white"
+              variant="solid"
               icon="i-heroicons-arrow-down-tray"
               trailing-icon="i-heroicons-chevron-down"
               class="border-gray-200"

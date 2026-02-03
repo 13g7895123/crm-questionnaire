@@ -196,6 +196,9 @@ $routes->group('api/v1', ['namespace' => 'App\Controllers\Api\V1'], function ($r
         $routes->post('questionnaires/(:num)/save', 'RmQuestionnaires::saveManual/$1');
         $routes->post('questionnaires/(:num)/submit', 'RmQuestionnaires::submit/$1');
 
+        // Template Downloads
+        $routes->get('templates/download/(:alpha)', 'RmTemplates::download/$1');
+
         // Review Management
         $routes->get('reviews/pending', 'RmReviews::pending');
         $routes->post('reviews/(:num)', 'RmReviews::review/$1');

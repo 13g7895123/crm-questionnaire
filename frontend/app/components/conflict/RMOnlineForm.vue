@@ -308,8 +308,7 @@ const activeMinerals = computed(() => {
                   <UInput 
                     v-model="formData.smelterList[index].smelter_name" 
                     size="xs" 
-                    variant="none"
-                    class="border-b focus-within:border-primary-500 rounded-none w-full"
+                    :ui="{ base: 'border-b focus-within:border-primary-500 rounded-none w-full' }"
                     placeholder="e.g. Acme Smelting Corp"
                   />
                 </template>
@@ -319,8 +318,7 @@ const activeMinerals = computed(() => {
                   <UInput 
                     v-model="formData.smelterList[index].smelter_id" 
                     size="xs" 
-                    variant="none"
-                    class="border-b focus-within:border-primary-500 rounded-none w-full font-mono"
+                    :ui="{ base: 'border-b focus-within:border-primary-500 rounded-none w-full font-mono' }"
                     placeholder="CID001234"
                   />
                 </template>
@@ -330,8 +328,7 @@ const activeMinerals = computed(() => {
                   <UInput 
                     v-model="formData.smelterList[index].smelter_country" 
                     size="xs" 
-                    variant="none"
-                    class="border-b focus-within:border-primary-500 rounded-none w-full"
+                    :ui="{ base: 'border-b focus-within:border-primary-500 rounded-none w-full' }"
                     placeholder="China"
                   />
                 </template>

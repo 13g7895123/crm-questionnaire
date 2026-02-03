@@ -100,21 +100,21 @@
               v-if="templateSet.templates.cmrt?.enabled"
               class="flex items-center gap-2 text-sm"
             >
-              <UBadge color="blue" variant="subtle">CMRT</UBadge>
+              <UBadge color="blue" variant="soft">CMRT</UBadge>
               <span class="text-gray-700">v{{ templateSet.templates.cmrt.version }}</span>
             </div>
             <div
               v-if="templateSet.templates.emrt?.enabled"
               class="flex items-center gap-2 text-sm"
             >
-              <UBadge color="green" variant="subtle">EMRT</UBadge>
+              <UBadge color="green" variant="soft">EMRT</UBadge>
               <span class="text-gray-700">v{{ templateSet.templates.emrt.version }}</span>
             </div>
             <div
               v-if="templateSet.templates.amrt?.enabled"
               class="flex items-center gap-2 text-sm"
             >
-              <UBadge color="yellow" variant="subtle">AMRT</UBadge>
+              <UBadge color="yellow" variant="soft">AMRT</UBadge>
               <span class="text-gray-700">
                 v{{ templateSet.templates.amrt.version }}
                 ({{ templateSet.templates.amrt.minerals?.length || 0 }} 種礦產)
@@ -206,7 +206,7 @@
                 />
                 <span class="font-semibold text-gray-900">CMRT - Conflict Minerals</span>
               </label>
-              <UBadge color="blue" variant="subtle">衝突礦產（3TG）</UBadge>
+              <UBadge color="blue" variant="soft">衝突礦產（3TG）</UBadge>
             </div>
             
             <div v-if="form.templates.cmrt.enabled" class="space-y-3">
@@ -235,7 +235,7 @@
                 />
                 <span class="font-semibold text-gray-900">EMRT - Extended Minerals</span>
               </label>
-              <UBadge color="green" variant="subtle">擴展礦產</UBadge>
+              <UBadge color="green" variant="soft">擴展礦產</UBadge>
             </div>
             
             <div v-if="form.templates.emrt.enabled" class="space-y-3">
@@ -264,7 +264,7 @@
                 />
                 <span class="font-semibold text-gray-900">AMRT - Additional Minerals</span>
               </label>
-              <UBadge color="yellow" variant="subtle">自選礦產（1-10種）</UBadge>
+              <UBadge color="yellow" variant="soft">自選礦產（1-10種）</UBadge>
             </div>
             
             <div v-if="form.templates.amrt.enabled" class="space-y-3">

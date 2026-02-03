@@ -23,6 +23,8 @@
           <div>
             <h1 class="text-2xl font-bold text-gray-900">{{ assignment?.project?.name || '責任礦產問卷' }}</h1>
             <p class="text-sm text-gray-500 mt-1">
+              <span class="font-medium text-gray-700">{{ assignment?.supplier_name }}</span>
+              <span class="mx-2">•</span>
               {{ $t('questionnaire.instruction') || '請依序完成以下範本填寫，或直接上傳官方 Excel。' }}
             </p>
           </div>
@@ -65,7 +67,7 @@
               </div>
               
               <div class="flex flex-col items-end">
-                <UBadge :color="tmpl.completed ? 'green' : 'orange'" variant="subtle" size="xs" class="font-bold">
+                <UBadge :color="tmpl.completed ? 'green' : 'orange'" variant="soft" size="xs" class="font-bold">
                   {{ tmpl.completed ? $t('common.completed') : $t('common.pending') }}
                 </UBadge>
               </div>
@@ -135,7 +137,7 @@
         <UTabs :items="tabItems" @change="onTabChange" :ui="{ list: { base: 'bg-gray-50/50 p-1 border-b border-gray-100', rounded: 'rounded-none' } }">
           <template #default="{ item, selected }">
             <div class="flex items-center gap-2 px-6 py-3 transition-all duration-300">
-              <UIcon :name="item.icon" class="w-5 h-5" :class="selected ? 'text-primary-500 scale-110' : 'text-gray-400'" />
+              <UIcon name="i-heroicons-document-text" class="w-5 h-5 transition-all" :class="selected ? 'text-primary-500 scale-110' : 'text-gray-400'" />
               <span class="font-bold text-sm" :class="selected ? 'text-gray-900' : 'text-gray-400'">{{ item.label }}</span>
               <UIcon v-if="item.completed" name="i-heroicons-check-circle-20-solid" class="w-4 h-4 text-green-500" />
             </div>
@@ -402,18 +404,24 @@ const onTabChange = (index: number) => {
 }
 
 const handleDownloadTemplate = (type: string) => {
-  // RMI 官方範本下載連結
-  const templateUrls: Record<string, string> = {
-    CMRT: 'https://www.responsiblemineralsinitiative.org/reporting-templates/cmrt/',
-    EMRT: 'https://www.responsiblemineralsinitiative.org/reporting-templates/emrt/',
-    AMRT: 'https://www.responsiblemineralsinitiative.org/reporting-templates/amrt/'
+  // 從後端下載官方範本檔案
+  const templateFiles: Record<string, string> = {
+    CMRT: '/api/v1/rm/templates/download/cmrt',
+    EMRT: '/api/v1/rm/templates/download/emrt',
+    AMRT: '/api/v1/rm/templates/download/amrt'
   }
   
-  const url = templateUrls[type]
-  if (url) {
-    // 開啟新分頁前往 RMI 官網下載頁面
-    window.open(url, '_blank')
-    showSuccess(`正在前往 ${type} 官方範本下載頁面...`)
+  const apiPath = templateFiles[type]
+  if (apiPath) {
+    // 建立下載連結
+    const link = document.createElement('a')
+    link.href = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}${apiPath}`
+    link.setAttribute('download', `${type}_Template.xlsx`)
+    link.setAttribute('target', '_blank')
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    showSuccess(`正在下載 ${type} 官方範本...`)
   } else {
     showError('無法取得範本下載連結')
   }
@@ -432,7 +440,6 @@ const tabItems = computed(() => {
   return assignedTemplates.value.map(t => ({
     label: t.type,
     type: t.type,
-    icon: 'i-heroicons-document-text',
     completed: t.completed
   }))
 })

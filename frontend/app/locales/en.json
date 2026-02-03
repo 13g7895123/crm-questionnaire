@@ -55,7 +55,9 @@
     "noData": "No data available",
     "noDataYet": "No records found yet",
     "modify": "Modify",
-    "addFirstSmelter": "Click to add your first smelter"
+    "addFirstSmelter": "Click to add your first smelter",
+    "pending": "Pending",
+    "completed": "Completed"
   },
   "auth": {
     "login": "Log In",

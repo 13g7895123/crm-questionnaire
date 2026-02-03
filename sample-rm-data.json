@@ -1,0 +1,269 @@
+{
+  "project": {
+    "name": "2025 年度供應商盡職調查專案",
+    "year": 2025,
+    "type": "CONFLICT",
+    "description": "針對所有一階供應商進行責任礦產盡職調查"
+  },
+  "supplier": {
+    "name": "ABC電子科技股份有限公司",
+    "email": "contact@abc-electronics.com.tw",
+    "country": "Taiwan"
+  },
+  "cmrt": {
+    "declaration": {
+      "companyName": "ABC電子科技股份有限公司",
+      "companyCountry": "Taiwan",
+      "declarationScope": "Company"
+    },
+    "mineralDeclaration": {
+      "Tin": {
+        "used": "Yes",
+        "source": "Recycled",
+        "percentage": 30
+      },
+      "Tantalum": {
+        "used": "Yes",
+        "source": "Primary ore",
+        "percentage": 15
+      },
+      "Tungsten": {
+        "used": "Yes",
+        "source": "Mixed",
+        "percentage": 25
+      },
+      "Gold": {
+        "used": "Yes",
+        "source": "Primary ore",
+        "percentage": 10
+      }
+    },
+    "smelters": [
+      {
+        "metal_type": "Tin",
+        "smelter_id": "CID000123",
+        "smelter_name": "Malaysia Smelting Corporation Berhad (MSC)",
+        "smelter_country": "Malaysia",
+        "smelter_street": "Jalan Sungai Besi",
+        "smelter_city": "Kuala Lumpur",
+        "source_of_smelter_id": "RMI",
+        "rmi_conformant": true,
+        "is_conformant_expected": 1
+      },
+      {
+        "metal_type": "Tin",
+        "smelter_id": "CID000045",
+        "smelter_name": "PT Timah Tbk",
+        "smelter_country": "Indonesia",
+        "smelter_street": "Jalan Jenderal Sudirman",
+        "smelter_city": "Jakarta",
+        "source_of_smelter_id": "RMI",
+        "rmi_conformant": true,
+        "is_conformant_expected": 1
+      },
+      {
+        "metal_type": "Tantalum",
+        "smelter_id": "CID000678",
+        "smelter_name": "Global Advanced Metals Aizu",
+        "smelter_country": "Japan",
+        "smelter_street": "Aizu-Wakamatsu",
+        "smelter_city": "Fukushima",
+        "source_of_smelter_id": "RMI",
+        "rmi_conformant": true,
+        "is_conformant_expected": 1
+      },
+      {
+        "metal_type": "Tungsten",
+        "smelter_id": "CID000234",
+        "smelter_name": "China Tungsten & Hightech",
+        "smelter_country": "China",
+        "smelter_street": "Industrial Park",
+        "smelter_city": "Ganzhou",
+        "source_of_smelter_id": "RMI",
+        "rmi_conformant": true,
+        "is_conformant_expected": 1
+      },
+      {
+        "metal_type": "Gold",
+        "smelter_id": "CID000890",
+        "smelter_name": "Metalor Technologies SA",
+        "smelter_country": "Switzerland",
+        "smelter_street": "Avenue du Vignoble",
+        "smelter_city": "Marin-Epagnier",
+        "source_of_smelter_id": "RMI",
+        "rmi_conformant": true,
+        "is_conformant_expected": 1
+      },
+      {
+        "metal_type": "Gold",
+        "smelter_id": "CID001234",
+        "smelter_name": "Argor-Heraeus SA",
+        "smelter_country": "Switzerland",
+        "smelter_street": "Via Moree",
+        "smelter_city": "Mendrisio",
+        "source_of_smelter_id": "RMI",
+        "rmi_conformant": true,
+        "is_conformant_expected": 1
+      }
+    ]
+  },
+  "emrt": {
+    "declaration": {
+      "companyName": "ABC電子科技股份有限公司",
+      "companyCountry": "Taiwan",
+      "declarationScope": "Company"
+    },
+    "mineralDeclaration": {
+      "Cobalt": {
+        "used": "Yes",
+        "source": "Battery manufacturers",
+        "percentage": 40
+      },
+      "Mica": {
+        "used": "No",
+        "source": null,
+        "percentage": 0
+      },
+      "Copper": {
+        "used": "Yes",
+        "source": "Wire manufacturers",
+        "percentage": 35
+      },
+      "Natural Graphite": {
+        "used": "Yes",
+        "source": "Battery manufacturers",
+        "percentage": 20
+      },
+      "Lithium": {
+        "used": "Yes",
+        "source": "Battery manufacturers",
+        "percentage": 45
+      },
+      "Nickel": {
+        "used": "Yes",
+        "source": "Stainless steel manufacturers",
+        "percentage": 30
+      }
+    },
+    "smelters": [
+      {
+        "metal_type": "Cobalt",
+        "smelter_id": "CID002345",
+        "smelter_name": "Huayou Cobalt",
+        "smelter_country": "China",
+        "smelter_street": "Industrial Zone",
+        "smelter_city": "Tongxiang",
+        "source_of_smelter_id": "RMI",
+        "rmi_conformant": true
+      },
+      {
+        "metal_type": "Cobalt",
+        "smelter_id": "CID002456",
+        "smelter_name": "Freeport Cobalt",
+        "smelter_country": "Finland",
+        "smelter_street": "Kokkola Industrial Park",
+        "smelter_city": "Kokkola",
+        "source_of_smelter_id": "RMI",
+        "rmi_conformant": true
+      },
+      {
+        "metal_type": "Copper",
+        "smelter_id": "CID003567",
+        "smelter_name": "Aurubis AG",
+        "smelter_country": "Germany",
+        "smelter_street": "Hovestrasse",
+        "smelter_city": "Hamburg",
+        "source_of_smelter_id": "RMI",
+        "rmi_conformant": true
+      },
+      {
+        "metal_type": "Lithium",
+        "smelter_id": "CID004678",
+        "smelter_name": "Ganfeng Lithium",
+        "smelter_country": "China",
+        "smelter_street": "Lithium Industrial Park",
+        "smelter_city": "Xinyu",
+        "source_of_smelter_id": "RMI",
+        "rmi_conformant": true
+      },
+      {
+        "metal_type": "Nickel",
+        "smelter_id": "CID005789",
+        "smelter_name": "Vale Canada Limited",
+        "smelter_country": "Canada",
+        "smelter_street": "Mining District",
+        "smelter_city": "Sudbury",
+        "source_of_smelter_id": "RMI",
+        "rmi_conformant": true
+      }
+    ],
+    "mines": [
+      {
+        "mineral_type": "Cobalt",
+        "mine_name": "Tenke Fungurume Mining",
+        "mine_country": "Democratic Republic of Congo",
+        "mine_region": "Katanga Province",
+        "coordinates": "-10.6, 26.1",
+        "production_year": 2024,
+        "certification": "IRMA Certified"
+      },
+      {
+        "mineral_type": "Lithium",
+        "mine_name": "Greenbushes Lithium Mine",
+        "mine_country": "Australia",
+        "mine_region": "Western Australia",
+        "coordinates": "-33.85, 116.05",
+        "production_year": 2024,
+        "certification": "ISO 14001"
+      }
+    ]
+  },
+  "amrt": {
+    "declaration": {
+      "companyName": "ABC電子科技股份有限公司",
+      "companyCountry": "Taiwan",
+      "declarationScope": "Product (or List of Products)"
+    },
+    "selectedMinerals": ["Silver", "Platinum"],
+    "mineralDeclaration": {
+      "Silver": {
+        "used": "Yes",
+        "source": "Electronics manufacturing",
+        "percentage": 12
+      },
+      "Platinum": {
+        "used": "Yes",
+        "source": "Catalytic converters",
+        "percentage": 8
+      }
+    },
+    "smelters": [
+      {
+        "metal_type": "Silver",
+        "smelter_id": "CID006890",
+        "smelter_name": "Heraeus Precious Metals",
+        "smelter_country": "Germany",
+        "smelter_street": "Heraeusstrasse",
+        "smelter_city": "Hanau",
+        "source_of_smelter_id": "RMI",
+        "rmi_conformant": true
+      },
+      {
+        "metal_type": "Platinum",
+        "smelter_id": "CID007901",
+        "smelter_name": "Anglo American Platinum",
+        "smelter_country": "South Africa",
+        "smelter_street": "Rustenburg",
+        "smelter_city": "North West Province",
+        "source_of_smelter_id": "RMI",
+        "rmi_conformant": true
+      }
+    ]
+  },
+  "metadata": {
+    "created_at": "2026-01-13T10:30:00Z",
+    "created_by": "示範資料產生器",
+    "version": "1.0",
+    "notes": "此為示範資料，包含 CMRT、EMRT、AMRT 三種範本的完整範例"
+  }
+}

@@ -114,7 +114,7 @@
                 <UBadge
                   v-for="id in form.supplierIds"
                   :key="id"
-                  variant="subtle"
+                  variant="soft"
                   class="mr-1"
                 >
                   {{ getSupplierName(id) }}

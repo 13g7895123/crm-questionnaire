@@ -55,7 +55,9 @@
     "noData": "暫無資料",
     "noDataYet": "尚無紀錄資料",
     "modify": "修改",
-    "addFirstSmelter": "點擊新增第一筆冶煉廠資料"
+    "addFirstSmelter": "點擊新增第一筆冶煉廠資料",
+    "pending": "待處理",
+    "completed": "已完成"
   },
   "auth": {
     "login": "登入",
