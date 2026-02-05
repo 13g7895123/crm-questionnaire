@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { useApi } from './useApi'
+import { useAuthStore } from '~/stores/auth'
 import type { Organization } from '~/types/index'
 
 export const useSuppliers = () => {
@@ -55,12 +56,53 @@ export const useSuppliers = () => {
     }
   }
 
+  const downloadImportTemplate = async () => {
+    loading.value = true
+    try {
+      const authStore = useAuthStore()
+      const config = useRuntimeConfig()
+      const apiBase = config.public.apiBase || ''
+
+      let url = ''
+      if (apiBase.startsWith('http')) {
+        url = `${apiBase}/organizations/import-template`
+      } else {
+        const baseUrl = process.client ? '' : process.env.API_BASE_URL || 'http://localhost:9104'
+        url = `${baseUrl}/api/v1/organizations/import-template`
+      }
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authStore.token}`
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error('下載範本失敗')
+      }
+
+      const blob = await response.blob()
+      const downloadUrl = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = downloadUrl
+      link.setAttribute('download', '供應商批次匯入範本.xlsx')
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(downloadUrl)
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     suppliers,
     loading,
     fetchSuppliers,
     createSupplier,
     updateSupplier,
-    deleteSupplier
+    deleteSupplier,
+    downloadImportTemplate
   }
 }

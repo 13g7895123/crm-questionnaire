@@ -39,6 +39,7 @@
     "previewComplete": "Preview Complete",
     "preview": "Preview",
     "import": "Import",
+    "upload": "Upload",
     "importExcel": "Import from Excel",
     "downloadTemplate": "Download Template",
     "importExcelNoData": "No valid supplier names found in Excel",

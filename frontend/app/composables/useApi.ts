@@ -77,6 +77,11 @@ export const useApi = () => {
         handleResponseStatus(response.status, data)
       }
 
+      // Handle 204 No Content
+      if (response.status === 204) {
+        return null as T
+      }
+
       const data = await response.json() as T
       return data
     } catch (err) {
@@ -142,6 +147,11 @@ export const useApi = () => {
           data = null
         }
         handleResponseStatus(response.status, data)
+      }
+
+      // Handle 204 No Content
+      if (response.status === 204) {
+        return null as T
       }
 
       const data = await response.json() as T

@@ -74,6 +74,8 @@ $routes->group('api/v1', ['namespace' => 'App\Controllers\Api\V1'], function ($r
     // Organization routes
     $routes->group('organizations', ['filter' => 'jwt'], function ($routes) {
         $routes->get('/', 'OrganizationController::index');
+        $routes->get('import-template', 'OrganizationController::downloadImportTemplate');
+        $routes->post('import', 'OrganizationController::import');
         $routes->get('(:segment)', 'OrganizationController::show/$1');
         $routes->post('/', 'OrganizationController::create');
         $routes->put('(:segment)', 'OrganizationController::update/$1');
@@ -86,6 +88,8 @@ $routes->group('api/v1', ['namespace' => 'App\Controllers\Api\V1'], function ($r
     // Department routes
     $routes->group('departments', ['filter' => 'jwt'], function ($routes) {
         $routes->get('/', 'DepartmentController::index');
+        $routes->get('import-template', 'DepartmentController::downloadImportTemplate');
+        $routes->post('import', 'DepartmentController::import');
         $routes->get('(:segment)', 'DepartmentController::show/$1');
         $routes->post('/', 'DepartmentController::create');
         $routes->put('(:segment)', 'DepartmentController::update/$1');

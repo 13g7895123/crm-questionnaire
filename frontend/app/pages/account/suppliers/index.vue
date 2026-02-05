@@ -6,12 +6,26 @@
           <h1 class="text-2xl font-bold text-gray-900">{{ $t('suppliers.management') }}</h1>
           <p class="mt-1 text-sm text-gray-500">管理供應商及其帳戶</p>
         </div>
-        <UButton
-          icon="i-heroicons-plus"
-          color="primary"
-          :label="$t('common.add')"
-          @click="openCreateModal"
-        />
+        <div class="flex gap-2">
+          <UButton
+            icon="i-heroicons-arrow-down-tray"
+            color="white"
+            :label="$t('common.downloadTemplate')"
+            @click="downloadTemplate"
+           />
+          <UButton
+            icon="i-heroicons-arrow-up-tray"
+            color="white"
+            :label="$t('common.import')"
+            @click="openImportModal"
+          />
+          <UButton
+            icon="i-heroicons-plus"
+            color="primary"
+            :label="$t('common.add')"
+            @click="openCreateModal"
+          />
+        </div>
       </div>
 
       <!-- Filters & Search -->
@@ -111,12 +125,99 @@
         </form>
       </UCard>
     </UModal>
+
+    <!-- Import Modal -->
+    <UModal v-model="isImportModalOpen">
+      <UCard>
+        <template #header>
+          <h3 class="text-lg font-semibold">{{ $t('common.import') }}</h3>
+        </template>
+
+        <div class="space-y-4">
+          <div class="bg-blue-50 p-4 rounded-lg">
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                </svg>
+              </div>
+              <div class="ml-3">
+                <h3 class="text-sm font-medium text-blue-800">匯入說明</h3>
+                <div class="mt-2 text-sm text-blue-700">
+                  <ul class="list-disc list-inside space-y-1">
+                    <li>請先下載範本，填寫資料後上傳</li>
+                    <li>供應商名稱不可重複</li>
+                    <li>所有匯入的組織類型均為供應商</li>
+                    <li>最多可匯入 1000 筆資料</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <UFormGroup label="選擇檔案" required>
+            <div class="mt-1">
+              <input
+                ref="fileInput"
+                type="file"
+                accept=".xlsx,.xls"
+                class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-l-lg file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+                @change="handleFileChange"
+              />
+            </div>
+            <p v-if="selectedFile" class="mt-2 text-sm text-gray-600">
+              已選擇：{{ selectedFile.name }}
+            </p>
+          </UFormGroup>
+
+          <div v-if="importResult" class="space-y-2">
+            <div class="p-4 rounded-lg" :class="importResult.success > 0 ? 'bg-green-50' : 'bg-yellow-50'">
+              <div class="text-sm font-medium" :class="importResult.success > 0 ? 'text-green-800' : 'text-yellow-800'">
+                {{ importResult.message }}
+              </div>
+              <div class="mt-2 text-sm" :class="importResult.success > 0 ? 'text-green-700' : 'text-yellow-700'">
+                <p>成功：{{ importResult.success }} 筆</p>
+                <p>跳過：{{ importResult.skipped }} 筆</p>
+                <p>總計：{{ importResult.total }} 筆</p>
+              </div>
+            </div>
+
+            <div v-if="importResult.errors && importResult.errors.length > 0" class="bg-red-50 p-4 rounded-lg max-h-60 overflow-y-auto">
+              <div class="text-sm font-medium text-red-800 mb-2">錯誤訊息：</div>
+              <ul class="text-sm text-red-700 space-y-1">
+                <li v-for="(error, index) in importResult.errors" :key="index" class="flex items-start">
+                  <span class="mr-2">•</span>
+                  <span>{{ error }}</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-3 mt-6">
+            <UButton
+              color="gray"
+              variant="soft"
+              :label="$t('common.cancel')"
+              @click="closeImportModal"
+            />
+            <UButton
+              color="primary"
+              :label="$t('common.upload')"
+              :loading="importing"
+              :disabled="!selectedFile"
+              @click="handleImport"
+            />
+          </div>
+        </div>
+      </UCard>
+    </UModal>
   </NuxtLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useApi } from '~/composables/useApi'
 import { useSuppliers } from '~/composables/useSuppliers'
 import { useSweetAlert } from '~/composables/useSweetAlert'
 import { useBreadcrumbs } from '~/composables/useBreadcrumbs'
@@ -128,15 +229,21 @@ definePageMeta({ middleware: 'auth' })
 
 const router = useRouter()
 const { t } = useI18n()
-const { suppliers, loading, fetchSuppliers, createSupplier, updateSupplier, deleteSupplier } = useSuppliers()
-const { showConfirmDialog, showSystemAlert, closeAlert, showLoading } = useSweetAlert()
+const api = useApi()
+const { suppliers, loading, fetchSuppliers, createSupplier, updateSupplier, deleteSupplier, downloadImportTemplate } = useSuppliers()
+const { showConfirm, showSystemAlert, closeAlert, showLoading } = useSweetAlert()
 const { setBreadcrumbs } = useBreadcrumbs()
 
 const searchQuery = ref('')
 const selected = ref<Organization[]>([])
 const isModalOpen = ref(false)
+const isImportModalOpen = ref(false)
 const editingId = ref<string | null>(null)
 const form = ref({ name: '' })
+const fileInput = ref<HTMLInputElement | null>(null)
+const selectedFile = ref<File | null>(null)
+const importing = ref(false)
+const importResult = ref<any>(null)
 
 const pagination = ref({
   page: 1,
@@ -191,7 +298,7 @@ const openEditModal = (supplier: Organization) => {
 }
 
 const confirmDelete = async (supplier: Organization) => {
-  const confirmed = await showConfirmDialog(t('common.confirmDelete'))
+  const confirmed = await showConfirm({ text: t('common.confirmDelete') })
   if (!confirmed) return
 
   try {
@@ -221,6 +328,69 @@ const handleSubmit = async () => {
 
 const navigateToMembers = (supplier: Organization) => {
   router.push(`/account/suppliers/${supplier.id}`)
+}
+
+const downloadTemplate = async () => {
+  try {
+    await downloadImportTemplate()
+    showSystemAlert('範本下載成功', 'success')
+  } catch (error: any) {
+    console.error('Download template error:', error)
+    showSystemAlert(error.message || '下載範本失敗', 'error')
+  }
+}
+
+const openImportModal = () => {
+  selectedFile.value = null
+  importResult.value = null
+  if (fileInput.value) {
+    fileInput.value.value = ''
+  }
+  isImportModalOpen.value = true
+}
+
+const closeImportModal = () => {
+  isImportModalOpen.value = false
+  selectedFile.value = null
+  importResult.value = null
+  if (fileInput.value) {
+    fileInput.value.value = ''
+  }
+}
+
+const handleFileChange = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  if (target.files && target.files.length > 0) {
+    selectedFile.value = target.files[0]
+    importResult.value = null
+  }
+}
+
+const handleImport = async () => {
+  if (!selectedFile.value) return
+
+  try {
+    importing.value = true
+    
+    const formData = new FormData()
+    formData.append('file', selectedFile.value)
+    
+    const response = await api.uploadFormData('/organizations/import', formData)
+    
+    importResult.value = response.data
+    
+    // Refresh suppliers list
+    await fetchSuppliers()
+    
+    // Show success message
+    if (response.data.success > 0) {
+      showSystemAlert(response.data.message, 'success')
+    }
+  } catch (error: any) {
+    showSystemAlert(error.message || '匯入失敗', 'error')
+  } finally {
+    importing.value = false
+  }
 }
 
 onMounted(async () => {
