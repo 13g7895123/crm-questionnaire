@@ -15,6 +15,10 @@ else
     composer install --no-interaction --prefer-dist --optimize-autoloader
 fi
 
+# Force regenerate autoload to ensure all classes are registered
+echo "Regenerating autoload files..."
+composer dump-autoload --optimize
+
 # Ensure writable directory exists and has correct permissions
 mkdir -p writable/logs writable/cache writable/session writable/uploads writable/debugbar
 chmod -R 777 writable

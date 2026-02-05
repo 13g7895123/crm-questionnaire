@@ -190,6 +190,22 @@ case "${1:-deploy}" in
             echo "✅ Composer dependencies installed successfully"
         fi
         
+        # Force regenerate autoload to include newly added classes
+        echo ""
+        echo "Regenerating Composer autoload files..."
+        if docker compose -f "$COMPOSE_FILE" exec backend composer dump-autoload --optimize --no-dev; then
+            echo "✅ Autoload files regenerated successfully"
+        else
+            echo "⚠️  Warning: Autoload regeneration failed"
+        fi
+        
+        # Restart backend again to reload autoload files
+        echo ""
+        echo "Restarting backend to reload autoload files..."
+        docker compose -f "$COMPOSE_FILE" restart backend
+        echo "Waiting for backend to be ready..."
+        sleep 5
+        
         # Fix writable permissions
         echo ""
         echo "Fixing writable permissions..."
