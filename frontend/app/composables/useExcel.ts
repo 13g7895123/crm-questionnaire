@@ -42,9 +42,10 @@ export const useExcel = () => {
     /**
      * Helper to download a simple template
      */
-    const downloadTemplate = async (filename: string, headers: string[]) => {
+    const downloadTemplate = async (filename: string, headers: string[], data?: any[][]) => {
         const XLSX = await import('xlsx')
-        const worksheet = XLSX.utils.aoa_to_sheet([headers])
+        const rows = data ? [headers, ...data] : [headers]
+        const worksheet = XLSX.utils.aoa_to_sheet(rows)
         const workbook = XLSX.utils.book_new()
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Template')
         XLSX.writeFile(workbook, `${filename}.xlsx`)

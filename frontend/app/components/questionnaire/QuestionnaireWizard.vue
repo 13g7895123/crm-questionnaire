@@ -282,6 +282,7 @@
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import Swal from 'sweetalert2'
 import type { TemplateStructure, Section, Answers, AnswerValue, BasicInfo, Reviews, QuestionReview } from '~/types/template-v2'
 import BasicInfoFormV2 from './BasicInfoFormV2.vue'
 import SectionFormV2 from './SectionFormV2.vue'
@@ -890,8 +891,33 @@ const handleSubmit = async () => {
      emit('submitted')
    } catch (e: any) {
      console.error('Submit failed:', e)
-     showError(e?.message || t('questionnaire.submitFailed'))
-     error.value = e?.message || t('questionnaire.submitFailed')
+     
+     // Format validation error messages
+     let errorMessage = e?.message || t('questionnaire.submitFailed')
+     
+     // If validation error with details, show them in a list
+     if (e?.code === 'VALIDATION_ERROR' && e?.details) {
+       const detailMessages = Object.entries(e.details)
+         .map(([field, msg]) => `• ${msg}`)
+         .join('\n')
+       
+       if (detailMessages) {
+         // Use Swal directly for better formatting
+         if (process.client) {
+           await Swal.fire({
+             title: '資料驗證失敗',
+             html: detailMessages.split('\n').map(line => `<div style="text-align: left; margin: 8px 0;">${line}</div>`).join(''),
+             icon: 'error',
+             confirmButtonText: '確定'
+           })
+         }
+         error.value = errorMessage
+         return
+       }
+     }
+     
+     showError(errorMessage)
+     error.value = errorMessage
    } finally {
      submitting.value = false
    }

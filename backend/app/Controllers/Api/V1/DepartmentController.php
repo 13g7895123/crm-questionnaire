@@ -249,13 +249,8 @@ class DepartmentController extends BaseApiController
             $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
             $sheet = $spreadsheet->getActiveSheet();
 
-            // Get all organizations for reference
-            $organizations = $this->orgModel->findAll();
-            $orgNames = array_map(fn($org) => $org->name, $organizations);
-            $orgList = '"' . implode(',', $orgNames) . '"';
-
             // Set headers
-            $headers = ['部門名稱', '組織名稱', '備註'];
+            $headers = ['部門名稱', '備註'];
             $sheet->fromArray([$headers], null, 'A1');
 
             // Style headers
@@ -267,39 +262,19 @@ class DepartmentController extends BaseApiController
                 ],
                 'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER],
             ];
-            $sheet->getStyle('A1:C1')->applyFromArray($headerStyle);
+            $sheet->getStyle('A1:B1')->applyFromArray($headerStyle);
 
             // Add sample data
-            $sampleOrg = !empty($organizations) ? $organizations[0]->name : '範例組織';
             $sampleData = [
-                ['品質管理部', $sampleOrg, '這是範例，可以刪除'],
-                ['採購部', $sampleOrg, ''],
-                ['研發部', $sampleOrg, ''],
+                ['品質管理部', '這是範例，可以刪除'],
+                ['採購部', ''],
+                ['研發部', ''],
             ];
             $sheet->fromArray($sampleData, null, 'A2');
 
             // Set column widths
-            $sheet->getColumnDimension('A')->setWidth(30);
-            $sheet->getColumnDimension('B')->setWidth(30);
-            $sheet->getColumnDimension('C')->setWidth(40);
-
-            // Add data validation for Organization column if organizations exist
-            if (!empty($organizations)) {
-                $validation = $sheet->getCell('B2')->getDataValidation();
-                $validation->setType(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::TYPE_LIST);
-                $validation->setErrorStyle(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::STYLE_STOP);
-                $validation->setAllowBlank(false);
-                $validation->setShowDropDown(true);
-                $validation->setFormula1($orgList);
-                $validation->setShowErrorMessage(true);
-                $validation->setErrorTitle('錯誤的組織');
-                $validation->setError('請選擇現有的組織名稱');
-
-                // Apply validation to more rows
-                for ($row = 2; $row <= 100; $row++) {
-                    $sheet->getCell("B{$row}")->setDataValidation(clone $validation);
-                }
-            }
+            $sheet->getColumnDimension('A')->setWidth(40);
+            $sheet->getColumnDimension('B')->setWidth(40);
 
             // Add instructions sheet
             $instructionSheet = $spreadsheet->createSheet(1);
@@ -309,34 +284,23 @@ class DepartmentController extends BaseApiController
                 [''],
                 ['欄位說明：'],
                 ['1. 部門名稱：必填，部門的完整名稱'],
-                ['2. 組織名稱：必填，必須是系統中已存在的組織（請從下拉選單選擇）'],
-                ['3. 備註：選填，僅用於參考，不會匯入系統'],
+                ['2. 備註：選填，僅用於參考，不會匯入系統'],
                 [''],
                 ['重要提示：'],
-                ['• 同一組織內的部門名稱不可重複'],
-                ['• 不同組織可以有相同名稱的部門'],
-                ['• 組織名稱必須與系統中已存在的組織完全一致'],
+                ['• 部門將被建立在您所屬的組織下'],
+                ['• 在您的組織內部門名稱不可重複'],
                 ['• 重複的記錄將被跳過'],
                 ['• 請勿修改表頭（第一行）'],
                 ['• 範例資料可以刪除或保留（保留會被匯入）'],
                 ['• 最多可匯入 1000 筆資料'],
                 [''],
                 ['匯入步驟：'],
-                ['1. 填寫部門資料（組織名稱請從下拉選單選擇）'],
+                ['1. 填寫部門資料'],
                 ['2. 儲存檔案'],
                 ['3. 在系統中選擇此檔案上傳'],
                 ['4. 系統會顯示匯入結果'],
-                [''],
-                ['現有組織列表：'],
             ];
             $instructionSheet->fromArray($instructions, null, 'A1');
-            
-            // Add organization list
-            $orgRow = count($instructions) + 1;
-            foreach ($organizations as $org) {
-                $instructionSheet->setCellValue("A{$orgRow}", "• {$org->name} ({$org->type})");
-                $orgRow++;
-            }
 
             $instructionSheet->getColumnDimension('A')->setWidth(80);
             $instructionSheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
@@ -398,7 +362,7 @@ class DepartmentController extends BaseApiController
 
             // Filter out empty rows
             $data = array_filter($data, function ($row) {
-                return !empty($row[0]) && !empty($row[1]);  // Name and organization must be present
+                return !empty($row[0]);  // At least name must be present
             });
 
             if (empty($data)) {
@@ -409,11 +373,12 @@ class DepartmentController extends BaseApiController
                 return $this->validationErrorResponse(['file' => '一次最多只能匯入 1000 筆資料']);
             }
 
-            // Get all organizations for lookup
-            $organizations = $this->orgModel->findAll();
-            $orgMap = [];
-            foreach ($organizations as $org) {
-                $orgMap[$org->name] = $org->id;
+            // Get user's organization
+            $userId = $this->getCurrentUserId();
+            $organizationId = $this->getCurrentOrganizationId();
+            
+            if (!$organizationId) {
+                return $this->forbiddenResponse('您尚未加入任何組織，無法建立部門');
             }
 
             $db = \Config\Database::connect();
@@ -427,7 +392,6 @@ class DepartmentController extends BaseApiController
                 $rowNum = $index + 2; // +2 because array index starts at 0 and we removed header
 
                 $name = trim($row[0] ?? '');
-                $orgName = trim($row[1] ?? '');
 
                 // Validation
                 if (empty($name)) {
@@ -435,23 +399,10 @@ class DepartmentController extends BaseApiController
                     continue;
                 }
 
-                if (empty($orgName)) {
-                    $errors[] = "第 {$rowNum} 行：組織名稱不可為空";
-                    continue;
-                }
-
-                // Check if organization exists
-                if (!isset($orgMap[$orgName])) {
-                    $errors[] = "第 {$rowNum} 行：找不到組織 '{$orgName}'，請確認組織名稱正確";
-                    continue;
-                }
-
-                $organizationId = $orgMap[$orgName];
-
                 // Check if department already exists in this organization
                 if ($this->deptModel->existsInOrganization($name, $organizationId)) {
                     $skipCount++;
-                    $errors[] = "第 {$rowNum} 行：組織 '{$orgName}' 已存在部門 '{$name}'，已跳過";
+                    $errors[] = "第 {$rowNum} 行：部門 '{$name}' 已存在，已跳過";
                     continue;
                 }
 

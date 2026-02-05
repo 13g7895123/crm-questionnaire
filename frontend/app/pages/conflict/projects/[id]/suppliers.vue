@@ -12,11 +12,11 @@
         </button>
         <button class="btn btn-secondary" @click="handleExcelImport">
           <UIcon name="i-heroicons-arrow-up-tray" />
-          Excel 匯入
+          匯入
         </button>
         <button class="btn btn-secondary" @click="downloadTemplate">
           <UIcon name="i-heroicons-arrow-down-tray" />
-          下載範本
+          下載範本(現有供應商清單)
         </button>
       </div>
       
@@ -305,10 +305,12 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useResponsibleMinerals, type SupplierAssignment, type TemplateType } from '~/composables/useResponsibleMinerals'
 import { useSweetAlert } from '~/composables/useSweetAlert'
+import { useExcel } from '~/composables/useExcel'
 
 const route = useRoute()
 const router = useRouter()
 const { showSuccess, showError, showConfirm } = useSweetAlert()
+const { parseExcel, downloadTemplate: downloadExcelTemplate } = useExcel()
 const {
   suppliers,
   fetchSuppliersWithTemplates,
@@ -552,9 +554,58 @@ const handleFileSelected = async (event: Event) => {
   if (!file) return
 
   try {
-    await importTemplateAssignments(projectId.value, file)
-    showSuccess('Excel 匯入成功')
-    await loadSuppliers()
+    // 解析 Excel
+    const rows = await parseExcel(file)
+    
+    // 跳過前3筆示例數據（從第4筆開始，索引3）
+    // 第0筆是標題行，第1-3筆是示例
+    const dataRows = rows.slice(4)
+    
+    if (dataRows.length === 0) {
+      showError('Excel 中沒有有效的數據')
+      return
+    }
+
+    // 處理每一筆數據
+    const updates: any[] = []
+    for (const row of dataRows) {
+      if (!row[0]) continue // 跳過空行
+      
+      const supplierName = String(row[0] || '').trim()
+      const cmrt = String(row[1] || '').toLowerCase()
+      const emrt = String(row[2] || '').toLowerCase()
+      const amrt = String(row[3] || '').toLowerCase()
+      const amrtMinerals = String(row[4] || '').trim()
+      const remark = String(row[5] || '').trim()
+      
+      // 查找供應商
+      const supplier = suppliers.value.find(s => s.supplier_name === supplierName)
+      if (!supplier) {
+        console.warn(`找不到供應商: ${supplierName}`)
+        continue
+      }
+
+      // 準備更新數據
+      const templates: TemplateType & { amrt_minerals?: string[] } = {
+        cmrt_required: cmrt === 'yes' || cmrt === '是',
+        emrt_required: emrt === 'yes' || emrt === '是',
+        amrt_required: amrt === 'yes' || amrt === '是',
+        amrt_minerals: amrtMinerals ? amrtMinerals.split(',').map(m => m.trim()).filter(m => m) : undefined
+      }
+      
+      updates.push({ supplierId: supplier.id, templates })
+    }
+
+    // 執行批量更新
+    if (updates.length > 0) {
+      for (const update of updates) {
+        await assignTemplateToSupplier(projectId.value, update.supplierId, update.templates)
+      }
+      showSuccess(`成功匯入 ${updates.length} 筆供應商範本設定`)
+      await loadSuppliers()
+    } else {
+      showError('沒有找到匹配的供應商')
+    }
   } catch (err: any) {
     showError(err.message || '匯入失敗')
   } finally {
@@ -565,9 +616,42 @@ const handleFileSelected = async (event: Event) => {
   }
 }
 
-const downloadTemplate = () => {
-  downloadTemplateAssignmentTemplate()
-  showSuccess('範本下載成功')
+const downloadTemplate = async () => {
+  try {
+    // 準備標題行
+    const headers = ['供應商名稱', 'CMRT', 'EMRT', 'AMRT', 'AMRT礦產', '備註']
+    
+    // 準備數據行（前三筆為示例）
+    const exampleRows = [
+      ['範例供應商A', 'Yes', 'Yes', 'No', '', '這是示例數據，匯入時會自動跳過'],
+      ['範例供應商B', 'Yes', 'No', 'Yes', 'Silver,Platinum', '這是示例數據，匯入時會自動跳過'],
+      ['範例供應商C', 'No', 'Yes', 'No', '', '這是示例數據，匯入時會自動跳過']
+    ]
+    
+    // 添加現有供應商數據
+    const supplierRows = suppliers.value.map(s => [
+      s.supplier_name,
+      s.cmrt_required ? 'Yes' : 'No',
+      s.emrt_required ? 'Yes' : 'No',
+      s.amrt_required ? 'Yes' : 'No',
+      (s.amrt_minerals && Array.isArray(s.amrt_minerals)) ? s.amrt_minerals.join(',') : '',
+      '' // 備註欄位預設為空
+    ])
+    
+    // 合併示例數據和實際數據
+    const allRows = [...exampleRows, ...supplierRows]
+    
+    // 下載 Excel
+    await downloadExcelTemplate(
+      `conflict_minerals_suppliers_${projectId.value}`,
+      headers,
+      allRows
+    )
+    
+    showSuccess('供應商清單下載成功')
+  } catch (err: any) {
+    showError(err.message || '下載失敗')
+  }
 }
 
 const notifySupplier = async (supplier: SupplierAssignment) => {

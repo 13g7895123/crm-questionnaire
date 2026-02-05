@@ -146,8 +146,8 @@
                 <div class="mt-2 text-sm text-blue-700">
                   <ul class="list-disc list-inside space-y-1">
                     <li>請先下載範本，填寫資料後上傳</li>
+                    <li>部門將被建立在您所屬的組織下</li>
                     <li>同一組織內的部門名稱不可重複</li>
-                    <li>組織名稱必須從下拉選單中選擇</li>
                     <li>最多可匯入 1000 筆資料</li>
                   </ul>
                 </div>

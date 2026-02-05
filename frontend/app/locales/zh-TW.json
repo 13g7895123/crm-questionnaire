@@ -201,9 +201,10 @@
     "editSupplier": "編輯供應商",
     "supplierName": "供應商名稱",
     "supplierTemplate": "供應商匯入範本",
+    "supplierListTemplate": "下載範本(現有供應商清單)",
     "selectSupplier": "選擇供應商",
     "supplierInfo": "供應商資訊",
-    "supplierList": "供應商列表",
+    "supplierList": "供應商清單",
     "confirmDelete": "確定要刪除此供應商嗎？此操作無法復原。"
   },
   "users": {

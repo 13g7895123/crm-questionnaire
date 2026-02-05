@@ -77,7 +77,7 @@
                   variant="ghost"
                   @click="downloadSupplierTemplate"
                 >
-                  {{ $t('common.downloadTemplate') }}
+                  {{ $t('suppliers.supplierListTemplate') }}
                 </UButton>
                 <UButton
                   icon="i-heroicons-document-arrow-up"
@@ -86,7 +86,7 @@
                   variant="ghost"
                   @click="triggerExcelImport"
                 >
-                  {{ $t('common.importExcel') }}
+                  {{ $t('common.import') }}
                 </UButton>
                 <input
                   ref="excelInput"
@@ -219,9 +219,9 @@ const emit = defineEmits<{
 const { createProject, updateProject, getProject } = useProjects()
 const { templates, fetchTemplates } = useTemplates()
 const { templateSets, fetchTemplateSets } = useTemplateSets()
-const { suppliers, fetchSuppliers } = useSuppliers()
+const { suppliers, fetchSuppliers, createSupplier } = useSuppliers()
 const { departments, fetchDepartments } = useDepartments()
-const { showSystemAlert } = useSweetAlert()
+const { showSystemAlert, showConfirm } = useSweetAlert()
 const { t } = useI18n()
 const { parseExcel, downloadTemplate } = useExcel()
 
@@ -428,18 +428,12 @@ const triggerExcelImport = () => {
 
 const downloadSupplierTemplate = async () => {
   try {
-    await downloadTemplate(t('suppliers.supplierTemplate'), [t('suppliers.supplierName')])
+    // Generate template with all existing suppliers
+    const supplierNames = suppliers.value.map((s: any) => [s.name])
+    await downloadTemplate(t('suppliers.supplierTemplate'), [t('suppliers.supplierName')], supplierNames)
   } catch (error) {
     console.error('Failed to download template:', error)
   }
-}
-
-const getCharCodes = (str: string) => {
-  return Array.from(str).map(c => ({
-    char: c,
-    code: c.charCodeAt(0),
-    hex: '0x' + c.charCodeAt(0).toString(16).toUpperCase()
-  }))
 }
 
 const handleExcelImport = async (event: Event) => {
@@ -471,90 +465,68 @@ const handleExcelImport = async (event: Event) => {
     // Match with existing suppliers
     const matchedSupplierIds: string[] = []
     const unmatchedNames: string[] = []
-    const detailedLogs: any[] = []
 
-    importedNames.forEach((name, index) => {
+    importedNames.forEach((name) => {
       // Remove ALL spaces for comparison to be robust against "Company A" vs "CompanyA"
       const normalizedExcelName = name.replace(/\s/g, '').toLowerCase()
       const supplier = suppliers.value.find(s => s.name.replace(/\s/g, '').toLowerCase() === normalizedExcelName)
-      
-      const debugItem: any = {
-        row: index + 2,
-        excelName: name,
-        excelNormalized: normalizedExcelName,
-        excelChars: getCharCodes(name),
-        status: 'FAILED',
-        systemName: '-',
-        systemChars: []
-      }
 
       if (supplier) {
         if (!matchedSupplierIds.includes(String(supplier.id))) {
           matchedSupplierIds.push(String(supplier.id))
         }
-        debugItem.status = 'MATCHED'
-        debugItem.systemId = supplier.id
-        debugItem.systemName = supplier.name
-        debugItem.systemNormalized = supplier.name.replace(/\s/g, '').toLowerCase()
-        debugItem.systemChars = getCharCodes(supplier.name)
       } else {
         unmatchedNames.push(name)
-        // Log closest match attempt for investigation
-        const possibleMatch = suppliers.value[0]; // Just to see system format
-        if (possibleMatch) {
-          debugItem.sampleSystemName = possibleMatch.name
-          debugItem.sampleSystemChars = getCharCodes(possibleMatch.name)
-        }
       }
-      detailedLogs.push(debugItem)
     })
 
-    console.table(detailedLogs.map(l => ({ 
-      Row: l.row, 
-      Excel: l.excelName, 
-      Status: l.status, 
-      System: l.systemName 
-    })))
-    
-    // Send to backend for agent to read
-    try {
-      const apiBase = useRuntimeConfig().public.apiBase
-      await fetch(`${apiBase}/debug/log-match`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          summary: { total: importedNames.length, matched: matchedSupplierIds.length, unmatched: unmatchedNames.length },
-          details: detailedLogs
-        })
-      })
-      console.log('Debug logs sent to backend.')
-    } catch (e) {
-      console.error('Failed to send debug logs to backend', e)
-    }
-
+    console.log('Matched:', matchedSupplierIds.length, 'Unmatched:', unmatchedNames.length)
     console.groupEnd()
+
+    // Reset input
+    input.value = ''
+
+    // If there are unmatched names, ask user if they want to create them
+    if (unmatchedNames.length > 0) {
+      const confirmed = await showConfirm({
+        title: '發現不存在的供應商',
+        text: `已成功匯入 ${matchedSupplierIds.length} 筆供應商。\n有 ${unmatchedNames.length} 筆供應商不存在：\n${unmatchedNames.slice(0, 5).join(', ')}${unmatchedNames.length > 5 ? '...' : ''}\n\n是否要建立這些供應商？`,
+        icon: 'question',
+        confirmButtonText: '建立',
+        cancelButtonText: '跳過'
+      })
+
+      if (confirmed) {
+        // Create new suppliers
+        const { createSupplier } = useSuppliers()
+        let createdCount = 0
+        
+        for (const name of unmatchedNames) {
+          try {
+            const result = await createSupplier(name)
+            if (result.data?.id) {
+              matchedSupplierIds.push(String(result.data.id))
+              createdCount++
+            }
+          } catch (error) {
+            console.error(`Failed to create supplier: ${name}`, error)
+          }
+        }
+
+        // Refresh suppliers list
+        await fetchSuppliers()
+
+        showSystemAlert(`成功建立 ${createdCount} 個新供應商，共匯入 ${matchedSupplierIds.length} 個供應商`, 'success')
+      }
+    } else {
+      showSystemAlert(t('common.importExcelSuccess', { count: matchedSupplierIds.length }), 'success')
+    }
 
     // Update form
     const currentIds = new Set(form.value.supplierIds)
     matchedSupplierIds.forEach(id => currentIds.add(id))
     form.value.supplierIds = Array.from(currentIds)
 
-    // Reset input
-    input.value = ''
-
-    // Result Feedback
-    if (unmatchedNames.length === 0) {
-      showSystemAlert(t('common.importExcelSuccess', { count: matchedSupplierIds.length }), 'success')
-    } else {
-      showSystemAlert(
-        t('common.importExcelPartial', {
-          matched: matchedSupplierIds.length,
-          unmatched: unmatchedNames.length,
-          names: unmatchedNames.slice(0, 3).join(', ') + (unmatchedNames.length > 3 ? '...' : '')
-        }),
-        'info'
-      )
-    }
   } catch (error) {
     console.error('Failed to parse Excel:', error)
     showSystemAlert(t('common.importExcelError'), 'error')

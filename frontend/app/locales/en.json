@@ -201,6 +201,7 @@
     "editSupplier": "Edit Supplier",
     "supplierName": "Supplier Name",
     "supplierTemplate": "Supplier Import Template",
+    "supplierListTemplate": "Download Template (Existing Supplier List)",
     "selectSupplier": "Select Supplier",
     "supplierInfo": "Supplier Info",
     "supplierList": "Supplier List",

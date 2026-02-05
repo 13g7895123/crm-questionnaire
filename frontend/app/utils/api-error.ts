@@ -80,29 +80,36 @@ export function parseApiError(error: any): ErrorResponse {
  * Handle HTTP response status codes
  */
 export function handleResponseStatus(status: number, data?: any): void {
+  // Extract error info from backend response structure
+  // Backend returns: { success: false, error: { code, message, details }, timestamp }
+  const errorInfo = data?.error || {}
+  const code = errorInfo.code || `HTTP_${status}`
+  const message = errorInfo.message || '發生錯誤'
+  const details = errorInfo.details || null
+
   switch (status) {
     case 400:
-      throw new ApiError(400, 'BAD_REQUEST', '請求參數錯誤', data)
+      throw new ApiError(400, code, message || '請求參數錯誤', details)
     case 401:
-      throw new ApiError(401, 'UNAUTHORIZED', '未授權，請重新登入', data)
+      throw new ApiError(401, code, message || '未授權，請重新登入', details)
     case 403:
-      throw new ApiError(403, 'FORBIDDEN', '無權限存取此資源', data)
+      throw new ApiError(403, code, message || '無權限存取此資源', details)
     case 404:
-      throw new ApiError(404, 'NOT_FOUND', '資源不存在', data)
+      throw new ApiError(404, code, message || '資源不存在', details)
     case 409:
-      throw new ApiError(409, 'CONFLICT', '資源衝突，請重新載入頁面', data)
+      throw new ApiError(409, code, message || '資源衝突，請重新載入頁面', details)
     case 422:
-      throw new ApiError(422, 'UNPROCESSABLE_ENTITY', '資料驗證失敗', data)
+      throw new ApiError(422, code, message || '資料驗證失敗', details)
     case 429:
-      throw new ApiError(429, 'TOO_MANY_REQUESTS', '請求過於頻繁，請稍候再試', data)
+      throw new ApiError(429, code, message || '請求過於頻繁，請稍候再試', details)
     case 500:
-      throw new ApiError(500, 'INTERNAL_SERVER_ERROR', '伺服器錯誤，請稍後重試', data)
+      throw new ApiError(500, code, message || '伺服器錯誤，請稍後重試', details)
     case 503:
-      throw new ApiError(503, 'SERVICE_UNAVAILABLE', '服務暫時不可用，請稍後重試', data)
+      throw new ApiError(503, code, message || '服務暫時不可用，請稍後重試', details)
   }
 
   if (status >= 400) {
-    throw new ApiError(status, `HTTP_${status}`, `HTTP ${status} 錯誤`, data)
+    throw new ApiError(status, code, message || `HTTP ${status} 錯誤`, details)
   }
 }
 
