@@ -482,7 +482,6 @@ const handleDownloadTemplate = async (type: string) => {
   // 從後端下載官方範本檔案
   const config = useRuntimeConfig()
   const authStore = useAuthStore()
-  const apiBase = config.public.apiBase || 'http://localhost:9104/api/v1'
   
   const templateFiles: Record<string, string> = {
     CMRT: '/rm/templates/download/cmrt',
@@ -497,7 +496,17 @@ const handleDownloadTemplate = async (type: string) => {
   }
 
   try {
-    const downloadUrl = `${apiBase}${apiPath}`
+    // 使用與 useApi 相同的邏輯構建 URL
+    const apiBase = config.public.apiBase || ''
+    let downloadUrl = ''
+    
+    if (apiBase.startsWith('http')) {
+      // 絕對路徑模式 (例如: https://ase.cc-sustain.com/api/v1)
+      downloadUrl = `${apiBase}${apiPath}`
+    } else {
+      // 相對路徑模式，讓瀏覽器自動使用當前域名
+      downloadUrl = `/api/v1${apiPath}`
+    }
     
     // 使用 fetch 帶上認證 token 下載檔案
     const response = await fetch(downloadUrl, {
