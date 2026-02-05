@@ -53,7 +53,9 @@ class RmProjects extends BaseController
 
             // 加入供應商指派資訊
             $assignmentModel = new \App\Models\RmSupplierAssignmentModel();
-            $data['suppliers'] = $assignmentModel->where('project_id', $id)->findAll();
+            $suppliers = $assignmentModel->where('project_id', $id)->findAll();
+            $data['suppliers'] = $suppliers;
+            $data['supplierCount'] = count($suppliers);
 
             return $this->respond([
                 'success' => true,
@@ -415,6 +417,81 @@ class RmProjects extends BaseController
     }
 
     /**
+     * 複製專案
+     */
+    public function duplicate($id = null)
+    {
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        try {
+            $project = $this->model->find($id);
+            if (!$project) {
+                return $this->failNotFound('找不到該專案');
+            }
+
+            // 1. 建立新專案（名稱加上副本後綴）
+            $newProjectData = [
+                'name' => $project['name'] . ' - 副本',
+                'year' => $project['year'],
+                'type' => $project['type'],
+                'template_set_id' => $project['template_set_id'],
+                'review_config' => $project['review_config']
+            ];
+
+            if (!$this->model->insert($newProjectData)) {
+                throw new \Exception('建立複製專案失敗');
+            }
+
+            $newProjectId = $this->model->getInsertID();
+
+            // 2. 複製供應商指派（如果有）
+            $assignmentModel = new \App\Models\RmSupplierAssignmentModel();
+            $originalAssignments = $assignmentModel->where('project_id', $id)->findAll();
+
+            foreach ($originalAssignments as $assignment) {
+                // 處理 amrt_minerals JSON 編碼
+                $amrtMinerals = $assignment['amrt_minerals'];
+                if (is_array($amrtMinerals)) {
+                    $amrtMinerals = json_encode($amrtMinerals);
+                }
+                
+                $newAssignmentData = [
+                    'project_id' => $newProjectId,
+                    'supplier_id' => $assignment['supplier_id'],
+                    'supplier_name' => $assignment['supplier_name'],
+                    'supplier_email' => $assignment['supplier_email'],
+                    'cmrt_required' => $assignment['cmrt_required'],
+                    'emrt_required' => $assignment['emrt_required'],
+                    'amrt_required' => $assignment['amrt_required'],
+                    'amrt_minerals' => $amrtMinerals,
+                    'status' => 'not_assigned' // 重置狀態
+                ];
+
+                if (!$assignmentModel->insert($newAssignmentData)) {
+                    log_message('error', 'Failed to copy assignment for supplier ' . $assignment['supplier_id']);
+                }
+            }
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                return $this->failServerError('複製專案失敗（資料庫事務錯誤）');
+            }
+
+            return $this->respond([
+                'success' => true,
+                'message' => '專案複製成功',
+                'data' => ['id' => $newProjectId]
+            ]);
+        } catch (\Exception $e) {
+            $db->transRollback();
+            log_message('error', 'Exception in duplicate project: ' . $e->getMessage());
+            return $this->failServerError($e->getMessage());
+        }
+    }
+
+    /**
      * 匯出專案進度為 Excel
      */
     public function export($id = null)
@@ -476,6 +553,162 @@ class RmProjects extends BaseController
             exit;
         } catch (\Exception $e) {
             return $this->failServerError('匯出失敗: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * 新增供應商到專案
+     */
+    public function addSuppliers($id = null)
+    {
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        try {
+            $project = $this->model->find($id);
+            if (!$project) {
+                return $this->failNotFound('找不到該專案');
+            }
+
+            $input = $this->request->getJSON(true);
+            $supplierIds = $input['supplierIds'] ?? [];
+
+            if (empty($supplierIds)) {
+                return $this->fail('未提供供應商清單', 400);
+            }
+
+            // 獲取範本組設定
+            $templateSetModel = new \App\Models\TemplateSetModel();
+            $templateSet = $templateSetModel->find($project['template_set_id']);
+
+            if (!$templateSet) {
+                return $this->failNotFound('找不到範本組設定');
+            }
+
+            $assignmentModel = new \App\Models\RmSupplierAssignmentModel();
+            $orgModel = new \App\Models\OrganizationModel();
+            $userModel = new \App\Models\UserModel();
+
+            // 檢查已存在的供應商
+            $existingAssignments = $assignmentModel->where('project_id', $id)->findAll();
+            $existingSupplierIds = array_column($existingAssignments, 'supplier_id');
+
+            $addedCount = 0;
+            $skippedCount = 0;
+
+            foreach ($supplierIds as $sid) {
+                // 跳過已存在的
+                if (in_array($sid, $existingSupplierIds)) {
+                    $skippedCount++;
+                    continue;
+                }
+
+                $org = $orgModel->find($sid);
+                if (!$org) {
+                    log_message('warning', "Supplier not found: {$sid}");
+                    continue;
+                }
+
+                $orgName = is_object($org) ? ($org->name ?? '') : ($org['name'] ?? '');
+
+                $user = $userModel->where('organization_id', $sid)->first();
+                $email = '';
+                if ($user) {
+                    $email = is_object($user) ? ($user->email ?? '') : ($user['email'] ?? '');
+                }
+
+                // 處理 amrt_minerals JSON 編碼
+                $amrtMinerals = $templateSet['amrt_minerals'] ?? null;
+                if (is_array($amrtMinerals)) {
+                    $amrtMinerals = json_encode($amrtMinerals);
+                }
+
+                $assignmentData = [
+                    'project_id'     => $id,
+                    'supplier_id'    => $sid,
+                    'supplier_name'  => $orgName,
+                    'supplier_email' => $email,
+                    'cmrt_required'  => $templateSet['cmrt_enabled'] ?? 0,
+                    'emrt_required'  => $templateSet['emrt_enabled'] ?? 0,
+                    'amrt_required'  => $templateSet['amrt_enabled'] ?? 0,
+                    'amrt_minerals'  => $amrtMinerals,
+                    'status'         => 'not_assigned'
+                ];
+
+                if ($assignmentModel->insert($assignmentData)) {
+                    $addedCount++;
+                } else {
+                    log_message('error', 'Failed to add supplier ' . $sid . ': ' . json_encode($assignmentModel->errors()));
+                }
+            }
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                return $this->failServerError('新增供應商失敗（資料庫事務錯誤）');
+            }
+
+            return $this->respond([
+                'success' => true,
+                'message' => "成功新增 {$addedCount} 個供應商" . ($skippedCount > 0 ? "，跳過 {$skippedCount} 個已存在的供應商" : ''),
+                'data' => [
+                    'added' => $addedCount,
+                    'skipped' => $skippedCount
+                ]
+            ]);
+        } catch (\Exception $e) {
+            $db->transRollback();
+            log_message('error', 'Exception in addSuppliers: ' . $e->getMessage());
+            return $this->failServerError($e->getMessage());
+        }
+    }
+
+    /**
+     * 批量刪除供應商指派
+     */
+    public function batchDeleteSuppliers($id = null)
+    {
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        try {
+            $project = $this->model->find($id);
+            if (!$project) {
+                return $this->failNotFound('找不到該專案');
+            }
+
+            $input = $this->request->getJSON(true);
+            $assignmentIds = $input['assignmentIds'] ?? [];
+
+            if (empty($assignmentIds)) {
+                return $this->fail('未提供要刪除的供應商指派清單', 400);
+            }
+
+            $assignmentModel = new \App\Models\RmSupplierAssignmentModel();
+            
+            // 刪除指定的供應商指派（只刪除屬於此專案的）
+            $deletedCount = $assignmentModel
+                ->where('project_id', $id)
+                ->whereIn('id', $assignmentIds)
+                ->delete();
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                return $this->failServerError('批量刪除失敗（資料庫事務錯誤）');
+            }
+
+            return $this->respond([
+                'success' => true,
+                'message' => "成功刪除 {$deletedCount} 個供應商指派",
+                'data' => [
+                    'deleted' => $deletedCount
+                ]
+            ]);
+        } catch (\Exception $e) {
+            $db->transRollback();
+            log_message('error', 'Exception in batchDeleteSuppliers: ' . $e->getMessage());
+            return $this->failServerError($e->getMessage());
         }
     }
 

@@ -37,12 +37,18 @@ export const useProjects = () => {
     return await api.delete(url)
   }
 
+  const duplicateProject = async (id: string | number, type: 'SAQ' | 'CONFLICT' = 'SAQ') => {
+    const url = type === 'CONFLICT' ? `/rm/projects/${id}/duplicate` : `/projects/${id}/duplicate`
+    return await api.post(url)
+  }
+
   return {
     projects,
     fetchProjects,
     getProject,
     createProject,
     updateProject,
-    deleteProject
+    deleteProject,
+    duplicateProject
   }
 }

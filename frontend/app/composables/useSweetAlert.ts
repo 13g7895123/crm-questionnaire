@@ -56,6 +56,20 @@ export const useSweetAlert = () => {
 
   const showSuccess = (text: string) => showSystemAlert(text, 'success')
   const showError = (text: string) => showSystemAlert(text, 'error')
+  const showErrorWithConfirm = (text: string, title: string = '錯誤') => {
+    if (process.client) {
+      return Swal.fire({
+        title,
+        html: text.replace(/\n/g, '<br>'), // 支持換行
+        icon: 'error',
+        confirmButtonText: '確定',
+        customClass: {
+          popup: 'swal-wide'
+        }
+      })
+    }
+    return Promise.resolve()
+  }
 
   const showLoading = (title: string = '處理中...') => {
     if (process.client) {
@@ -81,6 +95,7 @@ export const useSweetAlert = () => {
     showAlert,
     showSuccess,
     showError,
+    showErrorWithConfirm,
     showLoading,
     closeAlert
   }

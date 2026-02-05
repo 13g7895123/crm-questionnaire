@@ -1,5 +1,5 @@
 <template>
-  <div :class="project?.type === 'CONFLICT' ? '' : 'py-8 px-4 sm:px-6 lg:px-8'">
+  <div :class="project?.type === 'CONFLICT' ? 'w-full py-6' : 'py-8 px-4 sm:px-6 lg:px-8'">
     <!-- Loading -->
     <div v-if="loading" class="flex flex-col items-center justify-center py-12">
       <UIcon name="i-heroicons-arrow-path" class="w-12 h-12 text-primary-500 animate-spin" />

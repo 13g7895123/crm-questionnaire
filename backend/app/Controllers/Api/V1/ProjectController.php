@@ -434,18 +434,8 @@ class ProjectController extends BaseApiController
         $templateVersion = $this->request->getJsonVar('templateVersion');
 
         if ($templateId || $templateVersion) {
-            // Check if any supplier has started filling (not just DRAFT/IN_PROGRESS without answers)
-            // For simplicity, we check if any supplier is beyond IN_PROGRESS status
-            $hasStartedFilling = $stats['byStatus']['SUBMITTED'] > 0 ||
-                $stats['byStatus']['REVIEWING'] > 0 ||
-                $stats['byStatus']['APPROVED'] > 0;
-
-            if ($hasStartedFilling) {
-                return $this->conflictResponse(
-                    'TEMPLATE_CHANGE_NOT_ALLOWED',
-                    '範本無法修改，已有供應商開始填寫問卷'
-                );
-            }
+            // Note: 移除了範本修改限制，允許在供應商填寫後修改範本
+            // 但建議在生產環境中謹慎使用，因為可能影響已填寫的資料
 
             // Validate template exists
             if ($templateId) {
@@ -473,17 +463,8 @@ class ProjectController extends BaseApiController
         if ($reviewConfig) {
             $reviewConfig = json_decode(json_encode($reviewConfig), true);
 
-            // Check if any supplier has submitted
-            $hasSubmitted = $stats['byStatus']['SUBMITTED'] > 0 ||
-                $stats['byStatus']['REVIEWING'] > 0 ||
-                $stats['byStatus']['APPROVED'] > 0;
-
-            if ($hasSubmitted) {
-                return $this->conflictResponse(
-                    'PROJECT_ALREADY_SUBMITTED',
-                    '已有供應商提交，無法修改審核流程'
-                );
-            }
+            // Note: 移除了審核流程修改限制，允許在供應商提交後修改審核流程
+            // 新的審核流程只會影響新提交的問卷，不會影響已提交的資料
 
             $this->reviewConfigModel->createConfigForProject($projectId, $reviewConfig);
         }
@@ -587,6 +568,86 @@ class ProjectController extends BaseApiController
         $this->projectModel->delete($projectId);
 
         return $this->respond(null, 204);
+    }
+
+    /**
+     * POST /api/v1/projects/{projectId}/duplicate
+     * Duplicate project (HOST only)
+     */
+    public function duplicate($projectId = null): ResponseInterface
+    {
+        if (!$this->isHost() && !$this->isAdmin()) {
+            return $this->forbiddenResponse();
+        }
+
+        $project = $this->projectModel->find($projectId);
+        if (!$project) {
+            return $this->notFoundResponse('找不到指定的專案');
+        }
+
+        // Create new project with -副本 suffix
+        $newProjectData = [
+            'name' => $project->name . ' - 副本',
+            'year' => $project->year,
+            'type' => $project->type,
+            'template_id' => $project->template_id,
+            'template_version' => $project->template_version,
+        ];
+
+        $this->projectModel->insert($newProjectData);
+        $newProjectId = $this->projectModel->getInsertID();
+
+        // Copy review config
+        $reviewConfig = $this->reviewConfigModel->getConfigForProject($projectId);
+        $newReviewConfig = array_map(function ($config) {
+            return [
+                'stageOrder' => (int) $config->stage_order,
+                'departmentId' => $config->department_id,
+            ];
+        }, $reviewConfig);
+        $this->reviewConfigModel->createConfigForProject($newProjectId, $newReviewConfig);
+
+        // Copy suppliers (with status reset to NOT_STARTED)
+        $suppliers = $this->projectSupplierModel->getSuppliersForProject($projectId);
+        $supplierIds = array_map(fn($s) => $s->supplier_id, $suppliers);
+        if (!empty($supplierIds)) {
+            $this->projectSupplierModel->addSuppliersToProject($newProjectId, $supplierIds);
+        }
+
+        // Fetch created project with relations
+        $newProject = $this->projectModel->find($newProjectId);
+        $newReviewConfigData = $this->reviewConfigModel->getConfigForProject($newProjectId);
+        $newSuppliers = $this->projectSupplierModel->getSuppliersForProject($newProjectId);
+
+        return $this->successResponse([
+            'id' => $newProject->id,
+            'name' => $newProject->name,
+            'year' => $newProject->year,
+            'type' => $newProject->type,
+            'templateId' => $newProject->template_id,
+            'templateVersion' => $newProject->template_version,
+            'suppliers' => array_map(function ($s) {
+                return [
+                    'id' => $s->id,
+                    'supplierId' => $s->supplier_id,
+                    'supplierName' => $s->supplier_name,
+                    'status' => $s->status,
+                    'currentStage' => (int) $s->current_stage,
+                ];
+            }, $newSuppliers),
+            'reviewConfig' => array_map(function ($config) {
+                return [
+                    'stageOrder' => (int) $config->stage_order,
+                    'departmentId' => $config->department_id,
+                    'department' => [
+                        'id' => $config->department_id,
+                        'name' => $config->department_name,
+                    ],
+                ];
+            }, $newReviewConfigData),
+            'createdAt' => $newProject->created_at?->format("c"),
+            'updatedAt' => $newProject->updated_at?->format("c"),
+        ], 201);
     }
 
     /**

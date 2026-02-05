@@ -586,10 +586,18 @@ const handleSubmit = async () => {
     }
 
     if (props.projectType === 'CONFLICT') {
-      payload.template_set_id = form.value.template_set_id
+      // 在編輯模式下，只有當範本組真的被修改時才發送
+      if (!isEditing.value || String(props.project?.template_set_id) !== String(form.value.template_set_id)) {
+        payload.template_set_id = form.value.template_set_id
+      }
     } else {
-      payload.templateId = form.value.templateId
-      payload.templateVersion = form.value.templateVersion
+      // 在編輯模式下，只有當範本真的被修改時才發送
+      if (!isEditing.value || String(props.project?.templateId) !== String(form.value.templateId)) {
+        payload.templateId = form.value.templateId
+      }
+      if (!isEditing.value || String(props.project?.templateVersion) !== String(form.value.templateVersion)) {
+        payload.templateVersion = form.value.templateVersion
+      }
     }
 
     if (isEditing.value && props.project) {

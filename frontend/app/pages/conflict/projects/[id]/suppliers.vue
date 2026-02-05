@@ -10,6 +10,14 @@
           <UIcon name="i-heroicons-clipboard-document-list" />
           批量設定範本 ({{ selectedSuppliers.length }})
         </button>
+        <button
+          class="btn btn-danger"
+          @click="handleBatchDelete"
+          :disabled="selectedSuppliers.length === 0"
+        >
+          <UIcon name="i-heroicons-trash" />
+          批量刪除 ({{ selectedSuppliers.length }})
+        </button>
         <button class="btn btn-secondary" @click="handleExcelImport">
           <UIcon name="i-heroicons-arrow-up-tray" />
           匯入
@@ -78,7 +86,7 @@
         </thead>
         <tbody>
           <tr
-            v-for="supplier in filteredSuppliers"
+            v-for="supplier in paginatedSuppliers"
             :key="supplier.id"
             :class="{ 'row-selected': selectedSuppliers.includes(supplier.id) }"
           >
@@ -89,19 +97,19 @@
                 v-model="selectedSuppliers"
               />
             </td>
-            <td class="supplier-name">{{ supplier.supplier_name }}</td>
-            <td class="supplier-email">{{ supplier.supplier_email }}</td>
+            <td class="supplier-name">{{ supplier.supplierName }}</td>
+            <td class="supplier-email">{{ supplier.supplierEmail }}</td>
             <td class="text-center">
-              <span v-if="supplier.cmrt_required" class="badge badge-success">✓</span>
-              <span v-else class="badge badge-gray">✗</span>
+              <span v-if="supplier.cmrt_required" class="badge badge-success">Yes</span>
+              <span v-else class="badge badge-gray">No</span>
             </td>
             <td class="text-center">
-              <span v-if="supplier.emrt_required" class="badge badge-success">✓</span>
-              <span v-else class="badge badge-gray">✗</span>
+              <span v-if="supplier.emrt_required" class="badge badge-success">Yes</span>
+              <span v-else class="badge badge-gray">No</span>
             </td>
             <td class="text-center">
-              <span v-if="supplier.amrt_required" class="badge badge-success">✓</span>
-              <span v-else class="badge badge-gray">✗</span>
+              <span v-if="supplier.amrt_required" class="badge badge-success">Yes</span>
+              <span v-else class="badge badge-gray">No</span>
             </td>
             <td class="minerals-col">
               <span v-if="supplier.amrt_minerals && supplier.amrt_minerals.length > 0" class="minerals-list">
@@ -147,8 +155,68 @@
         </tbody>
       </table>
 
-      <div v-if="filteredSuppliers.length === 0" class="empty-state">
+      <div v-if="paginatedSuppliers.length === 0" class="empty-state">
         <p>沒有符合條件的供應商</p>
+      </div>
+
+      <!-- 分頁控制 -->
+      <div v-if="totalPages > 1" class="pagination-container">
+        <div class="pagination-info">
+          顯示 {{ (currentPage - 1) * pageSize + 1 }} - {{ Math.min(currentPage * pageSize, totalRecords) }} / 共 {{ totalRecords }} 筆
+        </div>
+        <div class="pagination-controls">
+          <button
+            class="btn btn-pagination"
+            :disabled="currentPage === 1"
+            @click="currentPage = 1"
+          >
+            <UIcon name="i-heroicons-chevron-double-left" />
+          </button>
+          <button
+            class="btn btn-pagination"
+            :disabled="currentPage === 1"
+            @click="currentPage--"
+          >
+            <UIcon name="i-heroicons-chevron-left" />
+          </button>
+          
+          <div class="page-numbers">
+            <template v-for="page in getPageNumbers()" :key="page">
+              <button
+                v-if="page !== '...'"
+                :class="['btn btn-pagination', { 'active': currentPage === page }]"
+                @click="currentPage = Number(page)"
+              >
+                {{ page }}
+              </button>
+              <span v-else class="page-ellipsis">...</span>
+            </template>
+          </div>
+
+          <button
+            class="btn btn-pagination"
+            :disabled="currentPage === totalPages"
+            @click="currentPage++"
+          >
+            <UIcon name="i-heroicons-chevron-right" />
+          </button>
+          <button
+            class="btn btn-pagination"
+            :disabled="currentPage === totalPages"
+            @click="currentPage = totalPages"
+          >
+            <UIcon name="i-heroicons-chevron-double-right" />
+          </button>
+        </div>
+        <div class="page-size-selector">
+          <label>每頁顯示:</label>
+          <select v-model.number="pageSize" @change="currentPage = 1">
+            <option :value="10">10</option>
+            <option :value="20">20</option>
+            <option :value="50">50</option>
+            <option :value="100">100</option>
+          </select>
+        </div>
       </div>
     </div>
 
@@ -156,7 +224,7 @@
     <div v-if="showEditModal" class="modal-overlay" @click="closeEditModal">
       <div class="modal-content" @click.stop>
         <div class="modal-header">
-          <h2>設定範本 - {{ editingSupplier?.supplier_name }}</h2>
+          <h2>設定範本 - {{ editingSupplier?.supplierName }}</h2>
           <button class="modal-close" @click="closeEditModal">&times;</button>
         </div>
         
@@ -306,19 +374,23 @@ import { useRoute, useRouter } from 'vue-router'
 import { useResponsibleMinerals, type SupplierAssignment, type TemplateType } from '~/composables/useResponsibleMinerals'
 import { useSweetAlert } from '~/composables/useSweetAlert'
 import { useExcel } from '~/composables/useExcel'
+import { useSuppliers } from '~/composables/useSuppliers'
 
 const route = useRoute()
 const router = useRouter()
-const { showSuccess, showError, showConfirm } = useSweetAlert()
+const { showSuccess, showError, showErrorWithConfirm, showConfirm } = useSweetAlert()
 const { parseExcel, downloadTemplate: downloadExcelTemplate } = useExcel()
+const { fetchSuppliers: fetchAllSuppliers } = useSuppliers()
 const {
   suppliers,
   fetchSuppliersWithTemplates,
   assignTemplateToSupplier,
   batchAssignTemplates,
+  addSuppliersToProject,
   importTemplateAssignments,
   notifySupplier: notifySupplierApi,
   notifyAllSuppliers,
+  batchDeleteSuppliers,
   downloadTemplateAssignmentTemplate
 } = useResponsibleMinerals()
 
@@ -331,6 +403,11 @@ const searchQuery = ref('')
 const statusFilter = ref('all')
 const selectedSuppliers = ref<number[]>([])
 const selectAll = ref(false)
+
+// 分頁狀態
+const currentPage = ref(1)
+const pageSize = ref(20)
+const totalRecords = ref(0)
 
 // Modal 狀態
 const showEditModal = ref(false)
@@ -369,8 +446,8 @@ const filteredSuppliers = computed(() => {
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
     result = result.filter(s =>
-      (s.supplier_name?.toLowerCase().includes(query)) ||
-      (s.supplier_email?.toLowerCase().includes(query))
+      (s.supplierName?.toLowerCase().includes(query)) ||
+      (s.supplierEmail?.toLowerCase().includes(query))
     )
   }
 
@@ -381,7 +458,22 @@ const filteredSuppliers = computed(() => {
     result = result.filter(s => !isAssigned(s))
   }
 
+  // 更新總記錄數
+  totalRecords.value = result.length
+
   return result
+})
+
+// 分頁後的供應商列表
+const paginatedSuppliers = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  const end = start + pageSize.value
+  return filteredSuppliers.value.slice(start, end)
+})
+
+// 總頁數
+const totalPages = computed(() => {
+  return Math.ceil(totalRecords.value / pageSize.value)
 })
 
 const assignedCount = computed(() => {
@@ -439,10 +531,48 @@ const getStatusText = (status: string) => {
 
 const handleSelectAll = () => {
   if (selectAll.value) {
-    selectedSuppliers.value = filteredSuppliers.value.map(s => s.id)
+    selectedSuppliers.value = paginatedSuppliers.value.map(s => s.id)
   } else {
     selectedSuppliers.value = []
   }
+}
+
+// 分頁輔助函數
+const getPageNumbers = () => {
+  const pages: (number | string)[] = []
+  const total = totalPages.value
+  const current = currentPage.value
+  
+  if (total <= 7) {
+    // 如果總頁數不超過7，全部顯示
+    for (let i = 1; i <= total; i++) {
+      pages.push(i)
+    }
+  } else {
+    // 總是顯示第一頁
+    pages.push(1)
+    
+    if (current > 3) {
+      pages.push('...')
+    }
+    
+    // 顯示當前頁附近的頁碼
+    const start = Math.max(2, current - 1)
+    const end = Math.min(total - 1, current + 1)
+    
+    for (let i = start; i <= end; i++) {
+      pages.push(i)
+    }
+    
+    if (current < total - 2) {
+      pages.push('...')
+    }
+    
+    // 總是顯示最後一頁
+    pages.push(total)
+  }
+  
+  return pages
 }
 
 const editSupplier = (supplier: SupplierAssignment) => {
@@ -562,52 +692,296 @@ const handleFileSelected = async (event: Event) => {
     const dataRows = rows.slice(4)
     
     if (dataRows.length === 0) {
-      showError('Excel 中沒有有效的數據')
+      showErrorWithConfirm('Excel 中沒有有效的數據')
       return
     }
 
-    // 處理每一筆數據
-    const updates: any[] = []
+    console.log('開始處理匯入，共', dataRows.length, '筆數據')
+    console.log('當前項目供應商數量:', suppliers.value.length)
+
+    // 獲取系統中所有供應商（用於匹配）
+    const allSuppliers = await fetchAllSuppliers()
+    console.log('系統中所有供應商數量:', allSuppliers.length)
+    
+    // 建立系統供應商映射表（trim 後的名稱 -> 供應商對象）
+    const systemSupplierMap = new Map(
+      allSuppliers
+        .filter(s => s.name) // 先過濾
+        .map(s => [s.name.trim(), s]) // 再映射
+    )
+    
+    // 建立項目供應商映射表（trim 後的名稱 -> 供應商對象）
+    const projectSupplierMap = new Map(
+      suppliers.value
+        .filter(s => s.supplierName) // 過濾掉沒有名稱的供應商
+        .map(s => [s.supplierName.trim(), s])
+    )
+    
+    // 處理每一筆數據，並去重
+    const processedSuppliers = new Map<string, any>() // 供應商名稱 -> 處理資料
+    const duplicateSuppliers: string[] = [] // 記錄重複的供應商
+    const validationErrors: string[] = [] // 驗證錯誤訊息
+    
     for (const row of dataRows) {
       if (!row[0]) continue // 跳過空行
       
       const supplierName = String(row[0] || '').trim()
+      if (!supplierName) continue // 跳過空名稱
+      
+      // 檢查是否重複
+      if (processedSuppliers.has(supplierName)) {
+        if (!duplicateSuppliers.includes(supplierName)) {
+          duplicateSuppliers.push(supplierName)
+        }
+        console.log(`  -> 跳過重複的供應商: ${supplierName}`)
+        continue
+      }
+      
       const cmrt = String(row[1] || '').toLowerCase()
       const emrt = String(row[2] || '').toLowerCase()
       const amrt = String(row[3] || '').toLowerCase()
       const amrtMinerals = String(row[4] || '').trim()
-      const remark = String(row[5] || '').trim()
       
-      // 查找供應商
-      const supplier = suppliers.value.find(s => s.supplier_name === supplierName)
-      if (!supplier) {
-        console.warn(`找不到供應商: ${supplierName}`)
+      const cmrt_required = cmrt === 'yes' || cmrt === '是'
+      const emrt_required = emrt === 'yes' || emrt === '是'
+      const amrt_required = amrt === 'yes' || amrt === '是'
+      const minerals = amrtMinerals ? amrtMinerals.split(',').map(m => m.trim()).filter(m => m) : []
+      
+      // 驗證：如果 AMRT 為 Yes，則必須要有至少一種礦產
+      if (amrt_required && (!minerals || minerals.length === 0)) {
+        validationErrors.push(`供應商「${supplierName}」的 AMRT 設為 Yes，但未指定任何礦產`)
+      }
+      
+      // 準備範本數據
+      const templates: TemplateType & { amrt_minerals?: string[] } = {
+        cmrt_required,
+        emrt_required,
+        amrt_required,
+        amrt_minerals: minerals.length > 0 ? minerals : undefined
+      }
+      
+      // 記錄已處理
+      processedSuppliers.set(supplierName, { templates })
+      
+      console.log(`處理供應商: ${supplierName}, CMRT=${cmrt}, EMRT=${emrt}, AMRT=${amrt}, Minerals=${minerals.join(',')}`)
+    }
+    
+    // 如果有驗證錯誤，阻止匯入
+    if (validationErrors.length > 0) {
+      const errorMessage = `匯入驗證失敗，請修正以下問題：\n\n${validationErrors.join('\n')}\n\n請修正後重新匯入。`
+      showErrorWithConfirm(errorMessage, '驗證失敗')
+      return
+    }
+    
+    // 分類處理結果
+    const updates: any[] = [] // 可以更新的（項目中的供應商）
+    const suppliersToAdd: Array<{ name: string; id: number; templates: any }> = [] // 系統中有但項目中沒有的
+    const notFoundSuppliers: string[] = [] // 系統中不存在的
+    const skippedSuppliers: string[] = [] // 無啟用範本而跳過的
+    const existingSuppliersNeedUpdate: string[] = [] // 已存在於項目中且需要更新的供應商
+    const existingSuppliersNoChange: string[] = [] // 已存在於項目中但數據相同的供應商
+    
+    // 輔助函數：比較範本數據是否相同
+    const isTemplateDataSame = (existingSupplier: any, newTemplates: any) => {
+      // 比較 cmrt, emrt, amrt 是否相同
+      if (existingSupplier.cmrt_required !== newTemplates.cmrt_required) return false
+      if (existingSupplier.emrt_required !== newTemplates.emrt_required) return false
+      if (existingSupplier.amrt_required !== newTemplates.amrt_required) return false
+      
+      // 比較 amrt_minerals 陣列是否相同
+      const existingMinerals = (existingSupplier.amrt_minerals || []).sort()
+      const newMinerals = (newTemplates.amrt_minerals || []).sort()
+      
+      if (existingMinerals.length !== newMinerals.length) return false
+      for (let i = 0; i < existingMinerals.length; i++) {
+        if (existingMinerals[i] !== newMinerals[i]) return false
+      }
+      
+      return true
+    }
+    
+    for (const [supplierName, data] of processedSuppliers) {
+      const { templates } = data
+      
+      // 檢查是否有任何範本被啟用
+      const hasTemplateEnabled = templates.cmrt_required || templates.emrt_required || templates.amrt_required
+      
+      // 1. 先檢查是否存在於系統中
+      const systemSupplier = systemSupplierMap.get(supplierName)
+      
+      if (!systemSupplier) {
+        // 系統中不存在此供應商
+        notFoundSuppliers.push(supplierName)
+        console.log(`  -> 系統中不存在: ${supplierName}`)
         continue
       }
-
-      // 準備更新數據
-      const templates: TemplateType & { amrt_minerals?: string[] } = {
-        cmrt_required: cmrt === 'yes' || cmrt === '是',
-        emrt_required: emrt === 'yes' || emrt === '是',
-        amrt_required: amrt === 'yes' || amrt === '是',
-        amrt_minerals: amrtMinerals ? amrtMinerals.split(',').map(m => m.trim()).filter(m => m) : undefined
-      }
       
-      updates.push({ supplierId: supplier.id, templates })
+      // 2. 系統中存在，檢查是否在項目中
+      const projectSupplier = projectSupplierMap.get(supplierName)
+      
+      if (projectSupplier) {
+        // 在項目中，檢查數據是否相同
+        const isSame = isTemplateDataSame(projectSupplier, templates)
+        
+        if (isSame) {
+          // 數據相同，跳過更新
+          existingSuppliersNoChange.push(supplierName)
+          console.log(`  -> 在項目中，數據相同，跳過: ${supplierName}`)
+        } else {
+          // 數據不同，記錄為需要更新
+          existingSuppliersNeedUpdate.push(supplierName)
+          console.log(`  -> 在項目中，數據不同，準備更新: ${supplierName} (ID: ${projectSupplier.id})`)
+          updates.push({ supplierId: projectSupplier.id, supplierName, templates })
+        }
+      } else {
+        // 不在項目中
+        if (hasTemplateEnabled) {
+          // 有啟用範本，準備添加到項目
+          console.log(`  -> 系統中有但項目中沒有，準備添加: ${supplierName} (System ID: ${systemSupplier.id})`)
+          suppliersToAdd.push({ name: supplierName, id: Number(systemSupplier.id), templates })
+        } else {
+          // 無啟用範本，跳過
+          console.log(`  -> 無啟用範本，跳過: ${supplierName}`)
+          skippedSuppliers.push(supplierName)
+        }
+      }
+    }
+    
+    // 如果有供應商已存在於項目中且數據不同，詢問是否覆蓋
+    if (existingSuppliersNeedUpdate.length > 0) {
+      const confirmed = await showConfirm({
+        title: '覆蓋確認',
+        text: `以下 ${existingSuppliersNeedUpdate.length} 個供應商已存在於此項目中，且範本設定不同：\n\n${existingSuppliersNeedUpdate.join(', ')}\n\n確定要覆蓋現有的範本設定嗎？`,
+        icon: 'warning',
+        confirmButtonText: '覆蓋',
+        cancelButtonText: '取消',
+        confirmButtonColor: '#f59e0b'
+      })
+      
+      if (!confirmed) {
+        console.log('用戶取消了覆蓋操作')
+        return
+      }
     }
 
-    // 執行批量更新
+    console.log('準備更新的供應商:', updates.length)
+    console.log('準備添加到項目的供應商:', suppliersToAdd.length)
+    console.log('系統中不存在的供應商:', notFoundSuppliers.length)
+    console.log('重複的供應商:', duplicateSuppliers.length)
+    console.log('跳過的供應商（無範本）:', skippedSuppliers.length)
+    console.log('跳過的供應商（數據相同）:', existingSuppliersNoChange.length)
+
+    let importCount = 0
+    let addedToProjectCount = 0
+    
+    // 第一步：將系統中存在但項目中沒有的供應商添加到項目
+    if (suppliersToAdd.length > 0) {
+      try {
+        const supplierIdsToAdd = suppliersToAdd.map(s => s.id)
+        console.log('正在添加供應商到項目:', supplierIdsToAdd)
+        
+        const addResult = await addSuppliersToProject(projectId.value, supplierIdsToAdd)
+        console.log('添加供應商結果:', addResult)
+        
+        addedToProjectCount = addResult.data?.added || 0
+        
+        // 重新載入供應商列表以獲取新的 assignment IDs
+        await loadSuppliers()
+        
+        // 更新 projectSupplierMap 以便後續設定範本
+        const updatedProjectSupplierMap = new Map(
+          suppliers.value
+            .filter(s => s.supplierName)
+            .map(s => [s.supplierName.trim(), s])
+        )
+        
+        // 將新添加的供應商加入待更新列表
+        for (const supplier of suppliersToAdd) {
+          const projectSupplier = updatedProjectSupplierMap.get(supplier.name)
+          if (projectSupplier) {
+            updates.push({ 
+              supplierId: projectSupplier.id, 
+              supplierName: supplier.name, 
+              templates: supplier.templates 
+            })
+          }
+        }
+      } catch (err: any) {
+        console.error('添加供應商到項目失敗:', err)
+        showError(`添加供應商到項目失敗: ${err.message || '未知錯誤'}`)
+        return
+      }
+    }
+    
+    // 第二步：執行更新已存在的供應商（包括剛添加的）
     if (updates.length > 0) {
       for (const update of updates) {
-        await assignTemplateToSupplier(projectId.value, update.supplierId, update.templates)
+        console.log(`更新供應商: ${update.supplierName}, ID: ${update.supplierId}`, update.templates)
+        try {
+          await assignTemplateToSupplier(projectId.value, update.supplierId, update.templates)
+          importCount++
+        } catch (err: any) {
+          console.error(`更新供應商 ${update.supplierName} 失敗:`, err)
+        }
       }
-      showSuccess(`成功匯入 ${updates.length} 筆供應商範本設定`)
+    }
+    
+    // 構建更清楚的結果訊息
+    const messages: string[] = []
+    
+    // 1. 成功匯入的數量
+    if (importCount > 0) {
+      messages.push(`成功匯入 ${importCount} 筆供應商範本設定`)
+    }
+    
+    // 2. 新增到項目的供應商
+    if (addedToProjectCount > 0) {
+      messages.push(`自動新增 ${addedToProjectCount} 個供應商到此項目`)
+    }
+    
+    // 3. 數據相同跳過的供應商
+    if (existingSuppliersNoChange.length > 0) {
+      messages.push(`\n有 ${existingSuppliersNoChange.length} 個供應商因範本設定相同而跳過更新`)
+    }
+    
+    // 4. 重複跳過的供應商
+    if (duplicateSuppliers.length > 0) {
+      messages.push(`\nExcel中有 ${duplicateSuppliers.length} 個重複的供應商（已自動跳過重複項）：\n${duplicateSuppliers.join(', ')}`)
+    }
+    
+    // 5. 系統中不存在的供應商
+    if (notFoundSuppliers.length > 0) {
+      messages.push(`\n有 ${notFoundSuppliers.length} 個供應商在系統中不存在：\n${notFoundSuppliers.join(', ')}\n請先在「會員中心 > 供應商管理」新增這些供應商`)
+    }
+    
+    // 6. 因無啟用範本而跳過的供應商（數量提示即可，不列出名稱）
+    if (skippedSuppliers.length > 0) {
+      messages.push(`\n有 ${skippedSuppliers.length} 個供應商因未啟用任何範本而跳過`)
+    }
+    
+    const finalMessage = messages.join('\n')
+    
+    // 顯示結果
+    if (importCount > 0 || addedToProjectCount > 0) {
       await loadSuppliers()
+      if (notFoundSuppliers.length > 0 || duplicateSuppliers.length > 0) {
+        // 有部分問題，顯示帶確認的警告
+        showErrorWithConfirm(finalMessage, '匯入結果')
+      } else {
+        // 全部成功
+        showSuccess(finalMessage)
+      }
     } else {
-      showError('沒有找到匹配的供應商')
+      // 沒有成功匯入任何資料
+      if (finalMessage) {
+        showErrorWithConfirm(finalMessage, '匯入失敗')
+      } else {
+        showErrorWithConfirm('沒有可以匯入的資料', '匯入失敗')
+      }
     }
   } catch (err: any) {
-    showError(err.message || '匯入失敗')
+    console.error('匯入錯誤:', err)
+    showErrorWithConfirm(err.message || '匯入失敗')
   } finally {
     // 清空 file input
     if (excelFileInput.value) {
@@ -621,22 +995,41 @@ const downloadTemplate = async () => {
     // 準備標題行
     const headers = ['供應商名稱', 'CMRT', 'EMRT', 'AMRT', 'AMRT礦產', '備註']
     
-    // 準備數據行（前三筆為示例）
+    // 準備數據行（前三筆為示例 - 使用英文供應商名稱）
     const exampleRows = [
-      ['範例供應商A', 'Yes', 'Yes', 'No', '', '這是示例數據，匯入時會自動跳過'],
-      ['範例供應商B', 'Yes', 'No', 'Yes', 'Silver,Platinum', '這是示例數據，匯入時會自動跳過'],
-      ['範例供應商C', 'No', 'Yes', 'No', '', '這是示例數據，匯入時會自動跳過']
+      ['Example Supplier A', 'Yes', 'Yes', 'No', '', 'This is sample data, will be skipped during import'],
+      ['Example Supplier B', 'Yes', 'No', 'Yes', 'Silver,Platinum', 'This is sample data, will be skipped during import'],
+      ['Example Supplier C', 'No', 'Yes', 'No', '', 'This is sample data, will be skipped during import']
     ]
     
-    // 添加現有供應商數據
-    const supplierRows = suppliers.value.map(s => [
-      s.supplier_name,
-      s.cmrt_required ? 'Yes' : 'No',
-      s.emrt_required ? 'Yes' : 'No',
-      s.amrt_required ? 'Yes' : 'No',
-      (s.amrt_minerals && Array.isArray(s.amrt_minerals)) ? s.amrt_minerals.join(',') : '',
-      '' // 備註欄位預設為空
-    ])
+    // 獲取所有供應商（會員中心的所有供應商）
+    const allSuppliers = await fetchAllSuppliers()
+    
+    // 建立當前專案供應商的映射（用於設定預設值）
+    // 使用 trim() 確保名稱匹配
+    const projectSupplierMap = new Map(
+      suppliers.value
+        .filter(s => s.supplierName) // 過濾掉沒有名稱的供應商
+        .map(s => [s.supplierName.trim(), s])
+    )
+    
+    // 添加所有供應商數據
+    const supplierRows = allSuppliers.map(supplier => {
+      // 檢查該供應商是否在當前專案中（使用 trim 後的名稱）
+      const supplierName = (supplier.name || '').trim()
+      const projectSupplier = projectSupplierMap.get(supplierName)
+      
+      return [
+        supplierName,  // 使用 trim 後的名稱，確保與匯入時一致
+        projectSupplier?.cmrt_required ? 'Yes' : 'No',
+        projectSupplier?.emrt_required ? 'Yes' : 'No',
+        projectSupplier?.amrt_required ? 'Yes' : 'No',
+        (projectSupplier?.amrt_minerals && Array.isArray(projectSupplier.amrt_minerals)) 
+          ? projectSupplier.amrt_minerals.join(',') 
+          : '',
+        '' // 備註欄位預設為空
+      ]
+    })
     
     // 合併示例數據和實際數據
     const allRows = [...exampleRows, ...supplierRows]
@@ -655,10 +1048,10 @@ const downloadTemplate = async () => {
 }
 
 const notifySupplier = async (supplier: SupplierAssignment) => {
-  const confirmed = await showConfirm(
-    `確定要發送填寫邀請給 ${supplier.supplier_name} 嗎？`,
-    '發送通知'
-  )
+  const confirmed = await showConfirm({
+    text: `確定要發送填寫邀請給 ${supplier.supplierName} 嗎？`,
+    title: '發送通知'
+  })
   if (!confirmed) return
 
   try {
@@ -671,10 +1064,10 @@ const notifySupplier = async (supplier: SupplierAssignment) => {
 }
 
 const handleNotifyAll = async () => {
-  const confirmed = await showConfirm(
-    `確定要發送填寫邀請給所有已指派範本的供應商（${assignedCount.value} 位）嗎？`,
-    '批量通知'
-  )
+  const confirmed = await showConfirm({
+    text: `確定要發送填寫邀請給所有已指派範本的供應商（${assignedCount.value} 位）嗎？`,
+    title: '批量通知'
+  })
   if (!confirmed) return
 
   try {
@@ -683,6 +1076,37 @@ const handleNotifyAll = async () => {
     await loadSuppliers() // 重新載入以更新狀態
   } catch (err: any) {
     showError(err.message || '批量通知失敗')
+  }
+}
+
+const handleBatchDelete = async () => {
+  if (selectedSuppliers.value.length === 0) return
+
+  // 獲取被選中供應商的名稱
+  const selectedNames = suppliers.value
+    .filter(s => selectedSuppliers.value.includes(s.id))
+    .map(s => s.supplierName)
+    .join('、')
+
+  const confirmed = await showConfirm({
+    title: '批量刪除確認',
+    text: `確定要從此專案中移除以下 ${selectedSuppliers.value.length} 個供應商嗎？\n\n${selectedNames}\n\n此操作無法復原。`,
+    icon: 'warning',
+    confirmButtonText: '確定刪除',
+    cancelButtonText: '取消',
+    confirmButtonColor: '#dc2626'
+  })
+  
+  if (!confirmed) return
+
+  try {
+    await batchDeleteSuppliers(projectId.value, selectedSuppliers.value)
+    showSuccess(`已成功移除 ${selectedSuppliers.value.length} 個供應商`)
+    selectedSuppliers.value = []
+    selectAll.value = false
+    await loadSuppliers()
+  } catch (err: any) {
+    showError(err.message || '批量刪除失敗')
   }
 }
 
@@ -929,6 +1353,15 @@ onMounted(() => {
   color: white;
 }
 
+.btn-danger {
+  background: #dc2626;
+  color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -1043,6 +1476,100 @@ onMounted(() => {
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 8px;
   margin-bottom: 12px;
+}
+
+/* 分頁樣式 */
+.pagination-container {
+  margin-top: 24px;
+  padding: 16px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.pagination-info {
+  font-size: 14px;
+  color: #666;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-pagination {
+  min-width: 36px;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid #dee2e6;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-pagination:hover:not(:disabled) {
+  background: #f8f9fa;
+  border-color: #007bff;
+  color: #007bff;
+}
+
+.btn-pagination:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-pagination.active {
+  background: #007bff;
+  color: white;
+  border-color: #007bff;
+  font-weight: 600;
+}
+
+.page-numbers {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.page-ellipsis {
+  padding: 0 8px;
+  color: #999;
+}
+
+.page-size-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.page-size-selector label {
+  color: #666;
+}
+
+.page-size-selector select {
+  padding: 6px 32px 6px 12px;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.page-size-selector select:focus {
+  outline: none;
+  border-color: #007bff;
 }
 
 .mineral-checkbox {

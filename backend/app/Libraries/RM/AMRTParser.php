@@ -18,14 +18,22 @@ class AMRTParser extends BaseRMParser
     }
 
     /**
-     * 解析公司基本宣告
+     * 解析公司基本宣告 (完整版)
      */
     protected function parseDeclaration()
     {
         return [
-            'companyName'      => $this->getCellValue('Declaration', 'C7'),
-            'companyCountry'   => $this->getCellValue('Declaration', 'C8'),
-            'declarationScope' => $this->getCellValue('Declaration', 'C15'),
+            // Section A: Company Information
+            'companyName'              => $this->getCellValue('Declaration', 'C7'),
+            'companyCountry'           => $this->getCellValue('Declaration', 'C8'),
+            'companyAddress'           => $this->getCellValue('Declaration', 'C9'),
+            'companyContactName'       => $this->getCellValue('Declaration', 'C10'),
+            'companyContactEmail'      => $this->getCellValue('Declaration', 'C11'),
+            'companyContactPhone'      => $this->getCellValue('Declaration', 'C12'),
+            'authorizer'               => $this->getCellValue('Declaration', 'C13'),
+            'effectiveDate'            => $this->getCellValue('Declaration', 'C14'),
+            'declarationScope'         => $this->getCellValue('Declaration', 'C15'),
+            'selectedMinerals'         => $this->getCellValue('Declaration', 'C16'), // AMRT 自選礦產清單
         ];
     }
 
@@ -67,9 +75,9 @@ class AMRTParser extends BaseRMParser
         $highestRow = $sheet->getHighestRow();
 
         for ($row = 5; $row <= $highestRow; $row++) {
-            $metal = $sheet->getCell('A' . $row)->getValue();
-            $smelterId = $sheet->getCell('B' . $row)->getValue();
-            $smelterName = $sheet->getCell('C' . $row)->getValue();
+            $metal = $sheet->getCell('A' . $row)->getCalculatedValue();
+            $smelterId = $sheet->getCell('B' . $row)->getCalculatedValue();
+            $smelterName = $sheet->getCell('C' . $row)->getCalculatedValue();
 
             if (empty($metal) || empty($smelterName)) continue;
 
@@ -77,8 +85,8 @@ class AMRTParser extends BaseRMParser
                 'metal_type'           => $metal,
                 'smelter_id'           => $smelterId,
                 'smelter_name'         => $smelterName,
-                'smelter_country'      => $sheet->getCell('D' . $row)->getValue(),
-                'source_of_smelter_id' => $sheet->getCell('E' . $row)->getValue(),
+                'smelter_country'      => $sheet->getCell('D' . $row)->getCalculatedValue(),
+                'source_of_smelter_id' => $sheet->getCell('E' . $row)->getCalculatedValue(),
             ];
         }
 

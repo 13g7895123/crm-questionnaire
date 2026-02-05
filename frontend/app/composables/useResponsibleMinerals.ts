@@ -108,6 +108,22 @@ export const useResponsibleMinerals = () => {
     }
 
     /**
+     * 新增供應商到專案
+     */
+    const addSuppliersToProject = async (projectId: number, supplierIds: number[]) => {
+        try {
+            return await api.post(
+                `/rm/projects/${projectId}/add-suppliers`,
+                {
+                    supplierIds
+                }
+            )
+        } catch (error) {
+            throw error
+        }
+    }
+
+    /**
      * Excel 匯入範本指派
      */
     const importTemplateAssignments = async (projectId: number, file: File) => {
@@ -148,6 +164,19 @@ export const useResponsibleMinerals = () => {
     const notifyAllSuppliers = async (projectId: number) => {
         try {
             return await api.post(`/rm/projects/${projectId}/suppliers/notify-all`)
+        } catch (error) {
+            throw error
+        }
+    }
+
+    /**
+     * 批量刪除供應商
+     */
+    const batchDeleteSuppliers = async (projectId: number, assignmentIds: number[]) => {
+        try {
+            return await api.post(`/rm/projects/${projectId}/suppliers/batch-delete`, {
+                assignmentIds
+            })
         } catch (error) {
             throw error
         }
@@ -279,11 +308,7 @@ export const useResponsibleMinerals = () => {
             const formData = new FormData()
             formData.append('file', file)
 
-            const response = await api.post(`/rm/questionnaires/${assignmentId}/import`, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
-            })
+            const response = await api.uploadFormData(`/rm/questionnaires/${assignmentId}/import`, formData)
             return response.data
         } catch (error) {
             throw error
@@ -364,11 +389,13 @@ export const useResponsibleMinerals = () => {
         fetchSuppliersWithTemplates,
         assignTemplateToSupplier,
         batchAssignTemplates,
+        addSuppliersToProject,
         importTemplateAssignments,
 
         // 通知功能
         notifySupplier,
         notifyAllSuppliers,
+        batchDeleteSuppliers,
 
         // 進度追蹤
         fetchProgress,

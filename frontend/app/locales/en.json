@@ -37,6 +37,7 @@
     "next": "Next",
     "finish": "Finish",
     "previewComplete": "Preview Complete",
+    "previewMode": "Preview Mode",
     "preview": "Preview",
     "import": "Import",
     "upload": "Upload",
@@ -50,6 +51,7 @@
     "test": "Test",
     "type": "Type",
     "name": "Name",
+    "country": "Country",
     "export": "Export",
     "exportExcel": "Export to Excel",
     "exportConsolidated": "Export Consolidated Report",
@@ -163,7 +165,9 @@
     "confirmSubmit": "Are you sure you want to submit? After submission, you will not be able to modify it.",
     "submitFailed": "Submission failed, please try again later.",
     "saveFailed": "Save failed, please try again later.",
-    "instruction": "Please complete the assigned templates or upload your official Excel files."
+    "instruction": "Please complete the assigned templates or upload your official Excel files.",
+    "readyToSubmit": "Ready to Submit",
+    "pleaseCheckBeforeSubmit": "Please review everything carefully before submitting"
   },
   "review": {
     "review": "Review",
@@ -179,7 +183,11 @@
     "reviewHistory": "Review History",
     "approvalFlow": "Approval Flow",
     "reviewProgress": "Review Progress",
-    "returnFeedback": "Return Feedback"
+    "returnFeedback": "Return Feedback",
+    "confirmApprove": "Are you sure you want to approve this questionnaire?",
+    "confirmReturn": "Are you sure you want to return this questionnaire? Please provide a reason in the comment field.",
+    "approveSuccess": "Questionnaire approved",
+    "returnSuccess": "Questionnaire returned"
   },
   "departments": {
     "departments": "Departments",

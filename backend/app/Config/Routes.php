@@ -102,6 +102,7 @@ $routes->group('api/v1', ['namespace' => 'App\Controllers\Api\V1'], function ($r
         $routes->get('stats', 'ProjectController::stats');
         $routes->get('(:segment)', 'ProjectController::show/$1');
         $routes->post('/', 'ProjectController::create');
+        $routes->post('(:segment)/duplicate', 'ProjectController::duplicate/$1');
         $routes->put('(:segment)', 'ProjectController::update/$1');
         $routes->delete('(:segment)', 'ProjectController::delete/$1');
     });
@@ -178,11 +179,14 @@ $routes->group('api/v1', ['namespace' => 'App\Controllers\Api\V1'], function ($r
             $routes->get('/', 'RmProjects::index');
             $routes->post('/', 'RmProjects::create');
             $routes->get('(:num)', 'RmProjects::show/$1');
+            $routes->post('(:num)/duplicate', 'RmProjects::duplicate/$1');
             $routes->put('(:num)', 'RmProjects::update/$1');
             $routes->delete('(:num)', 'RmProjects::delete/$1');
             $routes->get('(:num)/progress', 'RmProjects::progress/$1');
             $routes->get('(:num)/export', 'RmProjects::export/$1');
             $routes->get('(:num)/consolidated-report', 'RmProjects::consolidatedReport/$1');
+            $routes->post('(:num)/add-suppliers', 'RmProjects::addSuppliers/$1');
+            $routes->post('(:num)/suppliers/batch-delete', 'RmProjects::batchDeleteSuppliers/$1');
             $routes->post('(:num)/suppliers/import', 'RmProjects::importSuppliers/$1');
         });
 

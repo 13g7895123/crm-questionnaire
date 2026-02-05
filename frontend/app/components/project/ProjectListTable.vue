@@ -182,7 +182,7 @@ const props = defineProps<{
 
 const { t } = useI18n()
 const router = useRouter()
-const { fetchProjects, projects, deleteProject } = useProjects()
+const { fetchProjects, projects, deleteProject, duplicateProject } = useProjects()
 const { showConfirm, showLoading, closeAlert, showSystemAlert } = useSweetAlert()
 
 const loading = ref(true)
@@ -283,8 +283,32 @@ const viewProject = (project: Project) => {
   router.push(`${props.baseRoute}/projects/${project.id}`)
 }
 
-const handleCopy = () => {
-  console.log('Copy projects:', selected.value)
+const handleCopy = async () => {
+  if (!selected.value.length) return
+  
+  const confirmed = await showConfirm({
+    text: `確定要複製所選的 ${selected.value.length} 個專案嗎？\n\n複製後的專案將包含原專案的所有供應商指派和範本設定，但狀態將重置。`,
+    title: '複製專案'
+  })
+  if (!confirmed) return
+
+  try {
+    showLoading('正在複製專案...')
+    
+    const results = await Promise.all(
+      selected.value.map(p => duplicateProject(p.id, props.projectType as 'SAQ' | 'CONFLICT'))
+    )
+    
+    selected.value = []
+    await loadData()
+    closeAlert()
+    
+    showSystemAlert(`成功複製 ${results.length} 個專案`, 'success')
+  } catch (e: any) {
+    console.error('Failed to duplicate projects:', e)
+    closeAlert()
+    showSystemAlert(e.message || '複製專案失敗', 'error')
+  }
 }
 
 const handleDelete = async () => {
@@ -297,7 +321,7 @@ const handleDelete = async () => {
 
   try {
     showLoading()
-    await Promise.all(selected.value.map(p => deleteProject(p.id)))
+    await Promise.all(selected.value.map(p => deleteProject(p.id, props.projectType as 'SAQ' | 'CONFLICT')))
     selected.value = []
     await loadData()
     closeAlert()
@@ -317,7 +341,7 @@ const handleDeleteRow = async (row: Project) => {
 
   try {
     showLoading()
-    await deleteProject(row.id)
+    await deleteProject(row.id, props.projectType as 'SAQ' | 'CONFLICT')
     selected.value = selected.value.filter(p => p.id !== row.id)
     await loadData()
     closeAlert()

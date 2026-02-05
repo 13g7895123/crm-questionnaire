@@ -875,6 +875,7 @@ const handleSubmit = async () => {
    if (!confirmed) return
 
    submitting.value = true
+   
    try {
      // Save everything first
      const savePromises = [
@@ -908,16 +909,19 @@ const handleSubmit = async () => {
              title: '資料驗證失敗',
              html: detailMessages.split('\n').map(line => `<div style="text-align: left; margin: 8px 0;">${line}</div>`).join(''),
              icon: 'error',
-             confirmButtonText: '確定'
+             confirmButtonText: '確定',
+             allowOutsideClick: false,
+             allowEscapeKey: false
            })
          }
-         error.value = errorMessage
+         // 不設置 error.value，讓用戶留在表單頁面修正錯誤
          return
        }
      }
      
+     // 其他錯誤也只顯示訊息，不切換到錯誤狀態畫面
      showError(errorMessage)
-     error.value = errorMessage
+     // 不設置 error.value，讓用戶留在表單頁面
    } finally {
      submitting.value = false
    }

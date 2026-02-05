@@ -139,10 +139,10 @@ const activeMinerals = computed(() => {
 </script>
 
 <template>
-  <div class="rm-online-form space-y-6 relative pb-20">
+  <div class="rm-online-form space-y-6 relative pb-20 px-4 sm:px-6 lg:px-8">
     <!-- Sticky Header -->
-    <div class="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-gray-100 py-4 -mx-4 px-4 sm:-mx-6 sm:px-6">
-      <div class="max-w-7xl mx-auto flex items-center justify-between">
+    <div class="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-gray-100 py-4 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+      <div class="w-full mx-auto flex items-center justify-between">
         <div class="flex items-center gap-3">
           <UButton
             icon="i-heroicons-chevron-left"
@@ -183,7 +183,7 @@ const activeMinerals = computed(() => {
       </div>
     </div>
 
-    <div class="max-w-7xl mx-auto">
+    <div class="w-full mx-auto">
       <UTabs :items="tabs" class="w-full" :ui="{ wrapper: 'space-y-6', list: { base: 'max-w-xs' } }">
         <!-- 宣告內容標籤頁 -->
         <template #declaration>

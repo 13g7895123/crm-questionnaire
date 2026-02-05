@@ -112,12 +112,19 @@ class RmQuestionnaires extends BaseController
                 ->first();
 
             $dbData = [
-                'assignment_id'       => $assignmentId,
-                'template_type'       => $templateType,
-                'status'              => 'draft',
-                'company_name'        => $results['declaration']['companyName'] ?? '',
-                'declaration_scope'  => $results['declaration']['declarationScope'] ?? '',
-                'mineral_declaration' => json_encode($results['mineralDeclaration'] ?? []),
+                'assignment_id'         => $assignmentId,
+                'template_type'         => $templateType,
+                'company_name'          => $results['declaration']['companyName'] ?? '',
+                'company_country'       => $results['declaration']['companyCountry'] ?? '',
+                'company_address'       => $results['declaration']['companyAddress'] ?? '',
+                'company_contact_name'  => $results['declaration']['companyContactName'] ?? '',
+                'company_contact_email' => $results['declaration']['companyContactEmail'] ?? '',
+                'company_contact_phone' => $results['declaration']['companyContactPhone'] ?? '',
+                'authorizer'            => $results['declaration']['authorizer'] ?? '',
+                'effective_date'        => $results['declaration']['effectiveDate'] ?? null,
+                'declaration_scope'     => $results['declaration']['declarationScope'] ?? '',
+                'mineral_declaration'   => json_encode($results['mineralDeclaration'] ?? []),
+                'policy_answers'        => json_encode($results['mineralDeclaration']['policy'] ?? []),
             ];
 
             if ($answer) {
@@ -213,7 +220,6 @@ class RmQuestionnaires extends BaseController
             $dbData = [
                 'assignment_id'       => $assignmentId,
                 'template_type'       => $templateType,
-                'status'              => 'draft',
                 'company_name'        => $input['declaration']['companyName'] ?? '',
                 'declaration_scope'  => $input['declaration']['declarationScope'] ?? '',
                 'mineral_declaration' => json_encode($input['mineralDeclaration'] ?? []),
@@ -295,9 +301,8 @@ class RmQuestionnaires extends BaseController
                 return $this->failNotFound('找不到對應的問卷內容');
             }
 
-            // 更新回答狀態
+            // 更新提交時間
             $this->answerModel->update($answer['id'], [
-                'status'       => 'submitted',
                 'submitted_at' => date('Y-m-d H:i:s')
             ]);
 

@@ -156,18 +156,30 @@
           </div>
 
           <UFormGroup label="選擇檔案" required>
-            <div class="mt-1">
+            <div
+              class="mt-1 relative border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer"
+              :class="isDragging ? 'border-primary-500 bg-primary-50' : 'border-gray-300 bg-gray-50 hover:bg-gray-100'"
+              @click="fileInput?.click()"
+              @dragover.prevent="isDragging = true"
+              @dragleave.prevent="isDragging = false"
+              @drop.prevent="handleDrop"
+            >
               <input
                 ref="fileInput"
                 type="file"
                 accept=".xlsx,.xls"
-                class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-l-lg file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+                class="hidden"
                 @change="handleFileChange"
               />
+              <UIcon name="i-heroicons-document-arrow-up" class="mx-auto h-12 w-12 text-gray-400 mb-2" />
+              <div v-if="selectedFile" class="text-sm font-medium text-primary-700">
+                已選擇：{{ selectedFile.name }}
+              </div>
+              <div v-else class="text-sm text-gray-600">
+                <p class="font-medium">點擊或拖曳檔案至此處上傳</p>
+                <p class="text-xs text-gray-400 mt-1">支援 .xlsx, .xls 格式</p>
+              </div>
             </div>
-            <p v-if="selectedFile" class="mt-2 text-sm text-gray-600">
-              已選擇：{{ selectedFile.name }}
-            </p>
           </UFormGroup>
 
           <div v-if="importResult" class="space-y-2">
@@ -244,6 +256,7 @@ const fileInput = ref<HTMLInputElement | null>(null)
 const selectedFile = ref<File | null>(null)
 const importing = ref(false)
 const importResult = ref<any>(null)
+const isDragging = ref(false)
 
 const pagination = ref({
   page: 1,
@@ -363,6 +376,21 @@ const handleFileChange = (event: Event) => {
   if (target.files && target.files.length > 0) {
     selectedFile.value = target.files[0]
     importResult.value = null
+  }
+}
+
+const handleDrop = (event: DragEvent) => {
+  isDragging.value = false
+  const files = event.dataTransfer?.files
+  if (files && files.length > 0) {
+    const file = files[0]
+    const ext = file.name.split('.').pop()?.toLowerCase()
+    if (ext === 'xlsx' || ext === 'xls') {
+      selectedFile.value = file
+      importResult.value = null
+    } else {
+      showError('只支援 .xlsx 或 .xls 格式')
+    }
   }
 }
 

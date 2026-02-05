@@ -44,49 +44,69 @@ class RmReviews extends BaseController
     }
 
     /**
-     * 審核指派 (核准或退回)
+     * 審核答卷 (核准或退回)
+     * 注意：此方法審核的是單個答卷(answer)，不是整個指派(assignment)
      */
     public function review($id = null)
     {
         try {
-            $assignment = $this->assignmentModel->find($id);
-            if (!$assignment) {
-                return $this->failNotFound('找不到指派記錄');
+            $answerModel = new RmAnswerModel();
+            $answer = $answerModel->find($id);
+            if (!$answer) {
+                return $this->failNotFound('找不到答卷記錄');
             }
 
             $input = $this->request->getJSON(true);
-            $action = $input['action'] ?? null; // 'approve' or 'return'
+            $action = $input['action'] ?? null; // 'APPROVE', 'RETURN', 'COMMENT'
             $comment = $input['comment'] ?? '';
+            $stage = $input['stage'] ?? 1;
 
-            if (!in_array($action, ['approve', 'return'])) {
+            if (!in_array(strtoupper($action), ['APPROVE', 'RETURN', 'COMMENT'])) {
                 return $this->failValidationError('審核動作無效');
             }
-
-            $newStatus = ($action === 'approve') ? 'completed' : 'in_progress';
 
             $db = \Config\Database::connect();
             $db->transStart();
 
-            // 更新指派狀態
-            $this->assignmentModel->update($id, [
-                'status' => $newStatus
-            ]);
-
             // 記錄審核日誌
             $this->reviewLogModel->insert([
-                'assignment_id' => $id,
-                'reviewer_id'   => $this->request->user['id'] ?? 1, // 預設 1 或從 JWT 取得
-                'action'        => ($action === 'approve') ? 'Approved' : 'Returned',
-                'comment'       => $comment
+                'answer_id'   => $id,
+                'reviewer_id' => $this->request->user['id'] ?? 1,
+                'action'      => strtoupper($action),
+                'stage'       => $stage,
+                'comment'     => $comment
             ]);
 
-            // 如果是核准，也要把相關回答狀態更新
-            if ($action === 'approve') {
-                $answerModel = new RmAnswerModel();
-                $answerModel->where('assignment_id', $id)
-                    ->where('status', 'submitted')
-                    ->set(['status' => 'approved'])
-                    ->update();
+            // 如果是核準，更新對應的 assignment 狀態
+            if (strtoupper($action) === 'APPROVE') {
+                // 檢查該 assignment 的所有 answers 是否都已核准
+                $assignmentId = $answer['assignment_id'];
+                $allAnswers = $answerModel->where('assignment_id', $assignmentId)->findAll();
+                $approvedCount = 0;
+                
+                foreach ($allAnswers as $ans) {
+                    // 檢查此答卷是否有 APPROVE 日誌
+                    $hasApproved = $this->reviewLogModel
+                        ->where('answer_id', $ans['id'])
+                        ->where('action', 'APPROVE')
+                        ->countAllResults() > 0;
+                    
+                    if ($hasApproved || $ans['id'] === $id) {
+                        $approvedCount++;
+                    }
+                }
+
+                // 如果所有答卷都已核准，更新 assignment 狀態為 completed
+                if ($approvedCount >= count($allAnswers)) {
+                    $this->assignmentModel->update($assignmentId, [
+                        'status' => 'completed'
+                    ]);
+                }
+            } elseif (strtoupper($action) === 'RETURN') {
+                // 退回時，將 assignment 狀態改為 in_progress
+                $this->assignmentModel->update($answer['assignment_id'], [
+                    'status' => 'in_progress'
+                ]);
             }
 
             $db->transComplete();
@@ -97,7 +117,12 @@ class RmReviews extends BaseController
 
             return $this->respond([
                 'success' => true,
-                'message' => ($action === 'approve') ? '核准完畢' : '已退回供應商'
+                'message' => match(strtoupper($action)) {
+                    'APPROVE' => '核准完畢',
+                    'RETURN' => '已退回供應商',
+                    'COMMENT' => '評論已儲存',
+                    default => '操作完成'
+                }
             ]);
         } catch (\Exception $e) {
             return $this->failServerError($e->getMessage());

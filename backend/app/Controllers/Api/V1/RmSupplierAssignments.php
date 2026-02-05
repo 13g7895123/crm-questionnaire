@@ -23,7 +23,35 @@ class RmSupplierAssignments extends BaseController
     public function index($projectId = null)
     {
         try {
-            $data = $this->model->where('project_id', $projectId)->findAll();
+            $rawData = $this->model->where('project_id', $projectId)->findAll();
+            
+            // 將資料庫欄位名稱轉換為前端期望的 camelCase 格式
+            $data = array_map(function($item) {
+                // 處理 amrt_minerals JSON 解碼
+                $amrtMinerals = null;
+                if (!empty($item['amrt_minerals'])) {
+                    if (is_string($item['amrt_minerals'])) {
+                        $decoded = json_decode($item['amrt_minerals'], true);
+                        $amrtMinerals = is_array($decoded) ? $decoded : [];
+                    } else if (is_array($item['amrt_minerals'])) {
+                        $amrtMinerals = $item['amrt_minerals'];
+                    }
+                }
+                
+                return [
+                    'id'             => (int)$item['id'],
+                    'supplierId'     => (int)$item['supplier_id'],
+                    'supplierName'   => $item['supplier_name'] ?? '',
+                    'supplierEmail'  => $item['supplier_email'] ?? '',
+                    'cmrt_required'  => (bool)$item['cmrt_required'],
+                    'emrt_required'  => (bool)$item['emrt_required'],
+                    'amrt_required'  => (bool)$item['amrt_required'],
+                    'amrt_minerals'  => $amrtMinerals,
+                    'status'         => $item['status'] ?? 'not_assigned',
+                    'lastUpdated'    => $item['updated_at'] ?? $item['created_at']
+                ];
+            }, $rawData);
+            
             return $this->respond([
                 'success' => true,
                 'data'    => $data

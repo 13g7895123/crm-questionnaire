@@ -28,7 +28,7 @@
           >
             <UIcon :name="tab.icon" class="w-4 h-4" />
             {{ tab.label }}
-            <UBadge v-if="tab.badge" color="gray" variant="soft" size="xs">
+            <UBadge v-if="tab.badge !== null && tab.badge !== undefined" color="gray" variant="soft" size="xs">
               {{ tab.badge }}
             </UBadge>
           </button>
@@ -130,7 +130,7 @@ const tabs = computed(() => [
     id: 'suppliers',
     label: '供應商管理',
     icon: 'i-heroicons-user-group',
-    badge: project.value?.suppliers?.length || null
+    badge: project.value?.supplierCount ?? null
   },
   {
     id: 'progress',
@@ -159,7 +159,7 @@ const loadProject = async () => {
   loading.value = true
   error.value = ''
   try {
-    const response = await getProject(projectId.value.toString())
+    const response = await getProject(projectId.value.toString(), 'CONFLICT')
     project.value = response.data
 
     setBreadcrumbs([

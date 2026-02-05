@@ -10,8 +10,8 @@
     @submitted="onOnlineFormSubmitted"
   />
 
-  <div v-else class="space-y-8 animate-fade-in pt-6 pb-8">
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 px-6">
+  <div v-else class="w-full space-y-8 animate-fade-in pt-6 pb-8">
+      <div class="w-full flex flex-col md:flex-row md:items-center justify-between gap-4 px-6">
         <div class="flex items-center gap-4">
           <UButton
             icon="i-heroicons-arrow-left"
@@ -193,6 +193,75 @@
                   <UIcon name="i-heroicons-shield-check" class="absolute -right-8 -bottom-8 w-40 h-40 text-green-200/20 rotate-12" />
                 </div>
 
+                <!-- Company Declaration Info -->
+                <div v-if="tmplStatus[item.type]?.declaration">
+                  <div class="flex items-center gap-2 mb-4">
+                    <UIcon name="i-heroicons-building-office" class="text-primary-500 w-5 h-5" />
+                    <h4 class="font-bold text-gray-900">{{ $t('conflict.companyDeclaration') || '公司宣告資訊' }}</h4>
+                  </div>
+                  
+                  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-6 bg-gray-50 rounded-2xl border border-gray-100">
+                    <div v-for="(value, key) in tmplStatus[item.type].declaration" :key="key" class="flex flex-col">
+                      <span class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">{{ formatFieldName(key) }}</span>
+                      <span class="text-sm font-medium text-gray-900">{{ value || '-' }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Policy Information -->
+                <div v-if="tmplStatus[item.type]?.mineralDeclaration?.policy">
+                  <div class="flex items-center gap-2 mb-4">
+                    <UIcon name="i-heroicons-shield-check" class="text-primary-500 w-5 h-5" />
+                    <h4 class="font-bold text-gray-900">{{ $t('conflict.policyInformation') || '政策資訊' }}</h4>
+                  </div>
+                  
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div v-for="(value, key) in tmplStatus[item.type].mineralDeclaration.policy" :key="key" class="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-100">
+                      <UIcon 
+                        :name="value === 'Yes' || value === true ? 'i-heroicons-check-circle' : 'i-heroicons-x-circle'" 
+                        :class="value === 'Yes' || value === true ? 'text-green-500' : 'text-gray-300'"
+                        class="w-5 h-5 flex-shrink-0"
+                      />
+                      <div class="flex-1 min-w-0">
+                        <span class="text-xs font-medium text-gray-600 block truncate">{{ formatFieldName(key) }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Mineral Declaration -->
+                <div v-if="tmplStatus[item.type]?.mineralDeclaration?.minerals">
+                  <div class="flex items-center gap-2 mb-4">
+                    <UIcon name="i-heroicons-cube" class="text-primary-500 w-5 h-5" />
+                    <h4 class="font-bold text-gray-900">{{ $t('conflict.mineralDeclaration') || '礦產宣告' }}</h4>
+                  </div>
+                  
+                  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div v-for="(data, mineral) in tmplStatus[item.type].mineralDeclaration.minerals" :key="mineral" class="p-5 bg-white rounded-2xl border border-gray-100 shadow-sm">
+                      <div class="flex items-center justify-between mb-3">
+                        <h5 class="font-bold text-gray-900">{{ mineral }}</h5>
+                        <UBadge :color="data.used === 'Yes' || data.used === true ? 'green' : 'gray'" variant="soft" size="xs" class="font-bold">
+                          {{ data.used === 'Yes' || data.used === true ? 'Used' : 'Not Used' }}
+                        </UBadge>
+                      </div>
+                      <div v-if="data.used === 'Yes' || data.used === true" class="space-y-2 text-xs">
+                        <div v-if="data.countries" class="flex items-start gap-2">
+                          <span class="text-gray-400 font-medium">Countries:</span>
+                          <span class="text-gray-700 font-medium flex-1">{{ data.countries }}</span>
+                        </div>
+                        <div v-if="data.smelterCount" class="flex items-center gap-2">
+                          <span class="text-gray-400 font-medium">Smelters:</span>
+                          <span class="text-gray-700 font-bold">{{ data.smelterCount }}</span>
+                        </div>
+                        <div v-if="data.mineCount" class="flex items-center gap-2">
+                          <span class="text-gray-400 font-medium">Mines:</span>
+                          <span class="text-gray-700 font-bold">{{ data.mineCount }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <!-- Smelter Preview Section -->
                 <div>
                   <div class="flex items-center justify-between mb-4">
@@ -253,6 +322,10 @@
           <div
             class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-primary-500 transition-colors cursor-pointer"
             @click="fileInput?.click()"
+            @dragover.prevent="isDragging = true"
+            @dragleave.prevent="isDragging = false"
+            @drop.prevent="handleDrop"
+            :class="{ 'border-primary-500 bg-primary-50': isDragging }"
           >
             <div class="space-y-1 text-center">
               <UIcon name="i-heroicons-document-arrow-up" class="mx-auto h-12 w-12 text-gray-400" />
@@ -351,10 +424,21 @@ const init = async () => {
         tmplStatus[ans.template_type].declaration = {
           companyName: ans.company_name,
           declarationScope: ans.declaration_scope,
-          companyCountry: ans.company_country || '' // 後端可能需要補齊此欄位
+          companyCountry: ans.company_country || '',
+          companyAddress: ans.company_address || '',
+          companyContactName: ans.company_contact_name || '',
+          companyContactEmail: ans.company_contact_email || '',
+          companyContactPhone: ans.company_contact_phone || '',
+          authorizer: ans.authorizer || '',
+          effectiveDate: ans.effective_date || ''
         }
         try {
-          tmplStatus[ans.template_type].mineralDeclaration = JSON.parse(ans.mineral_declaration || '{}')
+          const mineralDecl = JSON.parse(ans.mineral_declaration || '{}')
+          const policyAnswers = JSON.parse(ans.policy_answers || '{}')
+          tmplStatus[ans.template_type].mineralDeclaration = {
+            ...mineralDecl,
+            policy: policyAnswers
+          }
         } catch {
           tmplStatus[ans.template_type].mineralDeclaration = {}
         }
@@ -504,15 +588,34 @@ const uploadModal = reactive({
 const fileInput = ref<HTMLInputElement | null>(null)
 const selectedFile = ref<File | null>(null)
 const isUploading = ref(false)
+const isDragging = ref(false)
 
 const openUploadModal = (type: string) => {
   uploadModal.type = type
   uploadModal.isOpen = true
   selectedFile.value = null
+  isDragging.value = false
 }
 
 const handleFileChange = (e: any) => {
-  selectedFile.value = e.target.files[0]
+  const file = e.target.files?.[0]
+  if (file) {
+    selectedFile.value = file
+  }
+}
+
+const handleDrop = (e: DragEvent) => {
+  isDragging.value = false
+  const files = e.dataTransfer?.files
+  if (files && files.length > 0) {
+    const file = files[0]
+    const ext = file.name.split('.').pop()?.toLowerCase()
+    if (ext === 'xls' || ext === 'xlsx') {
+      selectedFile.value = file
+    } else {
+      showError('只支援 .xls 或 .xlsx 格式的檔案')
+    }
+  }
 }
 
 const handleUpload = async () => {
@@ -570,6 +673,15 @@ const formatDate = (dateString: string): string => {
   } catch {
     return dateString
   }
+}
+
+const formatFieldName = (fieldName: string): string => {
+  // 将 camelCase 或 snake_case 转换为可读的标题
+  const formatted = fieldName
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/_/g, ' ')
+    .trim()
+  return formatted.charAt(0).toUpperCase() + formatted.slice(1)
 }
 
 onMounted(() => {

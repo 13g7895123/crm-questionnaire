@@ -37,6 +37,7 @@
     "next": "下一步",
     "finish": "完成",
     "previewComplete": "預覽完成",
+    "previewMode": "預覽模式",
     "preview": "預覽",
     "import": "匯入",
     "upload": "上傳",
@@ -50,6 +51,7 @@
     "test": "測試",
     "type": "類型",
     "name": "名稱",
+    "country": "國家",
     "export": "匯出",
     "exportExcel": "匯出 Excel",
     "exportConsolidated": "匯出彙總報表",
@@ -163,7 +165,9 @@
     "confirmSubmit": "確定要提交問卷嗎？提交後將無法修改。",
     "submitFailed": "問卷提交失敗，請稍後再試。",
     "saveFailed": "保存失敗，請稍後再試。",
-    "instruction": "請依序完成所有指派的範本，或直接上傳官方 Excel。"
+    "instruction": "請依序完成所有指派的範本，或直接上傳官方 Excel。",
+    "readyToSubmit": "準備提交",
+    "pleaseCheckBeforeSubmit": "請在提交前仔細檢查所有內容"
   },
   "review": {
     "review": "審核",
@@ -179,7 +183,11 @@
     "reviewHistory": "審核紀錄",
     "approvalFlow": "審核流程",
     "reviewProgress": "審核進度",
-    "returnFeedback": "退回意見反饋"
+    "returnFeedback": "退回意見反饋",
+    "confirmApprove": "確定要核准此問卷嗎？",
+    "confirmReturn": "確定要退回此問卷嗎？請在備註欄填寫退回原因。",
+    "approveSuccess": "問卷已核准",
+    "returnSuccess": "問卷已退回"
   },
   "departments": {
     "departments": "部門",
