@@ -298,6 +298,134 @@ case "${1:-deploy}" in
         echo "Rollback complete! Active frontend: $ROLLBACK_COLOR"
         ;;
         
+    deploy-fresh)
+        echo ""
+        echo "🔄 Fresh deployment mode - rebuilding BOTH frontend colors"
+        echo "   This ensures all caches are cleared and latest code is used"
+        echo ""
+        
+        CURRENT_COLOR=$(get_active_color)
+        if [ "$CURRENT_COLOR" == "blue" ]; then
+            NEW_COLOR="green"
+            OLD_COLOR="blue"
+        else
+            NEW_COLOR="blue"
+            OLD_COLOR="green"
+        fi
+        
+        echo "Current active: $CURRENT_COLOR"
+        echo "Will switch to: $NEW_COLOR"
+        echo "Will also rebuild: $OLD_COLOR (for future rollback)"
+        echo ""
+        
+        # Same backend steps as normal deploy
+        # ... (copy backend deployment steps from deploy case)
+        
+        # Function to update or add configuration line
+        update_or_add_config() {
+            local file=$1
+            local key=$2
+            local value=$3
+            
+            if grep -q "^${key} = " "$file" 2>/dev/null; then
+                sed -i "s|^${key} = .*|${key} = ${value}|" "$file"
+            else
+                echo "${key} = ${value}" >> "$file"
+            fi
+        }
+        
+        # Step 0: Sync backend database configuration
+        echo "Step 0: Syncing backend database configuration..."
+        
+        if [ ! -f "backend/.env" ]; then
+            echo "⚠️  backend/.env not found, creating from template..."
+            if [ -f "backend/env" ]; then
+                cp backend/env backend/.env
+                echo "✅ Created backend/.env from backend/env"
+            else
+                echo "❌ Error: Neither backend/.env nor backend/env template found!"
+                exit 1
+            fi
+        fi
+        
+        cp backend/.env backend/.env.bak
+        echo "✓ Backed up backend/.env to backend/.env.bak"
+        
+        update_or_add_config "backend/.env" "database.default.hostname" "${DB_HOST}"
+        update_or_add_config "backend/.env" "database.default.database" "${DB_DATABASE}"
+        update_or_add_config "backend/.env" "database.default.username" "${DB_USERNAME}"
+        update_or_add_config "backend/.env" "database.default.password" "${DB_PASSWORD}"
+        update_or_add_config "backend/.env" "database.default.port" "3306"
+        update_or_add_config "backend/.env" "database.default.DBDriver" "MySQLi"
+        update_or_add_config "backend/.env" "CI_ENVIRONMENT" "production"
+        
+        echo ""
+        echo "Configuration updated:"
+        echo "  - Hostname: ${DB_HOST}"
+        echo "  - Database: ${DB_DATABASE}"
+        echo "  - Username: ${DB_USERNAME}"
+        echo "  - Port: 3306"
+        echo "  - Environment: production"
+        
+        # Step 1: Start services
+        echo ""
+        echo "Step 1: Starting database and services..."
+        docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d db phpmyadmin backend nginx
+        sleep 15
+        
+        echo ""
+        echo "Restarting backend to load configuration..."
+        docker compose -f "$COMPOSE_FILE" restart backend
+        sleep 5
+        
+        # Composer
+        echo ""
+        echo "Installing/Updating Composer dependencies..."
+        docker compose -f "$COMPOSE_FILE" exec backend composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev || true
+        
+        echo ""
+        echo "Regenerating Composer autoload files..."
+        docker compose -f "$COMPOSE_FILE" exec backend composer dump-autoload --optimize --no-dev || true
+        
+        echo ""
+        echo "Restarting backend to reload autoload files..."
+        docker compose -f "$COMPOSE_FILE" restart backend
+        sleep 5
+        
+        docker compose -f "$COMPOSE_FILE" exec backend chmod -R 777 /var/www/html/writable
+        
+        # Database
+        echo ""
+        echo "Step 2: Running database migrations..."
+        docker compose -f "$COMPOSE_FILE" exec backend php spark migrate
+        echo "✅ Database migrations completed"
+        
+        # Build BOTH frontends
+        echo ""
+        echo "Step 3: Building frontend to $NEW_COLOR (will be active)..."
+        build_frontend "$NEW_COLOR"
+        
+        echo ""
+        echo "Step 4: Also building frontend to $OLD_COLOR (for rollback)..."
+        build_frontend "$OLD_COLOR"
+        
+        # Switch traffic
+        echo ""
+        echo "Step 5: Switching traffic to $NEW_COLOR..."
+        switch_traffic "$NEW_COLOR"
+        
+        echo ""
+        echo "============================================="
+        echo "  Fresh Deployment Complete!"
+        echo "============================================="
+        echo "  Active frontend: $NEW_COLOR (latest code)"
+        echo "  Standby frontend: $OLD_COLOR (also latest code)"
+        echo ""
+        echo "  Both colors are now on the latest version!"
+        echo "  To rollback: ./scripts/prod.sh rollback"
+        echo "============================================="
+        ;;
+        
     switch)
         if [ -z "$2" ]; then
             echo "Usage: ./scripts/prod.sh switch [blue|green]"
@@ -343,13 +471,17 @@ case "${1:-deploy}" in
         echo "Usage: ./scripts/prod.sh [command]"
         echo ""
         echo "Commands:"
-        echo "  deploy    - Deploy with frontend blue-green strategy (default)"
-        echo "  rollback  - Rollback to previous frontend version"
-        echo "  switch    - Switch traffic to specific color (blue|green)"
-        echo "  build     - Build frontend to specific color (blue|green)"
-        echo "  status    - Show current deployment status"
-        echo "  stop      - Stop all production services"
-        echo "  logs      - View logs (optional: service name)"
-        echo "  migrate   - Run database migrations"
+        echo "  deploy        - Deploy with frontend blue-green strategy (default)"
+        echo "  deploy-fresh  - Fresh deploy: rebuild BOTH colors with cache clearing"
+        echo "  rollback      - Rollback to previous frontend version"
+        echo "  switch        - Switch traffic to specific color (blue|green)"
+        echo "  build         - Build frontend to specific color (blue|green)"
+        echo "  status        - Show current deployment status"
+        echo "  stop          - Stop all production services"
+        echo "  logs          - View logs (optional: service name)"
+        echo "  migrate       - Run database migrations"
+        echo ""
+        echo "Recommended for ensuring latest code:"
+        echo "  ./scripts/prod.sh deploy-fresh"
         ;;
 esac
