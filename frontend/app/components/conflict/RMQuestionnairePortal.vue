@@ -96,16 +96,6 @@
               >
                 {{ $t('common.modify') }}
               </UButton>
-              
-              <UButton
-                v-if="!tmpl.completed"
-                size="md"
-                color="gray"
-                variant="ghost"
-                icon="i-heroicons-globe-alt"
-                @click="enterOnlineForm(tmpl.type)"
-                class="hover:bg-primary-50"
-              />
             </div>
           </div>
           
@@ -304,6 +294,7 @@
 import { ref, computed, onMounted, reactive } from 'vue'
 import { useResponsibleMinerals } from '~/composables/useResponsibleMinerals'
 import { useSweetAlert } from '~/composables/useSweetAlert'
+import { useAuthStore } from '~/stores/auth'
 import RMOnlineForm from './RMOnlineForm.vue'
 
 const props = defineProps<{
@@ -403,27 +394,53 @@ const onTabChange = (index: number) => {
   // 可以根據需求處理標籤切換
 }
 
-const handleDownloadTemplate = (type: string) => {
+const handleDownloadTemplate = async (type: string) => {
   // 從後端下載官方範本檔案
+  const config = useRuntimeConfig()
+  const authStore = useAuthStore()
+  const apiBase = config.public.apiBase || 'http://localhost:9104/api/v1'
+  
   const templateFiles: Record<string, string> = {
-    CMRT: '/api/v1/rm/templates/download/cmrt',
-    EMRT: '/api/v1/rm/templates/download/emrt',
-    AMRT: '/api/v1/rm/templates/download/amrt'
+    CMRT: '/rm/templates/download/cmrt',
+    EMRT: '/rm/templates/download/emrt',
+    AMRT: '/rm/templates/download/amrt'
   }
   
   const apiPath = templateFiles[type]
-  if (apiPath) {
-    // 建立下載連結
+  if (!apiPath) {
+    showError('無法取得範本下載連結')
+    return
+  }
+
+  try {
+    const downloadUrl = `${apiBase}${apiPath}`
+    
+    // 使用 fetch 帶上認證 token 下載檔案
+    const response = await fetch(downloadUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${authStore.token}`
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error('下載失敗')
+    }
+
+    // 獲取 blob 並創建下載連結
+    const blob = await response.blob()
+    const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
-    link.href = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}${apiPath}`
-    link.setAttribute('download', `${type}_Template.xlsx`)
-    link.setAttribute('target', '_blank')
+    link.href = url
+    link.download = `${type}_Template_${new Date().toISOString().split('T')[0]}.xlsx`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
-    showSuccess(`正在下載 ${type} 官方範本...`)
-  } else {
-    showError('無法取得範本下載連結')
+    window.URL.revokeObjectURL(url)
+    
+    showSuccess(`${type} 範本下載成功`)
+  } catch (error) {
+    showError('範本下載失敗，請稍後再試')
   }
 }
 

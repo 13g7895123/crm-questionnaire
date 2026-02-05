@@ -16,11 +16,12 @@ const links = computed(() => {
   const items: any[] = []
 
   if (authStore.user?.role === 'HOST' || authStore.user?.role === 'ADMIN') {
-    items.push({
-      label: t('users.management'),
-      icon: 'i-heroicons-users',
-      to: '/account/users'
-    })
+    // 使用者管理已隱藏
+    // items.push({
+    //   label: t('users.management'),
+    //   icon: 'i-heroicons-users',
+    //   to: '/account/users'
+    // })
     items.push({
       label: t('suppliers.management'),
       icon: 'i-heroicons-building-office-2',
