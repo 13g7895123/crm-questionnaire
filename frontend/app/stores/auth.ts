@@ -4,9 +4,18 @@ import type { User, AuthState } from '~/types/index'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
+  const config = useRuntimeConfig()
+  
+  // 判斷是否為生產環境：檢查 API base 是否使用 HTTPS
+  const isSecure = config.public.apiBase?.startsWith('https://') || false
+  
+  // Cookie 配置：根據環境自動調整
   const tokenCookie = useCookie('auth_token', {
     maxAge: 60 * 60 * 24 * 7, // 7 days
-    path: '/'
+    path: '/',
+    sameSite: 'lax', // 防止 CSRF 攻擊
+    secure: isSecure, // HTTPS 環境必須為 true
+    // domain 不設置，讓瀏覽器自動處理當前域名
   })
   const token = computed(() => tokenCookie.value || null)
 

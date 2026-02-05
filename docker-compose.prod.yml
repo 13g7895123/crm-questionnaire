@@ -9,6 +9,8 @@ services:
     volumes:
       - ./frontend:/app
       - frontend_dist_blue:/dist
+    environment:
+      - NUXT_PUBLIC_API_BASE=${NUXT_PUBLIC_API_BASE:-}
     command: sh -c "rm -rf .nuxt .output node_modules && npm ci --prefer-offline=false && npm run generate && rm -rf /dist/* && cp -r /app/.output/public/* /dist/"
     profiles:
       - build-blue
@@ -23,6 +25,8 @@ services:
     volumes:
       - ./frontend:/app
       - frontend_dist_green:/dist
+    environment:
+      - NUXT_PUBLIC_API_BASE=${NUXT_PUBLIC_API_BASE:-}
     command: sh -c "rm -rf .nuxt .output node_modules && npm ci --prefer-offline=false && npm run generate && rm -rf /dist/* && cp -r /app/.output/public/* /dist/"
     profiles:
       - build-green
