@@ -496,20 +496,20 @@ const handleDownloadTemplate = async (type: string) => {
   }
 
   try {
-    // 使用與 useApi 相同的邏輯構建 URL
+    // 使用與 useDepartments 相同的 URL 構建邏輯
     const apiBase = config.public.apiBase || ''
-    let downloadUrl = ''
+    let url = ''
     
     if (apiBase.startsWith('http')) {
-      // 絕對路徑模式 (例如: https://ase.cc-sustain.com/api/v1)
-      downloadUrl = `${apiBase}${apiPath}`
+      // 絕對路徑 (如: https://ase.cc-sustain.com/api/v1)
+      url = `${apiBase}${apiPath}`
     } else {
-      // 相對路徑模式，讓瀏覽器自動使用當前域名
-      downloadUrl = `/api/v1${apiPath}`
+      // 相對路徑，瀏覽器會自動使用當前域名
+      url = `/api/v1${apiPath}`
     }
     
-    // 使用 fetch 帶上認證 token 下載檔案
-    const response = await fetch(downloadUrl, {
+    // 使用 fetch 帶上認證 token
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${authStore.token}`
@@ -520,16 +520,16 @@ const handleDownloadTemplate = async (type: string) => {
       throw new Error('下載失敗')
     }
 
-    // 獲取 blob 並創建下載連結
+    // 獲取 blob 並建立下載連結
     const blob = await response.blob()
-    const url = window.URL.createObjectURL(blob)
+    const downloadUrl = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
-    link.href = url
-    link.download = `${type}_Template_${new Date().toISOString().split('T')[0]}.xlsx`
+    link.href = downloadUrl
+    link.setAttribute('download', `${type}_Template_${new Date().toISOString().split('T')[0]}.xlsx`)
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
-    window.URL.revokeObjectURL(url)
+    window.URL.revokeObjectURL(downloadUrl)
     
     showSuccess(`${type} 範本下載成功`)
   } catch (error) {
